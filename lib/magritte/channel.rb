@@ -102,17 +102,8 @@ module Magritte
           p.interrupt!
         end
 
-        @read_mutex.spawn_sync { perform_read }
+        Thread.new { @channel.take }
       end.value
-    end
-
-    def perform_read
-      @read_mutex.synchronize do
-        @current_reader = p
-        out = @channel.take
-        @current_reader = nil
-        out
-      end
     end
 
     def write(val)
@@ -127,24 +118,13 @@ module Magritte
           p.interrupt!
         end
 
-        Thread.new { perform_write(val) }
+        Thread.new { @channel << val }
       end.join
-    end
-
-    def perform_write(val)
-      @write_mutex.synchronize do
-        @current_writer = p
-        @channel << val
-        @current_writer = nil
-      end
     end
 
     def close!
       PRINTER.p(close!: object_id)
       @open = false
-
-      @current_reader && @current_reader.interrupt!
-      @current_writer && @current_writer.interrupt!
 
       # @readers.each(&:interrupt!)
       # @writers.each(&:interrupt!)
