@@ -1,6 +1,4 @@
 require 'thread'
-require 'concurrent'
-require 'concurrent-edge'
 
 module Magritte
   class Printer
@@ -47,7 +45,8 @@ module Magritte
 
   if ENV['MAGRITTE_DEBUG']
     Dir.mkdir("./tmp/log/#{$$}")
-    PRINTER = LogPrinter.new("./tmp/log/#{$$}")
+    # PRINTER = LogPrinter.new("./tmp/log/#{$$}")
+    PRINTER = Printer.new
   else
     PRINTER = NullPrinter.new
   end
@@ -59,6 +58,7 @@ module Magritte
   end
 
   LIB_DIR = File.dirname(__FILE__)
+  load "#{LIB_DIR}/magritte/std.rb"
   load "#{LIB_DIR}/magritte/code.rb"
   load "#{LIB_DIR}/magritte/channel.rb"
   load "#{LIB_DIR}/magritte/proc.rb"

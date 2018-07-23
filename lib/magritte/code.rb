@@ -1,23 +1,6 @@
 module Magritte
-  module IO
-    def put(val)
-      # PRINTER.p put: val
-      Proc.current.stdout.write(val)
-    end
-
-    def get
-      out = Proc.current.stdin.read
-      # PRINTER.p get: out
-      out
-    end
-
-    def for_(iterable)
-      iterable.each { |val| put(val) }
-    end
-  end
-
   class Code
-    include Magritte::IO
+    include Magritte::Std
 
     def initialize(&block)
       @block = block
@@ -40,13 +23,20 @@ module Magritte
     end
 
     def spawn_collect
-      PRINTER.p "main thread"
       c = Collector.new
       Proc.spawn(self, {}, [], [c]).wait
       c.collection
     end
 
     def pipeline(&b)
+    end
+
+    def inspect
+      "#<Code #{loc}>"
+    end
+
+    def loc
+      @block.source_location.join(':')
     end
   end
 
@@ -63,27 +53,37 @@ module Magritte
     end
 
     def p(i=0, &block)
+      # the anonymous pipe channel!
       c = Channel.new
 
-      # spawn the process, blocking on the output channel
-      into(c).spawn.start
+      # spawn the process on the output channel
+      into(c).go
 
       Spawn.new(in_with(c), out_ch, &block)
     end
 
+    def as_code
+      Code.new(&@block)
+    end
+
     def spawn
+      PRINTER.p :spawn => [in_ch, out_ch, as_code]
       # TODO: env
-      Proc.spawn(Code.new(&@block), {}, in_ch, out_ch)
+      Proc.spawn(as_code, {}, in_ch, out_ch)
     end
 
     def collect
       collector = Collector.new
-      into(collector).spawn.wait
+      into(collector).call
       collector.collection
     end
 
     def go
-      spawn.wait
+      spawn.start
+    end
+
+    def call
+      Proc.with_channels(in_ch, out_ch, &@block)
     end
 
     def into(*chs)
