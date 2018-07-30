@@ -1,0 +1,19 @@
+=== basic operations
+add_reader(c, p)
+add_writer(c, p)
+rm_reader(c, p)
+rm_writer(c, p)
+read(c, p) -> val
+write(c, p, val)
+
+=== interactions
+* after rm_reader/rm_writer, if readers or writers set is empty, close(c) is called. any process blocked on the channel is interrupted, and channel enters closed state
+  (note: the blocked set is a *subset* of the readers/writers set. processes that are registered but not blocked are not interrupted.)
+* read/write on a closed channel always results in an immediate interrupt of the process.
+* a process only calls add_reader/add_writer at the start, and may only directly write to those channels. (though it may spawn other processes that write to other channels)
+* on interrupt or return, a process always calls rm_reader/rm_writer on all its open channels (the same set as add_reader/add_writer).
+
+in particular:
+* no process should ever be blocked on a closed channel
+* no process should read or write without being registered as reader/writer
+* no finished or interrupted process should ever be registered as reader/writer
