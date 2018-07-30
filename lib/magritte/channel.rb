@@ -28,6 +28,12 @@ module Magritte
     def owned?
       @mutex.owned?
     end
+
+    def sleep
+      log :sleep
+      @mutex.sleep
+      log :wake
+    end
   end
 
   class Channel
@@ -35,10 +41,8 @@ module Magritte
       @readers = Set.new
       @writers = Set.new
 
-      @readers_mutex = LogMutex.new :readers
-      @writers_mutex = LogMutex.new :writers
+      @mutex = LogMutex.new :only
 
-      @comm_mutex = LogMutex.new :blocked
       @block_type = :none
       @block_set = []
 
@@ -57,86 +61,95 @@ module Magritte
     end
 
     def add_reader(p)
-      @readers_mutex.synchronize do
-        @readers << p
-      end
+      @mutex.synchronize { @readers << p }
     end
 
     def add_writer(p)
-      @writers_mutex.synchronize do
-        @writers << p
-      end
+      @mutex.synchronize { @writers << p }
     end
 
     def remove_reader(p)
-      @readers_mutex.synchronize do
-        @readers.delete(p)
-        close! if @readers.empty?
-      end
+      @mutex.synchronize do
+        @block_set.delete(p.thread) if @block_type == :read
+
+        cleanup_from(p, @readers)
+      end.call
     end
 
     def remove_writer(p)
-      @writers_mutex.synchronize do
-        @writers.delete(p)
-        close! if @writers.empty?
-      end
+      @mutex.synchronize do
+        @block_set.delete(p.thread) if @block_type == :write
+
+        cleanup_from(p, @writers)
+      end.call
     end
 
     def read
-      @writers_mutex.synchronize do
+      @mutex.synchronize do
         if closed?
           PRINTER.p("closed on read")
-          Proc.current.interrupt!
+          next proc { Proc.current.interrupt! }
         end
 
-        @comm_mutex.synchronize do
-          @block_set.shuffle!
+        @block_set.shuffle!
 
-          case @block_type
-          when :none
-            @block_type = :read
-            block_read
-          when :read
-            block_read
-          when :write
-            wakeup_read
-          end
+        PRINTER.p(init_read: @block_type)
+        out = case @block_type
+        when :none
+          @block_type = :read
+          block_read
+        when :read
+          block_read
+        when :write
+          wakeup_read
         end
       end.call
     end
 
     def write(val)
-      @readers_mutex.synchronize do
+      @mutex.synchronize do
         if closed?
           PRINTER.p("closed on write")
-          Proc.current.interrupt!
+          next proc { Proc.current.interrupt! }
         end
 
-        @comm_mutex.synchronize do
-          @block_set.shuffle!
+        @block_set.shuffle!
 
-          case @block_type
-          when :none
-            @block_type = :write
-            block_write(val)
-          when :write
-            block_write(val)
-          when :read
-            wakeup_write(val)
-          end
+        PRINTER.p(init_write: @block_type)
+        case @block_type
+        when :none
+          @block_type = :write
+          block_write(val)
+        when :write
+          block_write(val)
+        when :read
+          wakeup_write(val)
         end
       end.call
     end
 
     def inspect
-      if @comm_mutex.owned?
+      if @mutex.owned?
         inspect_crit
       else
-        @comm_mutex.synchronize { inspect_crit }
+        @mutex.synchronize { inspect_crit }
       end
     end
 
     private
+
+    def cleanup_from(p, set)
+      should_close = open? && (set.delete(p); set.empty?)
+
+      if should_close
+        @open = false
+        to_clean = @block_set.dup
+        @block_set.clear
+        proc { to_clean.each { |t| t[:magritte_proc].interrupt! } }
+      else
+        proc { } # nop
+      end
+    end
 
     def inspect_crit
       dots = '*' * @block_set.size
@@ -157,16 +170,18 @@ module Magritte
     def block_write(val)
       Thread.current[:__magritte_write] = val
       @block_set << Thread.current
+      @mutex.sleep
 
       # action for after unlocking mutexes
-      proc { Thread.stop }
+      proc { }
     end
 
     def block_read
       @block_set << Thread.current
+      @mutex.sleep
 
       # action for after unlocking mutexes
-      proc { Thread.stop; Thread.current[:__magritte_read] }
+      proc { Thread.current[:__magritte_read] }
     end
 
     def wakeup_write(val)
@@ -174,8 +189,14 @@ module Magritte
       @block_type = :none if @block_set.empty?
       read_thread[:__magritte_read] = val
 
+      raise 'read_thread still running!' unless read_thread.stop?
+
+      read_thread.run
+
       # action for after unlocking mutexes
-      proc { read_thread.run }
+      proc do
+        # nop
+      end
     end
 
     def wakeup_read
@@ -183,17 +204,11 @@ module Magritte
       @block_type = :none if @block_set.empty?
 
       out = write_thread[:__magritte_write]
-      proc { write_thread.run; out }
-    end
+      raise 'write_thread still running!' unless write_thread.stop?
 
-    def close!
-      PRINTER.p(close!: self)
-      return unless @open
-      @open = false
+      write_thread.run
 
-      @comm_mutex.synchronize do
-        @block_set.each { |t| t[:magritte_proc].interrupt! }
-      end
+      proc { out }
     end
   end
 
