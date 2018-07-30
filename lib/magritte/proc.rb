@@ -20,9 +20,6 @@ module Magritte
           # wait for Proc#start
           start_mutex.lock
 
-          # Proc.current should be available now
-          Proc.current.open_channels
-
           code.run
         rescue Interrupt
           PRINTER.puts('real proc interrupted')
@@ -35,6 +32,7 @@ module Magritte
         ensure
           @alive = false
           Proc.current.cleanup!
+          PRINTER.puts('exiting')
         end
       end
 
@@ -69,12 +67,13 @@ module Magritte
       @env = env
       @in_ch = in_ch
       @out_ch = out_ch
-      @children = []
-      @call_depth = 0
+
+      @interrupt_mutex = LogMutex.new :interrupt
     end
 
     def start
       @alive = true
+      open_channels
       @thread[:magritte_start_mutex].unlock
       self
     end
@@ -84,10 +83,12 @@ module Magritte
     end
 
     def interrupt!
-      return unless alive?
+      @interrupt_mutex.synchronize do
+        return unless alive?
 
-      # will run cleanup in the thread via the ensure block
-      @thread.raise(Interrupt.new)
+        # will run cleanup in the thread via the ensure block
+        @thread.raise(Interrupt.new)
+      end
     end
 
     def sleep
@@ -119,18 +120,30 @@ module Magritte
 
   protected
     def with_channels(new_in, new_out, &b)
-      old_in, @in_ch = in_ch, new_in
-      old_out, @out_ch = out_ch, new_out
+      old_in = nil; old_out = nil
+      to_cleanup_read = []
+      to_cleanup_write = []
+
+      @interrupt_mutex.synchronize do
+        old_in, @in_ch = in_ch, new_in
+        old_out, @out_ch = out_ch, new_out
+      end
+
       yield
     rescue Interrupt
       PRINTER.puts('virtual proc interrupted')
       # pass
     ensure
-      (@in_ch - old_in).each { |c| c.remove_reader(self) }
-      (@out_ch - old_out).each { |c| c.remove_writer(self) }
+      @interrupt_mutex.synchronize do
+        to_cleanup_read = @in_ch - old_in
+        to_cleanup_write = @out_ch - old_out
 
-      old_in && @in_ch = old_in
-      old_out && @out_ch = old_out
+        old_in && @in_ch = old_in
+        old_out && @out_ch = old_out
+      end
+
+      to_cleanup_read.each { |c| c.remove_reader(self) }
+      to_cleanup_write.each { |c| c.remove_writer(self) }
     end
   end
 end
