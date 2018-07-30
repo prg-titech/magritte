@@ -107,4 +107,43 @@ describe Magritte::Code do
       assert { output.select(&:odd?) == [1, 3, 5] }
     end
   end
+
+  describe 'multiple readers' do
+    code do
+      c = make_channel
+
+      s {
+        s { for_ (0..Infinity) }.into(c).go
+        s { drain }.from(c).go
+        s { drain }.from(c).call
+      }.p { take 10 }.call
+    end
+
+    it 'does a thing' do
+      assert { output.size == 10 }
+
+      # no duplicates!
+      assert { output.uniq.size == 10 }
+
+      # there is a possibility that the 11th read from the counter
+      # will beat the nth read from the counter to write into
+      # the `take 10` process, in which case the number 10 will
+      # replace the number n
+      assert { ((0..10).to_a - output).size == 1 }
+    end
+  end
+
+  describe 'multi pipe' do
+    code do
+      s { for_ (0...30) }.p {
+        s { drain }.go
+        s { drain }.go
+        s { drain }.go
+      }.p { take 30 }.call
+    end
+
+    it 'collects the outputs' do
+      assert { output.sort == (0...30).to_a }
+    end
+  end
 end

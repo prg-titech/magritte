@@ -31,6 +31,10 @@ module Magritte
       end
     end
 
+    def take(n)
+      n.times { put(get) }
+    end
+
     def spawn_proc(&b)
       i = make_channel
       o = make_channel
