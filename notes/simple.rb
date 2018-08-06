@@ -23,23 +23,23 @@ end
 
 def rm_reader(t)
   to_close = $mutex.synchronize do
-    if $block_type == :write
-      $block_set.delete(t)
-    end
-
-    cleanup_from(t, $writers)
-  end
-
-  to_close.each { |thread| thread.raise(Interrupt.new) }
-end
-
-def rm_reader(t)
-  to_close = $mutex.synchronize do
     if $block_type == :read
       $block_set.delete(t)
     end
 
     cleanup_from(t, $readers)
+  end
+
+  to_close.each { |thread| thread.raise(Interrupt.new) }
+end
+
+def rm_writer(t)
+  to_close = $mutex.synchronize do
+    if $block_type == :write
+      $block_set.delete(t)
+    end
+
+    cleanup_from(t, $writers)
   end
 
   to_close.each { |thread| thread.raise(Interrupt.new) }
@@ -163,10 +163,10 @@ def spawn_consumer!
 end
 
 # produce all even numbers
-spawn_producer!(0, 2)
+producer1 = spawn_producer!(0, 2)
 
 # produce all odd numbers
-spawn_producer!(1, 2)
+producer2 = spawn_producer!(1, 2)
 
 consumer1 = spawn_consumer!
 consumer2 = spawn_consumer!
