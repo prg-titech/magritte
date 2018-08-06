@@ -9,6 +9,8 @@ $writers = Set.new
 $block_type = :none
 $block_set = []
 $open = true
+
+$output_mutex = Mutex.new
 $output = []
 
 def add_reader(t)
@@ -128,16 +130,18 @@ def write(t, val)
   end
 end
 
-producer = Thread.new do
-  begin
-    add_writer(Thread.current)
-    i = 0
-    loop do
-      write(Thread.current, i)
-      i += 1
+def spawn_producer!(init=0, step=1)
+  Thread.new do
+    begin
+      add_writer(Thread.current)
+      i = init
+      loop do
+        write(Thread.current, i)
+        i += step
+      end
+    ensure
+      rm_writer(Thread.current)
     end
-  ensure
-    rm_writer(Thread.current)
   end
 end
 
@@ -146,7 +150,7 @@ def spawn_consumer!
     begin
       add_reader(Thread.current)
       10.times do
-        $output << read(Thread.current)
+        $output_mutex.synchronize { $output << read(Thread.current) }
       end
     ensure
       rm_reader(Thread.current)
@@ -154,9 +158,20 @@ def spawn_consumer!
   end
 end
 
+# produce all even numbers
+spawn_producer!(0, 2)
+
+# produce all odd numbers
+spawn_producer!(1, 2)
+
 consumer1 = spawn_consumer!
 consumer2 = spawn_consumer!
+consumer3 = spawn_consumer!
 
 consumer1.join
 consumer2.join
+consumer3.join
+
 puts "output: #{$output.inspect}"
+puts "live threads (should be exactly 1, in \"run\" state):"
+puts Thread.list.map(&:inspect)
