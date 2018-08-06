@@ -46,9 +46,6 @@ module Magritte
       @block_type = :none
       @block_set = []
 
-      @read_count = 0
-      @write_count = 0
-
       @open = true
     end
 
