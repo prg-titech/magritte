@@ -123,6 +123,10 @@ def write(t, val)
         $block_type = :none
       end
 
+      # here we mutate a thread variable on the *other* thread
+      # before waking it up again, so that it can receive the
+      # value when it wakes up. we guarantee that at the end
+      # of the synchronize block in #read, this value is set.
       read_thread[:read_value] = val
 
       read_thread.run
