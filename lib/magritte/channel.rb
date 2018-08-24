@@ -1,4 +1,34 @@
 module Magritte
+  class Blocker
+    attr_reader :thread, :val
+
+    def interrupt!
+      @thread[:magritte_proc].interrupt!
+    end
+
+    def wakeup
+      raise "#{self.inspect} still running!" unless @thread.stop?
+
+      @thread.run
+    end
+  end
+
+  class Sender < Blocker
+    def initialize(thread, val)
+      @thread, @val = thread, val
+    end
+  end
+
+  class Receiver < Blocker
+    def initialize(thread)
+      @thread = thread
+    end
+
+    def <<(val)
+      @val = val
+    end
+  end
+
   class LogMutex
     def initialize(name)
       @name = name
@@ -67,7 +97,7 @@ module Magritte
 
     def remove_reader(p)
       @mutex.synchronize do
-        @block_set.delete(p.thread) if @block_type == :read
+        unregister_thread(p.thread) if @block_type == :read
 
         cleanup_from(p, @readers)
       end.call
@@ -75,7 +105,7 @@ module Magritte
 
     def remove_writer(p)
       @mutex.synchronize do
-        @block_set.delete(p.thread) if @block_type == :write
+        unregister_thread(p.thread) if @block_type == :write
 
         cleanup_from(p, @writers)
       end.call
@@ -135,6 +165,10 @@ module Magritte
 
     private
 
+    def unregister_thread(t)
+      @block_set.reject! { |b| b.thread == t }
+    end
+
     def cleanup_from(p, set)
       should_close = open? && (set.delete(p); set.empty?)
 
@@ -142,7 +176,7 @@ module Magritte
         @open = false
         to_clean = @block_set.dup
         @block_set.clear
-        proc { to_clean.each { |t| t[:magritte_proc].interrupt! } }
+        proc { to_clean.each(&:interrupt!) }
       else
         proc { } # nop
       end
@@ -165,8 +199,7 @@ module Magritte
     end
 
     def block_write(val)
-      Thread.current[:__magritte_write] = val
-      @block_set << Thread.current
+      @block_set << Sender.new(Thread.current, val)
       @mutex.sleep
 
       # action for after unlocking mutexes
@@ -174,21 +207,20 @@ module Magritte
     end
 
     def block_read
-      @block_set << Thread.current
+      receiver = Receiver.new(Thread.current)
+      @block_set << receiver
       @mutex.sleep
 
       # action for after unlocking mutexes
-      proc { Thread.current[:__magritte_read] }
+      proc { receiver.val }
     end
 
     def wakeup_write(val)
-      read_thread = @block_set.shift
+      receiver = @block_set.shift
       @block_type = :none if @block_set.empty?
-      read_thread[:__magritte_read] = val
+      receiver << val
 
-      raise 'read_thread still running!' unless read_thread.stop?
-
-      read_thread.run
+      receiver.wakeup
 
       # action for after unlocking mutexes
       proc do
@@ -197,15 +229,11 @@ module Magritte
     end
 
     def wakeup_read
-      write_thread = @block_set.shift
+      sender = @block_set.shift
       @block_type = :none if @block_set.empty?
+      sender.wakeup
 
-      out = write_thread[:__magritte_write]
-      raise 'write_thread still running!' unless write_thread.stop?
-
-      write_thread.run
-
-      proc { out }
+      proc { sender.val }
     end
   end
 
