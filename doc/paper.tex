@@ -1,6 +1,8 @@
-\documentclass{article}
-\title{A Concurrent Semantic for Shell-Like Processes}
-\author{Jeanine Adkisson, Hidehiko Masuhara}
+\documentclass[format=sigconf, review=true, screen=true]{acmart}
+
+% don't print the conference ref for now
+\settopmatter{printacmref=false}
+
 \usepackage{comment}
 \usepackage{mathtools}
 \usepackage{amssymb}
@@ -9,8 +11,27 @@
 \usepackage{pstricks,pst-node,pst-tree}
 \usepackage{auto-pst-pdf}
 
+
+\title{A Concurrent Semantic for Shell-Like Processes}
+\author{Jeanine Adkisson}
+\affiliation{Tokyo Institute of Technology}
+\email{jneen@prg.is.titech.edu}
+
+\author{Hidehiko Masuhara}
+\affiliation{Tokyo Institute of Technology}
+\email{masuhara@prg.is.titech.edu}
+
 \begin{document}
+
+\begin{abstract}
+Despite the widespread use of GUI tools for configuration tasks, CLI tools, and more specifically shell-based interfaces remain a powerful standard for software distribution and integration. Several attempts have been made at solving the desktop-integration problem, most notably TCL(TODO: cite!) and Guile Scheme(TODO: cite!), but neither has been as succesful as they intended to be: the \emph{lingua franca} for a large portion of tools remains shell-oriented, relying on such concepts as standard I/O, string-based argument vectors, and the expectation that users will be able to freely pipe streams of bytes in a shell-like way.
+
+Unfortunately, shell languages have significant known interoperability issues, such as lack of any kind of usable encapsulation, and the lack of in-language data structures to represent any kind of value other than a string. We believe that a shell-compatible language with well-defined semantics that could also function as a general-purpose systems language could go a long way towards solving the desktop-integration problem.
+
+In this paper, we explore a potential concurrency model for such a language, inspired by such systems as Go, Clojure, and Erlang. A persistent problem with these battle-tested systems is that they don't account for closing channels, and require manual cleanup of processes. In a systems programming context, errors are commonplace and expected. We propose a channel-based communication system that integrates with a workflow compensation system and is capable of recovering from errors and, importantly, cleaning up processes when communication halts.
+\end{abstract}
 \maketitle
+
 
 
 
