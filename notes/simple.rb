@@ -159,6 +159,8 @@ def spawn_consumer!
     begin
       add_reader(Thread.current)
       10.times do
+        # yield the thread randomly to increase the chance of races
+        sleep(rand / 10)
         $output_mutex.synchronize { $output << read(Thread.current) }
       end
     ensure
