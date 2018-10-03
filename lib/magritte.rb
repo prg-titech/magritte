@@ -14,4 +14,5 @@ module Magritte
   load "#{LIB_DIR}/magritte/channel.rb"
   load "#{LIB_DIR}/magritte/proc.rb"
   load "#{LIB_DIR}/magritte/ast.rb"
+  load "#{LIB_DIR}/magritte/env.rb"
 end
