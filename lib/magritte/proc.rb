@@ -11,7 +11,7 @@ module Magritte
       current.send(:with_channels, in_ch, out_ch, &b)
     end
 
-    def self.spawn(code, env, in_ch, out_ch)
+    def self.spawn(code, env)
       start_mutex = Mutex.new
       start_mutex.lock
 
@@ -36,13 +36,15 @@ module Magritte
         end
       end
 
-      p = Proc.new(t, code, env, in_ch, out_ch)
+      p = Proc.new(t, code, env)
 
       # will be unlocked in Proc#start
       t[:magritte_start_mutex] = start_mutex
 
       # provides Proc.current
       t[:magritte_proc] = p
+
+      p
     end
 
     def inspect
@@ -59,14 +61,12 @@ module Magritte
       alive? && @thread.join
     end
 
-    attr_reader :thread, :in_ch, :out_ch
-    def initialize(thread, code, env, in_ch, out_ch)
+    attr_reader :thread, :env
+    def initialize(thread, code, env)
       @alive = false
       @thread = thread
       @code = code
       @env = env
-      @in_ch = in_ch
-      @out_ch = out_ch
 
       @interrupt_mutex = LogMutex.new :interrupt
     end
@@ -101,32 +101,31 @@ module Magritte
 
     def cleanup!
       PRINTER.p :cleanup => self
-      in_ch.each { |c| c.remove_reader(self) }
-      out_ch.each { |c| c.remove_writer(self) }
+      @env.each_input { |c| c.remove_reader(self) }
+      @env.each_output { |c| c.remove_writer(self) }
     end
 
     def open_channels
-      in_ch.each { |c| c.add_reader(self) }
-      out_ch.each { |c| c.add_writer(self) }
+      @env.each_input { |c| c.add_reader(self) }
+      @env.each_output { |c| c.add_writer(self) }
     end
 
     def stdout
-      out_ch.first || Channel::Null.new
+      @env.stdout || Channel::Null.new
     end
 
     def stdin
-      in_ch.first || Channel::Null.new
+      @env.stdin || Channel::Null.new
     end
 
   protected
     def with_channels(new_in, new_out, &b)
-      old_in = nil; old_out = nil
-      to_cleanup_read = []
-      to_cleanup_write = []
+      old_env = nil
+      new_env = nil
 
       @interrupt_mutex.synchronize do
-        old_in, @in_ch = in_ch, new_in
-        old_out, @out_ch = out_ch, new_out
+        old_env = @env
+        new_env = @env = @env.extend(new_in, new_out)
       end
 
       yield
@@ -135,15 +134,11 @@ module Magritte
       # pass
     ensure
       @interrupt_mutex.synchronize do
-        to_cleanup_read = @in_ch - old_in
-        to_cleanup_write = @out_ch - old_out
-
-        old_in && @in_ch = old_in
-        old_out && @out_ch = old_out
+        @env = old_env
       end
 
-      to_cleanup_read.each { |c| c.remove_reader(self) }
-      to_cleanup_write.each { |c| c.remove_writer(self) }
+      new_env.own_inputs.each { |c| c.remove_reader(self) }
+      new_env.own_outputs.each { |c| c.remove_writer(self) }
     end
   end
 end
