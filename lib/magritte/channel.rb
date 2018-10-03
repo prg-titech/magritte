@@ -67,11 +67,15 @@ module Magritte
   end
 
   class Channel
+    IDS_MUTEX = Mutex.new
+    @@max_id = 0
+
     def initialize
       @readers = Set.new
       @writers = Set.new
 
-      @mutex = LogMutex.new :only
+      @mutex = Mutex.new
+      @id = IDS_MUTEX.synchronize { @@max_id += 1 }
 
       @block_type = :none
       @block_set = []
@@ -156,11 +160,28 @@ module Magritte
     end
 
     def inspect
-      if @mutex.owned?
-        inspect_crit
-      else
-        @mutex.synchronize { inspect_crit }
+      # doesn't entirely get rid of race conditions because
+      # @block_set may still be mutated, but makes it less
+      # likely i think?
+      dup.inspect_crit
+    end
+
+    protected
+
+    def inspect_crit
+      dots = '*' * @block_set.size
+      s = case @block_type
+      when :none
+        '.'
+      when :read
+        ":#{dots}"
+      when :write
+        "#{dots}:"
       end
+
+      o = @open ? 'o' : 'x'
+
+      "#<Channel##{@id} #{o} #{s}>"
     end
 
     private
@@ -180,22 +201,6 @@ module Magritte
       else
         proc { } # nop
       end
-    end
-
-    def inspect_crit
-      dots = '*' * @block_set.size
-      s = case @block_type
-      when :none
-        '.'
-      when :read
-        ":#{dots}"
-      when :write
-        "#{dots}:"
-      end
-
-      o = @open ? 'o' : 'x'
-
-      "#<Channel #{o} #{s}>"
     end
 
     def block_write(val)
@@ -256,6 +261,7 @@ module Magritte
     def write(val)
       @mutex.synchronize { @collection << val }
     end
+  private
 
     def close!
       # pass
