@@ -83,17 +83,16 @@ describe Magritte::AST do
       assert { command.args == ["arg1", "arg2", "arg3"] }
     end
 
-    #describe "maps" do
-    #  let(:mapped) { command.map {  }}
-    #
-    #  it "maps" do
-    #    assert { mapped.is_a? Magritte::AST::Command }
-    #    assert { mapped.head.is_a? Magritte::AST::RecAttr }
-    #    assert { mapped.head.expr.name == "bar" }
-    #    assert { mapped.args.is_a? Magritte::AST::ListRecAttr }
-    #    assert { mapped.args.map { |arg| arg == "bar" }.all? }
-    #  end
-    #end
+    describe "maps" do
+      let(:mapped) { command.map { |val| (val.is_a? Magritte::AST::Variable) ? val.name : val }}
+
+      it "maps" do
+        assert { mapped.is_a? Magritte::AST::Command }
+        assert { mapped.head.is_a? String}
+        assert { mapped.head == "foo" }
+        assert { mapped.args == ["arg1", "arg2", "arg3"]}
+      end
+    end
 
     it "equals itself" do
       assert { command == command }
@@ -117,17 +116,15 @@ describe Magritte::AST do
       assert { block.lines == [command,command] }
     end
 
-    #describe "maps" do
-    #  let(:mapped) { command.map {  }}
-    #
-    #  it "maps" do
-    #    assert { mapped.is_a? Magritte::AST::Command }
-    #    assert { mapped.head.is_a? Magritte::AST::RecAttr }
-    #    assert { mapped.head.expr.name == "bar" }
-    #    assert { mapped.args.is_a? Magritte::AST::ListRecAttr }
-    #    assert { mapped.args.map { |arg| arg == "bar" }.all? }
-    #  end
-    #end
+    describe "maps" do
+      let(:mapped) { block.map { |val| val.head.name }}
+
+      it "maps" do
+        assert { mapped.is_a? Magritte::AST::Block }
+        assert { mapped.lines.map { |elem| elem.is_a? String }.all? }
+        assert { mapped.lines.map { |elem| elem == "foo" }.all? }
+      end
+    end
 
     it "equals itself" do
       assert { block == block }
