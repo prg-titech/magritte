@@ -1,3 +1,5 @@
+% notes
+
 \documentclass[format=sigconf, review=true, screen=true]{acmart}
 
 % don't print the conference ref for now
@@ -10,6 +12,8 @@
 \usepackage{graphics,graphicx}
 \usepackage{pstricks,pst-node,pst-tree}
 \usepackage{auto-pst-pdf}
+
+\usepackage{listings}
 
 
 \title{A Concurrent Semantic for Shell-Like Processes}
@@ -28,9 +32,68 @@ Despite the widespread use of GUI tools for configuration tasks, CLI tools, and 
 
 Unfortunately, shell languages have significant known interoperability issues, such as lack of any kind of usable encapsulation, and the lack of in-language data structures to represent any kind of value other than a string. We believe that a shell-compatible language with well-defined semantics that could also function as a general-purpose systems language could go a long way towards solving the desktop-integration problem.
 
-In this paper, we explore a potential concurrency model for such a language, inspired by such systems as Go, Clojure, and Erlang. A persistent problem with these battle-tested systems is that they don't account for closing channels, and require manual cleanup of processes. In a systems programming context, errors are commonplace and expected. We propose a channel-based communication system that integrates with a workflow compensation system and is capable of recovering from errors and, importantly, cleaning up processes when communication halts.
+On the other hand, a persistent problem with more established systems like Erlang or Go is that they don't account for closing channels, and require manual cleanup of processes. In a systems programming context, errors and hangups are commonplace and expected, and it is critical to have some measure of automatic process cleanup for even naively-written code.
+
+We propose a channel-based communication system that integrates with a workflow compensation system and is capable of recovering from errors and, importantly, cleaning up processes when communication halts.
 \end{abstract}
 \maketitle
+
+\section{Motivation}
+
+Consider the following pseudo-code for a shell-like language:
+
+\begin{verbatim}
+  read-lines tmp/large-file
+    | take 10
+    | each (?line => do-expensive-work $line)
+\end{verbatim}
+In this example, three processes are spawned: (1) a process with a file open that writes one line at a time to its output, (2) a process that reads 10 times from its input, writes each entry to the output, and then exits, and (3) a process that reads every input and calls a function to perform an expensive task. A user's intent when typing such code may be to read 10 lines from a file and synchronously perform an action on each line.
+
+In a pipeline-based programming system such as a shell, we expect all three to be running concurrently, communicating through anonymous pipes or channels. A user will also expect that, after the 10 lines are processed, the file is closed, and that all three processes exit. This expectation is despite the fact that process (1) is specified to read the entire file, and process (3) is a theoretically infinite loop. In a naive implementation using synchronous channels, process (1) will never be able to write more than 10 lines, and will remain blocked on its output with the file open forever. Similarly, the \verb/each/ function will never be notified that its input has finished, and will block forever on its input stream.
+
+PEP 533 Authors(TODO: cite properly) describe an automatic closing system for generators, in which an \verb/__iterclose__/ signal is sent by the consumer back to the producer as soon as a consumer exits early. But channel-based systems generally allow for multiple concurrent readers and writers - so automatically cleaning up a channel when a single consumer exits would cause processes that are still able to communicate to be terminated early. We propose a system such that processes are interrupted as soon as it is no longer possible for them to resume.
+
+\section{Channel Closing / Interruption}
+
+When a process is blocked on a channel, it will be woken up as soon as another process communicates on the other end. Therefore the appropriate time for a process to be interrupted is if it is blocked on a channel that will never receive any more operations. In traditional channel-based systems, this is difficult to detect, because a reference to a channel could be passed anywhere in the program as a standard value, and be interacted with in any way at any time.
+
+We extend the notion of a synchronous channel with \emph{registered readers} and \emph{registered writers}, and add four intrinsic functions: \verb/add_reader/, \verb/remove_reader/, \verb/add_writer/, and \verb/remove_writer/, each receiving a channel and a process handle. These store and delete processes from the channel's internal sets of registered readers and registered writers. Additionally, \verb/remove_reader/ and \verb/remove_writer/ will cause the channel to close if their corresponding sets are empty after the operation.
+
+When a channel is closed, we first interrupt every process that is blocked on the channel. Thereafter, any attempted read or write operations will cause the initiating process to be interrupted. When a channel is interrupted, we must not only perform any cleanup actions such as closing files or writing to error logs, but also call \verb/remove_reader/ and \verb/remove_writer/ on any channels the process has registered - thereby potentially cascading the interruptions to other processes.
+
+\section{Magritte}
+
+We have implemented \verb/magritte/(TODO: cite), a Ruby DSL that allows communication between native Ruby threads, and automatically cleans up dangling threads with the above semantics. The API revolves around a \verb/Magritte::Code/ object, which can also be created with the builtin \verb/s/ primitive.
+
+Within a code object, the primitive functions \verb/put/ and \verb/get/ can be used to read from the input and write to the output. A code object can be run in-process (\verb/.call/), in the background (\verb/.go/). The default output is a special kind of write-only channel called a \verb/Collector/, which never blocks, but collects every written value into an array.
+
+Input and output channels can be set \emph{outside} of a channel using the \verb/.from(channel)/ and \verb/.to(channel)/ methods. However, they are by default inherited from the enclosing context, meaning that it is straightforward to spawn multiple concurrent processes that are attached to the same channels.
+
+Consider the example:
+
+\begin{verbatim}
+s { i = 0; loop { put i; i += 1 } }
+  .p { s { drain }.go; s { drain }.go }
+  .p { take 10 }.call
+\end{verbatim}
+In this example, we spawn four processes. The first line spawns an infinite loop that generates all positive integers. The second line spawns two processes, both reading from the same input and writing to the same output. Finally the third line spawns a process that reads and writes 10 values, then returns. The definition of \verb/drain/ is very simply:
+
+\begin{verbatim}
+def drain
+  loop { put(get) }
+end
+\end{verbatim}
+so that it completely drains the input channel into the output. But since there are two of these processes running concurrently, races are possible. But according to the semantics described above, both draining processes will be cleaned up when \verb/take 10/ returns, causing the generation loop to also be closed. Notably, the second process in the pipeline, which spawns the two \verb/drain/ processes, will exit immediately after spawning. But this won't result in any programs closing, since the two consumer processes are also registered as readers and writers to the standard input and standard output of the middle process.
+
+
+% \verb{...} inline \verbatim
+% \verb+abc_def+
+
+% example of bash race conditions based on re-opening channels
+
+\section{Related Work}
+
+Python PEP 533; Go, Erlang; Guile Scheme, TCL;
 
 
 
