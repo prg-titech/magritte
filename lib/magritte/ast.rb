@@ -43,5 +43,9 @@ module Magritte
     class Block < Tree::Node
       deflistrec :lines
     end
+
+    class Vector < Tree::Node
+      deflistrec :elems
+    end
   end
 end

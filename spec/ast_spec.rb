@@ -143,4 +143,3 @@ describe Magritte::AST do
     end
   end
 end
-

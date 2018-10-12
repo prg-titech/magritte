@@ -47,7 +47,7 @@ module Magritte
       end
 
       def map(&block)
-        RecAttr.new(block.call(@value))
+        self.class.new(block.call(@value))
       end
 
       def inspect
@@ -66,6 +66,18 @@ module Magritte
 
       def inspect
         "**#{value.inspect}"
+      end
+    end
+
+    class OptAttr < RecAttr
+      def each(&block)
+        return if @value.nil?
+        super
+      end
+
+      def map(&block)
+        return self if @value.nil?
+        super
       end
     end
 
@@ -153,7 +165,7 @@ module Magritte
       end
 
       def accept(visitor, *args, &block)
-        visitor.send(:"visit_#{self.class.short_name}", *args, &block)
+        visitor.send(:"visit_#{self.class.short_name}", self, *args, &block)
       end
     end
 
@@ -201,6 +213,12 @@ module Magritte
           out.merge(visit(child))
         end
         out
+      end
+    end
+
+    class Walker < Visitor
+      def visit_default(node, *args, &block)
+        node.each { |child| visit(child, *args, &block) }
       end
     end
   end

@@ -13,6 +13,9 @@ module Magritte
   load "#{LIB_DIR}/magritte/code.rb"
   load "#{LIB_DIR}/magritte/channel.rb"
   load "#{LIB_DIR}/magritte/proc.rb"
-  load "#{LIB_DIR}/magritte/ast.rb"
   load "#{LIB_DIR}/magritte/env.rb"
+  load "#{LIB_DIR}/magritte/tree.rb"
+  load "#{LIB_DIR}/magritte/ast.rb"
+  load "#{LIB_DIR}/magritte/free_vars.rb"
+  load "#{LIB_DIR}/magritte/value.rb"
 end
