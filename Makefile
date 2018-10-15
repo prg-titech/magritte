@@ -2,7 +2,7 @@ LATEX_OPTS = -shell-escape
 
 .PHONY: open-doc
 open-doc: doc/paper.pdf
-	open "$^"
+	open "$^" &
 
 .PHONY: doc
 doc: doc/paper.pdf
