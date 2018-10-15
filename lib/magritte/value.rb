@@ -17,7 +17,7 @@ module Magritte
       def call(*args)
         # Semantics: Look up the thing in current env and call it
         # Proc.current.env
-        raise "TODO"
+        Proc.current.env.get(@value).call(*args)
       end
     end
 

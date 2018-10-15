@@ -10,9 +10,10 @@ module Magritte
       end
 
       def visit_lambda(node)
-        unless node.patterns.all? { |n| n.is_a? Binder }
+        unless node.patterns.all? { |n| n.is_a? AST::Binder }
           raise "Not implemented yet!"
         end
+        #binding.pry
         used_vars = collect_from(node.bodies)
         bound_vars = node.patterns.map(&:name)
         used_vars - bound_vars

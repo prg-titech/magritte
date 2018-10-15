@@ -74,44 +74,7 @@ describe Magritte::AST do
     end
   end
 
-  describe "command nodes" do
-    it "has a head" do
-      assert { command.head == var }
-    end
-
-    it "has args" do
-      assert { command.args == ["arg1", "arg2", "arg3"] }
-    end
-
-    describe "maps" do
-      let(:mapped) { command.map { |val| (val.is_a? Magritte::AST::Variable) ? val.name : val }}
-
-      it "maps" do
-        assert { mapped.is_a? Magritte::AST::Command }
-        assert { mapped.head.is_a? String}
-        assert { mapped.head == "foo" }
-        assert { mapped.args == ["arg1", "arg2", "arg3"]}
-      end
-    end
-
-    it "equals itself" do
-      assert { command == command }
-    end
-
-    it "equals object with same state" do
-      assert { command == Magritte::AST::Command[var,["arg1","arg2","arg3"]] }
-    end
-
-    it "does not equal objects with different state" do
-      assert { command != Magritte::AST::Command[var,["arg1","arg2"]] }
-    end
-
-    it "does not equal different objects" do
-      assert { command != var }
-    end
-  end
-
-  describe "block nodes" do
+  describe "list recursive nodes" do
     it "has lines" do
       assert { block.lines == [command,command] }
     end
