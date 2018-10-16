@@ -98,7 +98,7 @@ describe Magritte::AST do
     end
 
     it "does not equal objects with different state" do
-      assert { block != Magritte::AST::Block["foo"] }
+      assert { block != Magritte::AST::Block[[]] }
     end
 
     it "does not equal different objects" do

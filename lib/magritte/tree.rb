@@ -56,6 +56,11 @@ module Magritte
     end
 
     class ListRecAttr < Attr
+      def initialize(*)
+        super
+        raise ArgumentError.new("Expected a list, got #{@value.inspect}") unless @value.is_a? Array
+      end
+
       def each(&block)
         @value.each(&block)
       end
