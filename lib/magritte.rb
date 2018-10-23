@@ -25,4 +25,5 @@ module Magritte
 
   # Parsing
   load "#{LIB_DIR}/magritte/lexer.rb"
+  load "#{LIB_DIR}/magritte/skeleton.rb"
 end

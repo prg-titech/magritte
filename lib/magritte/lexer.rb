@@ -6,11 +6,46 @@ module Magritte
       attr_reader :type
       attr_reader :value
       attr_reader :range
+      NESTED_PAIRS = {
+        :lparen => :rparen,
+        :lbrack => :rbrack,
+        :lbrace => :rbrace,
+      }
+      CONTINUE = Set.new([
+        :pipe,
+        :write_to,
+        :read_from,
+        :amp_amp,
+        :bar_bar,
+        :per_per,
+        :per_per_excl,
+        :arrow,
+      ])
 
       def initialize(type, value, range)
         @type = type
         @value = value
         @range = range
+      end
+
+      def continue?
+        CONTINUE.include?(@type)
+      end
+
+      def nest?
+        NESTED_PAIRS.key?(@type)
+      end
+
+      def nest_pair
+        NESTED_PAIRS[@type]
+      end
+
+      def free_nl?
+        false #TODO
+      end
+
+      def is?(type)
+        @type == type
       end
 
       def eof?
@@ -43,7 +78,17 @@ module Magritte
       skip_lines
     end
 
+    def peek
+      @peek ||= self.next
+    end
+
     def next
+      if @peek
+        p = @peek
+        @peek = nil
+        return p
+      end
+
       if @scanner.eos?
         return token(:eof)
       elsif scan /[\n#]/
@@ -76,9 +121,6 @@ module Magritte
      elsif scan /</
        skip_ws
        return token(:read_from)
-     elsif scan />>/
-       skip_ws
-       return token(:write_no_close)
      elsif scan />/
        skip_ws
        return token(:write_to)

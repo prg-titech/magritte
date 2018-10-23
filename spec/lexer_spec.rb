@@ -60,12 +60,12 @@ describe Magritte::Lexer do
   describe "oprators" do
     let(:input) {
       """
-      |     &  ==   =>  >>
+      |     &  ==   =>    
       """
     }
 
     it "parses operators" do
-      assert { tokens == [_token(:bar), _token(:amp), _token(:equal), _token(:equal), _token(:arrow), _token(:write_no_close), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:bar), _token(:amp), _token(:equal), _token(:equal), _token(:arrow), _token(:nl), _token(:eof)] }
     end
   end
 

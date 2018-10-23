@@ -1,0 +1,113 @@
+module Magritte
+  module Skeleton
+    class Base < Tree::Node
+      def inspect
+        "#<Magritte::Skeleton::Base #{self.repr}>"
+      end
+    end
+
+    class Token < Base
+      defdata :token
+
+      def repr
+        ".#{token.repr}"
+      end
+    end
+
+    class Nested < Base
+      defdata :open
+      defdata :close
+      deflistrec :elems
+
+      def repr
+        "[#{open.repr}|#{elems.map(&:repr).join(" ")}|#{close.repr}]"
+      end
+    end
+
+    class Item < Base
+      defdata :elems
+
+      def repr
+        "(#{elems.map(&:repr).join(" ")})"
+      end
+    end
+
+    # Root class is sos special so I removed
+    # < Item
+    class Root < Base
+      defdata :elems
+
+      def repr
+        "(#{elems.map(&:repr).join(" ")})"
+      end
+    end
+
+    class NestingError < StandardError
+      def initialize(open, close, type)
+        @open = open
+        @close = close
+        @type = type
+      end
+    end
+
+    class Parser
+      def self.parse(lexer)
+        new(nil, :eof).parse(lexer)
+      end
+
+      attr_reader :open
+      attr_reader :expected_close
+
+      def initialize(open, expected_close)
+        @open = open
+        @expected_close = expected_close
+        @items = [[]]
+      end
+
+      def parse(lexer)
+        loop do
+          token = lexer.next
+          if token.eof? and @open.nil?
+            return Root[items]
+          elsif token.eof?
+            error!(token, "Unmatched")
+          elsif token.is?(expected_close)
+            return Nested[self.open, token, out]
+          elsif token.nest?
+            y Parser.new(token, token.nest_pair).parse(lexer)
+          elsif token.is?(:nl)
+            # As we instantiate the parser with open = nil
+            # it can happen that we try to call free_nl?
+            # on a nil object....
+            next if self.open.nil? or self.open.free_nl?
+            next if lexer.peek.continue?
+            @items << []
+          else
+            y Token[token]
+          end
+        end
+      end
+
+    private
+      def error!(token, type)
+        raise NestingError.new(@open, token, type)
+      end
+
+      def y(node)
+        @items.last << node
+      end
+
+      def items
+        @items.select(&:any?).map { |nodes| Item[nodes] }
+      end
+
+      def out
+        if @items.size == 1
+          @items[0]
+        else
+          items
+        end
+      end
+    end
+  end
+end
