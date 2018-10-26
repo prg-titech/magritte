@@ -4,6 +4,12 @@ module Magritte
       def inspect
         "#<Magritte::Skeleton::Base #{self.repr}>"
       end
+
+      def match(matcher, &b)
+        vars = matcher.match_vars(self)
+        return if vars.nil?
+        yield b.call(*vars)
+      end
     end
 
     class Token < Base
@@ -32,8 +38,6 @@ module Magritte
       end
     end
 
-    # Root class is sos special so I removed
-    # < Item
     class Root < Base
       defdata :elems
 
@@ -79,7 +83,7 @@ module Magritte
             # As we instantiate the parser with open = nil
             # it can happen that we try to call free_nl?
             # on a nil object....
-            next if self.open.nil? or self.open.free_nl?
+            next if !self.open.nil? && self.open.free_nl?
             next if lexer.peek.continue?
             @items << []
           else
