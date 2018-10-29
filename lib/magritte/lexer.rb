@@ -159,7 +159,7 @@ module Magritte
         return token(:num, group(1))
       elsif scan /"((?:\\.|[^"])*)"/
         skip_ws
-        return token(:bareword, group(1))
+        return token(:string, group(1))
       elsif scan /([a-zA-Z\-]+)/
         skip_ws
         return token(:bare, group(1))

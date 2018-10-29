@@ -53,7 +53,7 @@ describe Magritte::Skeleton do
     }
 
     it "is parsed correctly" do
-      assert { tree.repr == "((.bare/x .equal [lbrace|(.bare/a .equal .bareword/book) (.bare/b .equal [lparen|.bare/f .num/5 .lex_var/s .var/d|rparen]) (.bare/y .equal [lbrace||rbrace])|rbrace]))" }
+      assert { tree.repr == "((.bare/x .equal [lbrace|(.bare/a .equal .string/book) (.bare/b .equal [lparen|.bare/f .num/5 .lex_var/s .var/d|rparen]) (.bare/y .equal [lbrace||rbrace])|rbrace]))" }
     end
   end
 

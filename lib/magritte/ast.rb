@@ -13,6 +13,10 @@ module Magritte
       defdata :name
     end
 
+    class String < Tree::Node
+      defdata :value
+    end
+
     class Lambda < Tree::Node
       defdata :name
       deflistrec :patterns
@@ -22,7 +26,6 @@ module Magritte
     class Pipe < Tree::Node
       defrec :input
       defrec :output
-      deflistrec :redirects
     end
 
     class Compensation < Tree::Node
@@ -38,6 +41,7 @@ module Magritte
     class Command < Tree::Node
       defrec :head
       deflistrec :args
+      deflistrec :redirects
     end
 
     class Block < Tree::Node

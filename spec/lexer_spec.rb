@@ -89,7 +89,7 @@ describe Magritte::Lexer do
     }
 
     it "parses strings correctly" do
-      assert { tokens == [_token(:bareword, "asksnz-zwjdfqw345 r8 ewn    ih2wu\\\" wihf002+4-r9+***.m.-< \\\""), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:string, "asksnz-zwjdfqw345 r8 ewn    ih2wu\\\" wihf002+4-r9+***.m.-< \\\""), _token(:nl), _token(:eof)] }
     end
   end
 
