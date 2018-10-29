@@ -23,7 +23,8 @@ module Magritte
   load "#{LIB_DIR}/magritte/ast.rb"
   load "#{LIB_DIR}/magritte/free_vars.rb"
 
-  # Parsing
+  # Lexer/Parser
   load "#{LIB_DIR}/magritte/lexer.rb"
   load "#{LIB_DIR}/magritte/skeleton.rb"
+  load "#{LIB_DIR}/magritte/matcher.rb"
 end
