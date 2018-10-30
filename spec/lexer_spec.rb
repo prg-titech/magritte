@@ -1,6 +1,6 @@
 describe Magritte::Lexer do
   let(:input) { "" }
-  let(:lex) { Magritte::Lexer.new(input) }
+  let(:lex) { Magritte::Lexer.new("test",input) }
   let(:tokens) { lex.to_a }
 
   # Define helper functions for setting up tests

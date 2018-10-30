@@ -1,6 +1,6 @@
 describe Magritte::Skeleton do
   let(:input) { "" }
-  let(:lex) { Magritte::Lexer.new(input) }
+  let(:lex) { Magritte::Lexer.new("test",input) }
   let(:tree) { Magritte::Skeleton::Parser.parse(lex) }
 
   describe "well balanced parenthesis" do
@@ -69,6 +69,18 @@ describe Magritte::Skeleton do
 
     it "parses correctly" do
       assert { tree.repr == "((.bare/s [lbrack|([lparen|.arrow .bare/c .write_to .lex_var/ch|rparen]) ([lparen|.arrow .bare/d .read_from .lex_var/ch|rparen])|rbrack]))" }
+    end
+  end
+
+  describe "more tests" do
+    let(:input) {
+      """
+      $foo!bar
+      """
+    }
+
+    it "parses correctly" do
+      assert { tree.repr == "((.var/foo .bang .bare/bar))" }
     end
   end
 end

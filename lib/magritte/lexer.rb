@@ -73,10 +73,15 @@ module Magritte
 
     include Enumerable
 
-    def initialize(string)
+    def initialize(source_name, string)
+      @source_name = source_name
       @scanner = StringScanner.new(string)
+      @line = 0
+      @col = 0
       skip_lines
     end
+
+    attr_reader :source_name
 
     def peek
       @peek ||= self.next
@@ -145,6 +150,9 @@ module Magritte
      elsif scan /\|/
        skip_ws
        return token(:bar)
+     elsif scan /!/
+       skip_ws
+       return token(:bang)
       elsif scan /[$](\w+)/
         skip_ws
         return token(:var, group(1))
@@ -168,6 +176,61 @@ module Magritte
       end
     end
 
+    class Location
+      include Comparable
+
+      def range
+        Range.new(self, self)
+      end
+
+      def initialize(source_name, source, line, col, index)
+        @source_name = source_name
+        @source = source
+        @line = line
+        @col = col
+        @index = index
+      end
+
+      attr_reader :source_name
+      attr_reader :source
+      attr_reader :line
+      attr_reader :col
+      attr_reader :index
+
+      def <=>(other)
+        raise "Incomparable" unless source_name == other.source_name
+        self.index <=> other.index
+      end
+
+      def repr
+        "#{line}:#{col}"
+      end
+    end
+
+
+    class Range
+
+      def range
+        self
+      end
+
+      def self.between(start, fin)
+        new(start.range.first, fin.range.last)
+      end
+
+      def initialize(first, last)
+        @first = first
+        @last = last
+      end
+
+      attr_reader :first
+      attr_reader :last
+
+      def repr
+        "#{first.source_name}@#{first.repr}~#{last.repr}"
+      end
+    end
+
     def lex(&block)
       loop do
         token = self.next
@@ -179,17 +242,33 @@ module Magritte
 
   private
     def scan(re)
-      prev_pos = @scanner.pos
+      prev_pos = current_pos
       if @scanner.scan(re)
         @match = @scanner.matched
         @groups = @scanner.captures
-        @last_range = [prev_pos, @scanner.pos]
+        update_line_col(@match)
+        @last_range = Range.new(prev_pos, current_pos)
         true
       else
         @match = nil
         @groups = []
         @last_range = [0, 0]
         false
+      end
+    end
+
+    def current_pos
+      Location.new(@source_name, @scanner.string, @line, @col, @scanner.pos)
+    end
+
+    def update_line_col(string)
+      nlcount = string.scan(/\n/).size
+      @line += nlcount
+      if nlcount > 0
+        string =~ /\n.*?\z/
+        @col = $&.size - 1
+      else
+        @col += string.size
       end
     end
 
@@ -214,7 +293,7 @@ module Magritte
     end
 
     def skip(re)
-      @scanner.skip(re)
+      @scanner.skip(re) and update_line_col(@scanner.matched)
     end
   end
 end

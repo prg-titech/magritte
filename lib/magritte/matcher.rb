@@ -80,6 +80,17 @@ module Magritte
       end
     end
 
+    class Nested < Base
+      defdata :open_type
+      defrec :matcher
+
+      def test(skel, &b)
+        fail! unless skel.is_a?(Skeleton::Nested)
+        fail! unless skel.open.is?(open_type)
+        fail! unless matcher.matches?(Skeleton::Item[skel.elems], &b)
+      end
+    end
+
     class LSplit < Base
       defrec :before
       defrec :split
@@ -113,7 +124,7 @@ module Magritte
         after = []
         skel.elems.reverse_each do |elem|
           next after << elem if matched
-          next before << elem unless self.split.matches?(elem, &b)
+          next before << elem unless self.split.matches?(elem, &block)
           matched = true
         end
         fail! unless matched
@@ -147,6 +158,10 @@ module Magritte
     module DSL
       def token(type)
         TokenType[type]
+      end
+
+      def nested(type, matcher)
+        Nested[type, matcher]
       end
 
       def singleton(matcher)

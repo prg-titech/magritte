@@ -10,6 +10,14 @@ module Magritte
         return if vars.nil?
         yield b.call(*vars)
       end
+
+      def token?(type = nil)
+        false
+      end
+
+      def range
+        raise "Abstract"
+      end
     end
 
     class Token < Base
@@ -17,6 +25,22 @@ module Magritte
 
       def repr
         ".#{token.repr}"
+      end
+
+      def token?(type = nil)
+        if type.nil?
+          return true
+        else
+          return token.is?(type)
+        end
+      end
+
+      def value
+        token.value
+      end
+
+      def range
+        token.range
       end
     end
 
@@ -28,6 +52,10 @@ module Magritte
       def repr
         "[#{open.repr}|#{elems.map(&:repr).join(" ")}|#{close.repr}]"
       end
+
+      def range
+        [open.range.first, close.range.last]
+      end
     end
 
     class Item < Base
@@ -36,6 +64,10 @@ module Magritte
       def repr
         "(#{elems.map(&:repr).join(" ")})"
       end
+
+      def range
+        [elems.first.range.first, elems.last.range.last]
+      end
     end
 
     class Root < Base
@@ -43,6 +75,10 @@ module Magritte
 
       def repr
         "(#{elems.map(&:repr).join(" ")})"
+      end
+
+      def range
+        [elems.first.range.first, elems.last.range.last]
       end
     end
 

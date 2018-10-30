@@ -45,11 +45,16 @@ module Magritte
     end
 
     class Block < Tree::Node
-      deflistrec :lines
+      deflistrec :elems
     end
 
     class Vector < Tree::Node
       deflistrec :elems
+    end
+
+    class Access < Tree::Node
+      defrec :source
+      defrec :lookup
     end
   end
 end
