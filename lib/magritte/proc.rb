@@ -11,6 +11,10 @@ module Magritte
       current.send(:with_channels, in_ch, out_ch, &b)
     end
 
+    def self.with_env(env, &b)
+      current.send(:with_env, env, &b)
+    end
+
     def self.spawn(code, env)
       start_mutex = Mutex.new
       start_mutex.lock
@@ -120,12 +124,15 @@ module Magritte
 
   protected
     def with_channels(new_in, new_out, &b)
+      with_env(@env.extend(new_in, new_out), &b)
+    end
+
+    def with_env(new_env, &b)
       old_env = nil
-      new_env = nil
 
       @interrupt_mutex.synchronize do
         old_env = @env
-        new_env = @env = @env.extend(new_in, new_out)
+        @env = new_env
       end
 
       yield

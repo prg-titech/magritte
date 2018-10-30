@@ -82,7 +82,8 @@ module Magritte
     end
 
     def call
-      Proc.with_channels(in_ch, out_ch, &@block)
+      env = @env.extend(in_ch, out_ch)
+      Proc.with_env(env, &@block)
     end
 
     def into(*chs)
