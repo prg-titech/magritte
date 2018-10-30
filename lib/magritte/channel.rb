@@ -24,7 +24,7 @@ module Magritte
       @thread = thread
     end
 
-    def <<(val)
+    def set(val)
       @val = val
     end
   end
@@ -100,63 +100,96 @@ module Magritte
     end
 
     def remove_reader(p)
-      @mutex.synchronize do
-        unregister_thread(p.thread) if @block_type == :read
+      action = @mutex.synchronize do
+        next :nop unless @open
+        @block_set.reject! { |b| b.thread == p.thread } if @block_type == :read
 
-        cleanup_from(p, @readers)
-      end.call
+        @readers.delete(p)
+        next :nop unless @readers.empty?
+
+        @open = false
+        :close
+      end
+
+      @block_set.each(&:interrupt!) if action == :close
     end
 
     def remove_writer(p)
-      @mutex.synchronize do
-        unregister_thread(p.thread) if @block_type == :write
+      action = @mutex.synchronize do
+        next :nop unless open?
+        @block_set.reject! { |b| b.thread == p.thread } if @block_type == :write
 
-        cleanup_from(p, @writers)
-      end.call
+
+        @writers.delete(p)
+        next :nop unless @writers.empty?
+
+        @open = false
+        :close
+      end
+
+      @block_set.each(&:interrupt!) if action == :close
     end
 
     def read
       @mutex.synchronize do
         if closed?
           PRINTER.p("closed on read")
-          next proc { Proc.current.interrupt! }
+
+          # jump to the end of the block
+          next
         end
 
         @block_set.shuffle!
 
         PRINTER.p(init_read: @block_type)
         out = case @block_type
-        when :none
+        when :none, :read
           @block_type = :read
-          block_read
-        when :read
-          block_read
+
+          receiver = Receiver.new(Thread.current)
+          @block_set << receiver
+          @mutex.sleep
+
+          return receiver.val
         when :write
-          wakeup_read
+          sender = @block_set.shift
+          @block_type = :none if @block_set.empty?
+
+          sender.wakeup
+          return sender.val
         end
-      end.call
+      end
+
+      Proc.current.interrupt!
     end
 
     def write(val)
       @mutex.synchronize do
         if closed?
           PRINTER.p("closed on write")
-          next proc { Proc.current.interrupt! }
+          next
         end
 
         @block_set.shuffle!
 
         PRINTER.p(init_write: @block_type)
         case @block_type
-        when :none
+        when :none, :write
           @block_type = :write
-          block_write(val)
-        when :write
-          block_write(val)
+          @block_set << Sender.new(Thread.current, val)
+          @mutex.sleep
+          return
         when :read
-          wakeup_write(val)
+          receiver = @block_set.shift
+          @block_type = :none if @block_set.empty?
+
+          receiver.set(val)
+          receiver.wakeup
+          return
         end
-      end.call
+      end
+
+      Proc.current.interrupt!
     end
 
     def inspect
@@ -191,54 +224,18 @@ module Magritte
     end
 
     def cleanup_from(p, set)
-      should_close = open? && (set.delete(p); set.empty?)
+      return [] unless open?
 
-      if should_close
+      set.delete(p)
+
+      if set.empty?
         @open = false
         to_clean = @block_set.dup
         @block_set.clear
-        proc { to_clean.each(&:interrupt!) }
+        to_clean
       else
-        proc { } # nop
+        []
       end
-    end
-
-    def block_write(val)
-      @block_set << Sender.new(Thread.current, val)
-      @mutex.sleep
-
-      # action for after unlocking mutexes
-      proc { }
-    end
-
-    def block_read
-      receiver = Receiver.new(Thread.current)
-      @block_set << receiver
-      @mutex.sleep
-
-      # action for after unlocking mutexes
-      proc { receiver.val }
-    end
-
-    def wakeup_write(val)
-      receiver = @block_set.shift
-      @block_type = :none if @block_set.empty?
-      receiver << val
-
-      receiver.wakeup
-
-      # action for after unlocking mutexes
-      proc do
-        # nop
-      end
-    end
-
-    def wakeup_read
-      sender = @block_set.shift
-      @block_type = :none if @block_set.empty?
-      sender.wakeup
-
-      proc { sender.val }
     end
   end
 
