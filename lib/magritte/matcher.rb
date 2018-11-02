@@ -25,7 +25,7 @@ module Magritte
 
       def matches?(skel, &b)
         out = []
-        test(skel) { |x| out << x }
+        test(skel) { |x| out << x } # What exaclty is x? test doesn't seem to either return nor yield anything
       rescue MatchFail
         return false
       else
@@ -87,7 +87,7 @@ module Magritte
       def test(skel, &b)
         fail! unless skel.is_a?(Skeleton::Nested)
         fail! unless skel.open.is?(open_type)
-        fail! unless matcher.matches?(Skeleton::Item[skel.elems], &b)
+        fail! unless matcher.matches?(Skeleton::Item[skel.elems], &b) # Why do we wrap the elems in an Item?
       end
     end
 
@@ -103,12 +103,12 @@ module Magritte
         after = []
         skel.elems.each do |elem|
           next after << elem if matched
-          next before << elem unless self.split.matches?(elem, &b)
+          next before << elem unless self.split.matches?(elem, &block)
           matched = true
         end
         fail! unless matched
-        fail! unless self.before.matches?(Skeleton::Item[before])
-        fail! unless self.after.matches?(Skeleton::Item[after])
+        fail! unless self.before.matches?(Skeleton::Item[before], &block)
+        fail! unless self.after.matches?(Skeleton::Item[after], &block)
       end
     end
 
@@ -123,13 +123,13 @@ module Magritte
         before = []
         after = []
         skel.elems.reverse_each do |elem|
-          next after << elem if matched
-          next before << elem unless self.split.matches?(elem, &block)
+          next before << elem if matched
+          next after << elem unless self.split.matches?(elem, &block)
           matched = true
         end
         fail! unless matched
-        fail! unless self.before.matches?(Skeleton::Item[before.reverse])
-        fail! unless self.after.matches?(Skeleton::Item[after.reverse])
+        fail! unless self.before.matches?(Skeleton::Item[before.reverse], &block)
+        fail! unless self.after.matches?(Skeleton::Item[after.reverse], &block)
       end
     end
 
@@ -149,7 +149,7 @@ module Magritte
 
       def test(skel, &b)
         matchers.each do |matcher|
-          return matcher if matcher.matches?(skel, &b)
+          return if matcher.matches?(skel, &b)
         end
         fail!
       end
@@ -173,7 +173,7 @@ module Magritte
       end
 
       def ends(elem, rest)
-        rsplit(empty, elem, rest)
+        rsplit(rest, elem, empty)
       end
 
       def lsplit(before, split, after)
@@ -182,6 +182,14 @@ module Magritte
 
       def rsplit(before, split, after)
         RSplit[before, split, after]
+      end
+
+      def any(*args)
+        Any[args]
+      end
+
+      def all(*args)
+        All[args]
       end
 
       def _

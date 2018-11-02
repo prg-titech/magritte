@@ -7,8 +7,9 @@ module Magritte
 
       def match(matcher, &b)
         vars = matcher.match_vars(self)
-        return if vars.nil?
-        yield b.call(*vars)
+        return false if vars.nil?
+        yield(*vars)
+        true
       end
 
       def token?(type = nil)
@@ -54,31 +55,31 @@ module Magritte
       end
 
       def range
-        [open.range.first, close.range.last]
+        Lexer::Range.between(open, close)
       end
     end
 
     class Item < Base
-      defdata :elems
+      defdata :elems # Why isn't this one deflistrec?
 
       def repr
         "(#{elems.map(&:repr).join(" ")})"
       end
 
       def range
-        [elems.first.range.first, elems.last.range.last]
+        Lexer::Range.between(elems.first, elems.last)
       end
     end
 
     class Root < Base
-      defdata :elems
+      defdata :elems # Same question as for Item class
 
       def repr
         "(#{elems.map(&:repr).join(" ")})"
       end
 
       def range
-        [elems.first.range.first, elems.last.range.last]
+        Lexer::Range.between(elems.first, elems.last)
       end
     end
 
@@ -105,7 +106,7 @@ module Magritte
       end
 
       def parse(lexer)
-        loop do
+        loop do # Is there any reason why we do a "loop do" instead of "lexer.each do |token|"
           token = lexer.next
           if token.eof? and @open.nil?
             return Root[items]

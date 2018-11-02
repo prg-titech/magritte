@@ -38,6 +38,11 @@ module Magritte
       defrec :expr
     end
 
+    class Redirect < Tree::Node
+      defdata :direction
+      defrec :target
+    end
+
     class Command < Tree::Node
       defrec :head
       deflistrec :args

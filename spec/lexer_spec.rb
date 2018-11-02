@@ -65,7 +65,7 @@ describe Magritte::Lexer do
     }
 
     it "parses operators" do
-      assert { tokens == [_token(:bar), _token(:amp), _token(:equal), _token(:equal), _token(:arrow), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:pipe), _token(:amp), _token(:equal), _token(:equal), _token(:arrow), _token(:nl), _token(:eof)] }
     end
   end
 
@@ -90,20 +90,6 @@ describe Magritte::Lexer do
 
     it "parses strings correctly" do
       assert { tokens == [_token(:string, "asksnz-zwjdfqw345 r8 ewn    ih2wu\\\" wihf002+4-r9+***.m.-< \\\""), _token(:nl), _token(:eof)] }
-    end
-  end
-
-  describe "channel semantics" do
-    let(:input) {
-      """
-      channel = (make-channel)
-      reader < $channel
-      writer > $channel
-      """
-    }
-
-    it "parses channel semantics" do
-      assert { tokens == [_token(:bare, "channel"), _token(:equal), _token(:lparen), _token(:bare, "make-channel"), _token(:rparen), _token(:nl), _token(:bare, "reader"), _token(:read_from), _token(:var, "channel"), _token(:nl), _token(:bare, "writer"), _token(:write_to), _token(:var, "channel"), _token(:nl), _token(:eof)] }
     end
   end
 end

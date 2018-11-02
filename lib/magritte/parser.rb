@@ -42,9 +42,20 @@ module Magritte
     end
 
     def parse_command(command)
+      redirects = []
+      matched = true
+      while matched
+        matched = command.match(rsplit(~_, ~any(token(:gt), token(:lt)), ~_)) do |direct, before, target|
+          unless target.elems.size == 1
+            error!(Skeleton::Item[[direct]+target.elems], "Redirect target must be a single term")
+          end
+          command = before
+          redirects << AST::Redirect[direct.token?(:gt) ? :> : :<, parse_term(target.elems.first)]
+        end
+      end
       head, *args = parse_terms(command)
       return head if args.empty?
-      AST::Command[head, args, []]
+      AST::Command[head, args, redirects]
     end
 
     def parse_terms(terms)
@@ -69,12 +80,28 @@ module Magritte
         return AST::Variable[var.value]
       end
 
+      term.match(~token(:lex_var)) do |var|
+        return AST::LexVariable[var.value]
+      end
+
+      term.match(~token(:bind)) do |var|
+        return AST::Binder[var.value]
+      end
+
       term.match(~token(:bare)) do |bare|
         return AST::String[bare.value]
       end
 
       term.match(nested(:lparen,~_)) do |item|
-        return parse_block(item)
+        item.match(lsplit(~_, token(:arrow), ~_)) do |before, after|
+          unless before.elems.all? { |e| e.token?(:bind) }
+            error!(term, "TODO: Support patterns")
+          end
+          patterns = before.elems.map { |e| AST::Binder[e.value] }
+          return AST::Lambda["anon@#{term.range.repr}", patterns, [parse_line(after)]]
+        end
+
+        return AST::Block[item.elems.map { |e| parse_line(e) }]
       end
 
       term.match(nested(:lbrack,~_)) do |item|

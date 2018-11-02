@@ -57,20 +57,20 @@ describe Magritte::Skeleton do
     end
   end
 
-  describe "scope using square brackets" do
-    let(:input) {
-      """
-      s [
-            (=> c > %ch)
-        (=> d < %ch)
-          ]
-      """
-    }
+  #describe "scope using square brackets" do
+  #  let(:input) {
+  #    """
+  #    s [
+  #          (=> c > %ch)
+  #      (=> d < %ch)
+  #        ]
+  #    """
+  #  }
 
-    it "parses correctly" do
-      assert { tree.repr == "((.bare/s [lbrack|([lparen|.arrow .bare/c .write_to .lex_var/ch|rparen]) ([lparen|.arrow .bare/d .read_from .lex_var/ch|rparen])|rbrack]))" }
-    end
-  end
+  #  it "parses correctly" do
+  #    assert { tree.repr == "((.bare/s [lbrack|([lparen|.arrow .bare/c .write_to .lex_var/ch|rparen]) ([lparen|.arrow .bare/d .read_from .lex_var/ch|rparen])|rbrack]))" }
+  #  end
+  #end
 
   describe "more tests" do
     let(:input) {
