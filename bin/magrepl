@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+root = File.dirname(File.dirname(__FILE__))
+load "#{root}/lib/magritte.rb"
+Magritte::REPL.run(ARGV)

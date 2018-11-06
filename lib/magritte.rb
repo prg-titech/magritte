@@ -7,16 +7,11 @@ module Magritte
     self
   end
 
+  class CompileError < StandardError
+  end
+
   LIB_DIR = File.dirname(__FILE__)
   load "#{LIB_DIR}/magritte/log.rb"
-
-  # Runtime
-  load "#{LIB_DIR}/magritte/std.rb"
-  load "#{LIB_DIR}/magritte/code.rb"
-  load "#{LIB_DIR}/magritte/channel.rb"
-  load "#{LIB_DIR}/magritte/proc.rb"
-  load "#{LIB_DIR}/magritte/value.rb"
-  load "#{LIB_DIR}/magritte/env.rb"
 
   # AST
   load "#{LIB_DIR}/magritte/tree.rb"
@@ -28,4 +23,15 @@ module Magritte
   load "#{LIB_DIR}/magritte/skeleton.rb"
   load "#{LIB_DIR}/magritte/matcher.rb"
   load "#{LIB_DIR}/magritte/parser.rb"
+
+  # Runtime
+  load "#{LIB_DIR}/magritte/std.rb"
+  load "#{LIB_DIR}/magritte/code.rb"
+  load "#{LIB_DIR}/magritte/channel.rb"
+  load "#{LIB_DIR}/magritte/proc.rb"
+  load "#{LIB_DIR}/magritte/value.rb"
+  load "#{LIB_DIR}/magritte/env.rb"
+  load "#{LIB_DIR}/magritte/builtins.rb"
+  load "#{LIB_DIR}/magritte/interpret.rb"
+  load "#{LIB_DIR}/magritte/repl.rb"
 end

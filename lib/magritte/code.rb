@@ -22,9 +22,10 @@ module Magritte
       Spawn.new(Proc.current.env, [], [], &b)
     end
 
-    def spawn_collect
+    def spawn_collect(env = nil)
+      env ||= Env.empty
       c = Collector.new
-      Proc.spawn(self, Env.empty.extend([], [c])).wait
+      Proc.spawn(self, env.extend([], [c])).wait
       c.collection
     end
 

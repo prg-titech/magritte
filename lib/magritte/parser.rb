@@ -3,7 +3,7 @@ module Magritte
     include Matcher::DSL
     extend self
 
-    class ParseError < StandardError
+    class ParseError < CompileError
       def initialize(skel, msg)
         @skel = skel
         @msg = msg
@@ -21,6 +21,10 @@ module Magritte
       raise ParseError.new(skel, msg)
     end
 
+    def parse(skel)
+      parse_root(skel)
+    end
+
     def parse_root(skel)
       elems = skel.elems.map do |item|
         parse_line(item)
@@ -29,6 +33,10 @@ module Magritte
     end
 
     def parse_line(item)
+      item.match(starts(token(:amp), ~_)) do |body|
+        return AST::Spawn[parse_line(body)]
+      end
+
       item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
         return AST::Pipe[parse_line(before), parse_command(after)]
       end
@@ -54,7 +62,7 @@ module Magritte
         end
       end
       head, *args = parse_terms(command)
-      return head if args.empty?
+      return head if args.empty? # What if we hace a command that takes no argument but has redirects?
       AST::Command[head, args, redirects]
     end
 

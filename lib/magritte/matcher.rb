@@ -25,7 +25,7 @@ module Magritte
 
       def matches?(skel, &b)
         out = []
-        test(skel) { |x| out << x } # What exaclty is x? test doesn't seem to either return nor yield anything
+        test(skel) { |x| out << x }
       rescue MatchFail
         return false
       else

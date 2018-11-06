@@ -1,6 +1,21 @@
 require 'strscan'
+require 'set'
 module Magritte
   class Lexer
+
+    class LexError < CompileError
+      def initialize(location, msg)
+        @location = location
+        @msg = msg
+      end
+
+      attr_reader :location
+      attr_reader :msg
+
+      def to_s
+        "Lexing Error: #{@msg} at #{@location.repr}"
+      end
+    end
 
     class Token
       attr_reader :type
@@ -172,7 +187,7 @@ module Magritte
         skip_ws
         return token(:bare, group(1))
       else
-        raise "Unknown token" # Should be improved to show line/col number
+        error!("Unknown token near #{@scanner.peek(3)}")
       end
     end
 
@@ -276,7 +291,7 @@ module Magritte
       @line += nlcount
       if nlcount > 0
         string =~ /\n.*?\z/
-        @col = $&.size - 1
+        @col = $&.size
       else
         @col += string.size
       end
@@ -304,6 +319,10 @@ module Magritte
 
     def skip(re)
       @scanner.skip(re) and update_line_col(@scanner.matched)
+    end
+
+    def error!(msg)
+      raise LexError.new(current_pos, msg)
     end
   end
 end

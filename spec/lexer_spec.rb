@@ -92,4 +92,18 @@ describe Magritte::Lexer do
       assert { tokens == [_token(:string, "asksnz-zwjdfqw345 r8 ewn    ih2wu\\\" wihf002+4-r9+***.m.-< \\\""), _token(:nl), _token(:eof)] }
     end
   end
+
+  describe "check that between method raises error" do
+    let(:input) {
+      """
+      a
+      """
+    }
+
+    it "must raise an error if source names differ" do
+      lex2 = Magritte::Lexer.new("test2", input)
+      err = assert_raises { Magritte::Lexer::Range.between(lex2.to_a.first, tokens.first) }
+      assert { err.message == "Can't compute Range.between, mismatching source names: test2 != test" }
+    end
+  end
 end

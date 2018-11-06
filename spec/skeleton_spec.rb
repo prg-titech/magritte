@@ -57,20 +57,20 @@ describe Magritte::Skeleton do
     end
   end
 
-  #describe "scope using square brackets" do
-  #  let(:input) {
-  #    """
-  #    s [
-  #          (=> c > %ch)
-  #      (=> d < %ch)
-  #        ]
-  #    """
-  #  }
+  describe "scope using square brackets" do
+    let(:input) {
+      """
+      s [
+            (=> c > %ch)
+        (=> d < %ch)
+          ]
+      """
+    }
 
-  #  it "parses correctly" do
-  #    assert { tree.repr == "((.bare/s [lbrack|([lparen|.arrow .bare/c .write_to .lex_var/ch|rparen]) ([lparen|.arrow .bare/d .read_from .lex_var/ch|rparen])|rbrack]))" }
-  #  end
-  #end
+    it "parses correctly" do
+      assert { tree.repr == "((.bare/s [lbrack|([lparen|.arrow .bare/c .gt .lex_var/ch|rparen]) ([lparen|.arrow .bare/d .lt .lex_var/ch|rparen])|rbrack]))" }
+    end
+  end
 
   describe "more tests" do
     let(:input) {
@@ -81,6 +81,19 @@ describe Magritte::Skeleton do
 
     it "parses correctly" do
       assert { tree.repr == "((.var/foo .bang .bare/bar))" }
+    end
+  end
+
+  describe "nesting error" do
+    let(:input) {
+      """
+      [b
+      """
+    }
+
+    it "throws an error" do
+      err = assert_raises { tree }
+      assert { err.message == "Unmatched nesting at test@1:7~2:1" }
     end
   end
 end

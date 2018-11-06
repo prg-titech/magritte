@@ -1,5 +1,9 @@
 module Magritte
   module Skeleton
+    def self.parse(*args)
+      Parser.parse(*args)
+    end
+
     class Base < Tree::Node
       def inspect
         "#<Magritte::Skeleton::Base #{self.repr}>"
@@ -83,11 +87,15 @@ module Magritte
       end
     end
 
-    class NestingError < StandardError
+    class NestingError < CompileError
       def initialize(open, close, type)
         @open = open
         @close = close
         @type = type
+      end
+
+      def to_s
+        "#{@type} at #{Lexer::Range.between(@open, @close).repr}"
       end
     end
 
@@ -111,7 +119,7 @@ module Magritte
           if token.eof? and @open.nil?
             return Root[items]
           elsif token.eof?
-            error!(token, "Unmatched")
+            error!(token, "Unmatched nesting")
           elsif token.is?(expected_close)
             return Nested[self.open, token, out]
           elsif token.nest?

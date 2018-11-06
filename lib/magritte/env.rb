@@ -12,6 +12,10 @@ module Magritte
         @name = name
         @env = env
       end
+
+      def to_s
+        "No such variable: #{@name}"
+      end
     end
 
     class << self
@@ -71,9 +75,8 @@ module Magritte
       new(new_parent, @keys, @own_inputs, @own_outputs)
     end
 
-    @empty = new(nil, {}, [], [])
     def self.empty
-      @empty
+      new(nil, {}, [], [])
     end
 
     def extend(inputs=[], outputs=[])

@@ -14,10 +14,10 @@ module Magritte
         @value = value
       end
 
-      def call(*args)
+      def call(args)
         # Semantics: Look up the thing in current env and call it
         # Proc.current.env
-        Proc.current.env.get(@value).call(*args)
+        Proc.current.env.get(@value).call(args)
       end
     end
 
@@ -36,9 +36,9 @@ module Magritte
         @elems = elems.freeze
       end
 
-      def call(*args)
+      def call(args)
         head, *rest = @elems
-        head.call(*rest, *args)
+        head.call(rest + args)
       end
     end
 
@@ -71,7 +71,7 @@ module Magritte
         @expr = expr
       end
 
-      def call(*args)
+      def call(args)
         #new_env = Proc.current.env.with(@env)
         raise "TODO"
       end
@@ -79,12 +79,14 @@ module Magritte
 
     class BuiltinFunction < Base
       attr_reader :block
+      attr_reader :name
 
-      def initialize(block)
+      def initialize(name, block)
+        @name = name
         @block = block
       end
 
-      def call(*args)
+      def call(args)
         @block.call(*args)
       end
     end
