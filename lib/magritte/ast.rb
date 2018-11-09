@@ -24,8 +24,8 @@ module Magritte
     end
 
     class Pipe < Tree::Node
-      defrec :input
-      defrec :output
+      defrec :producer
+      defrec :consumer
     end
 
     class Compensation < Tree::Node
@@ -44,12 +44,20 @@ module Magritte
     end
 
     class Command < Tree::Node
-      defrec :head
-      deflistrec :args
+      deflistrec :vec
       deflistrec :redirects
+
+      def initialize(*)
+        super
+        raise "Empty command" unless vec.any?
+      end
     end
 
     class Block < Tree::Node
+      deflistrec :elems
+    end
+
+    class Subst < Tree::Node
       deflistrec :elems
     end
 

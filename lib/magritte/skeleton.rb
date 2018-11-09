@@ -66,6 +66,11 @@ module Magritte
     class Item < Base
       defdata :elems # Why isn't this one deflistrec?
 
+      def sub_items
+        return self.elems if self.elems.all? { |e| e.is_a?(Item) }
+        [self]
+      end
+
       def repr
         "(#{elems.map(&:repr).join(" ")})"
       end

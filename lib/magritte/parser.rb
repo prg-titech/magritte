@@ -61,9 +61,13 @@ module Magritte
           redirects << AST::Redirect[direct.token?(:gt) ? :> : :<, parse_term(target.elems.first)]
         end
       end
-      head, *args = parse_terms(command)
-      return head if args.empty? # What if we hace a command that takes no argument but has redirects?
-      AST::Command[head, args, redirects]
+
+      command.match(singleton(nested(:lparen,~_))) do |i|
+        return parse_root(i)
+      end
+
+      vec = parse_terms(command)
+      AST::Command[vec, redirects]
     end
 
     def parse_terms(terms)
@@ -100,6 +104,10 @@ module Magritte
         return AST::String[bare.value]
       end
 
+      term.match(~token(:num)) do |num|
+        return AST::String[num.value] # Should perhaps be changed to it's own AST node as we never want to call it?
+      end
+
       term.match(nested(:lparen,~_)) do |item|
         item.match(lsplit(~_, token(:arrow), ~_)) do |before, after|
           unless before.elems.all? { |e| e.token?(:bind) }
@@ -109,7 +117,7 @@ module Magritte
           return AST::Lambda["anon@#{term.range.repr}", patterns, [parse_line(after)]]
         end
 
-        return AST::Block[item.elems.map { |e| parse_line(e) }]
+        return AST::Subst[item.sub_items.map { |e| parse_line(e) }]
       end
 
       term.match(nested(:lbrack,~_)) do |item|

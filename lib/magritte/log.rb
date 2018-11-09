@@ -48,7 +48,7 @@ module Magritte
   end
 
   PRINTER = case ENV['MAGRITTE_DEBUG']
-  when nil
+  when nil, ""
     NullPrinter.new
   when 'log'
     Dir.mkdir("./tmp/log/#{$$}")

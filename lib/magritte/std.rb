@@ -1,7 +1,7 @@
 module Magritte
   module Std
+    extend self
     def put(val)
-      PRINTER.p put: [val, stdout]
       Proc.current.stdout.write(val)
     end
 

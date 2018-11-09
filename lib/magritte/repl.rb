@@ -21,8 +21,7 @@ module Magritte
 
     def self.run(argv)
       line_number = 0
-      env = Env.empty
-      Builtins.load(env)
+      env = Builtins.load(Env.empty)
       loop do
         line_number += 1 if process_line(line_number, env)
       end

@@ -19,6 +19,10 @@ module Magritte
         # Proc.current.env
         Proc.current.env.get(@value).call(args)
       end
+
+      def repr
+        value
+      end
     end
 
     class Number < Base
@@ -26,6 +30,10 @@ module Magritte
 
       def initialize(value)
         @value = value
+      end
+
+      def repr
+        value
       end
     end
 
@@ -40,6 +48,10 @@ module Magritte
         head, *rest = @elems
         head.call(rest + args)
       end
+
+      def repr
+        "[#{elems.map(&:repr).join(" ")}]"
+      end
     end
 
     class Environment < Base
@@ -48,6 +60,10 @@ module Magritte
       def initialize(env)
         @env = env
       end
+
+      def repr
+        env.inspect
+      end
     end
 
     class Channel < Base
@@ -55,6 +71,10 @@ module Magritte
 
       def initialize(channel)
         @channel = channel
+      end
+
+      def repr
+        "<channel:#{channel}>"
       end
     end
 
@@ -75,6 +95,10 @@ module Magritte
         #new_env = Proc.current.env.with(@env)
         raise "TODO"
       end
+
+      def repr
+        "<func:#{name}>"
+      end
     end
 
     class BuiltinFunction < Base
@@ -87,7 +111,11 @@ module Magritte
       end
 
       def call(args)
-        @block.call(*args)
+        Std.instance_exec(*args, &@block)
+      end
+
+      def repr
+        "<builtin:#{name}>"
       end
     end
   end
