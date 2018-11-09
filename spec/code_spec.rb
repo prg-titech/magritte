@@ -25,7 +25,7 @@ describe Magritte::Code do
   let(:output) { with_no_dangling_threads { code.spawn_collect } }
 
   def self.code(&b)
-    let(:code) { Magritte::Code.new(&b) }
+    let(:code) { Magritte::Code.new { Magritte::Code::DSL.instance_eval(&b) } }
   end
 
   after { Magritte::PRINTER.p output: output }

@@ -4,6 +4,8 @@ module Magritte
     module DSL
       include Magritte::Std
 
+      extend self
+
       def stdin
         Proc.current.stdin
       end
@@ -13,6 +15,10 @@ module Magritte
       end
 
       def s(&b)
+        s_ { DSL.instance_eval(&b) }
+      end
+
+      def s_(&b)
         Spawn.new(Proc.current.env, [], [], &b)
       end
     end
@@ -23,8 +29,8 @@ module Magritte
       @block = block
     end
 
-    def run(*a)
-      instance_exec(*a, &@block)
+    def run
+      @block.call
     end
 
     def spawn_collect(env = nil)
@@ -62,7 +68,11 @@ module Magritte
       @block = block
     end
 
-    def p(i=0, &block)
+    def p(&block)
+      p_ { Code::DSL.instance_eval(&block) }
+    end
+
+    def p_(&block)
       # the anonymous pipe channel!
       c = Channel.new
 
