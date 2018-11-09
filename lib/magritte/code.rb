@@ -1,6 +1,23 @@
 module Magritte
   class Code
-    include Magritte::Std
+
+    module DSL
+      include Magritte::Std
+
+      def stdin
+        Proc.current.stdin
+      end
+
+      def stdout
+        Proc.current.stdout
+      end
+
+      def s(&b)
+        Spawn.new(Proc.current.env, [], [], &b)
+      end
+    end
+
+    include DSL
 
     def initialize(&block)
       @block = block
@@ -8,18 +25,6 @@ module Magritte
 
     def run(*a)
       instance_exec(*a, &@block)
-    end
-
-    def stdin
-      Proc.current.stdin
-    end
-
-    def stdout
-      Proc.current.stdout
-    end
-
-    def s(&b)
-      Spawn.new(Proc.current.env, [], [], &b)
     end
 
     def spawn_collect(env = nil)
@@ -35,6 +40,12 @@ module Magritte
 
     def loc
       @block.source_location.join(':')
+    end
+  end
+
+  class PlainCode < Code
+    def run(*a)
+      @block.call(*a)
     end
   end
 
@@ -57,6 +68,8 @@ module Magritte
 
       # spawn the process on the output channel
       into(c).go
+
+      PRINTER.p('spawned in the background')
 
       Spawn.new(@env, in_with(c), out_ch, &block)
     end
