@@ -111,7 +111,7 @@ module Magritte
 
       if @scanner.eos?
         return token(:eof)
-      elsif scan /[\n#;]/
+      elsif scan /[\n;]|(#[^\n]*)/
         skip_lines
         return token(:nl)
       elsif scan /[(]/
