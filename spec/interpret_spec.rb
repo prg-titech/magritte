@@ -61,7 +61,7 @@ describe Magritte::Interpret do
       end
     end
 
-    f.describe "early exit for vectors" do
+    describe "early exit for vectors" do
       let(:input) {
         """
         for [0 (put 1 2 3 4 5 6 7 8 9 10 | (& drain; & drain))]
@@ -74,7 +74,7 @@ describe Magritte::Interpret do
       end
     end
 
-    f.describe "slide example" do
+    describe "slide example" do
       let(:input) {
         """
         count-forever | (& drain; & drain; & drain) | take 30
