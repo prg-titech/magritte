@@ -7,6 +7,10 @@ module Magritte
       Thread.current[:magritte_proc] or raise 'no proc'
     end
 
+    def self.current?
+      !!Thread.current[:magritte_proc]
+    end
+
     def self.with_channels(in_ch, out_ch, &b)
       current.send(:with_channels, in_ch, out_ch, &b)
     end

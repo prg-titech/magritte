@@ -14,12 +14,13 @@ module Magritte
         Proc.current.stdout
       end
 
-      def s(&b)
-        s_ { DSL.instance_eval(&b) }
+      def s(e=nil, &b)
+        s_(e) { DSL.instance_eval(&b) }
       end
 
-      def s_(&b)
-        Spawn.new(Proc.current.env, [], [], &b)
+      def s_(env=nil, &b)
+        env ||= Proc.current.env
+        Spawn.new(env, [], [], &b)
       end
     end
 
@@ -56,6 +57,8 @@ module Magritte
   end
 
   class Spawn
+    extend Code::DSL
+
     def self.root(&b)
       new([], [], &b)
     end
@@ -70,6 +73,18 @@ module Magritte
 
     def p(&block)
       p_ { Code::DSL.instance_eval(&block) }
+    end
+
+    def collect
+      c = Collector.new
+      into(c).call
+      c.collection
+    ensure
+      # make sure not to wait for close until at least the main thread
+      # has returned, otherwise we sleep the root thread. in a case with
+      # no background spawns (&), the channel should be closed already and
+      # this will be a no-op.
+      c.wait_for_close
     end
 
     def p_(&block)
@@ -94,19 +109,17 @@ module Magritte
       Proc.spawn(as_code, @env.extend(in_ch, out_ch))
     end
 
-    def collect
-      collector = Collector.new
-      into(collector).call
-      collector.collection
-    end
-
     def go
       spawn.start
     end
 
     def call
-      env = @env.extend(in_ch, out_ch)
-      Proc.with_env(env, &@block)
+      if Proc.current?
+        env = @env.extend(in_ch, out_ch)
+        Proc.with_env(env, &@block)
+      else
+        spawn.wait
+      end
     end
 
     def into(*chs)

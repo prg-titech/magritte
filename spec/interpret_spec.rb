@@ -4,7 +4,11 @@ describe Magritte::Interpret do
   let(:skel) { Magritte::Skeleton::Parser.parse(lex) }
   let(:ast) { Magritte::Parser.parse_root(skel) }
   let(:env) { Magritte::Builtins.load(Magritte::Env.empty) }
-  let(:results) { Magritte::Code.new do Magritte::Interpret.interpret(ast) end.spawn_collect(env).map(&:repr) }
+  let(:results) { ast;
+    Magritte::Spawn.s_ env do
+      Magritte::Interpret.interpret(ast)
+    end.collect.map(&:repr)
+  }
   let(:result) { results.join("\n") }
 
   describe "simple input" do
@@ -16,7 +20,7 @@ describe Magritte::Interpret do
       }
 
       it "is interpreted correctly" do
-        assert { result == '["a", "b", "c"]' }
+        assert { result == '[a b c]' }
       end
     end
 
@@ -44,15 +48,41 @@ describe Magritte::Interpret do
       end
     end
 
-    describe "example" do
+    describe "early exit for collectors" do
       let(:input) {
         """
         put 1 2 3 4 5 6 7 8 9 10 | (& drain; & drain)
+        # sleep 1 # todo: uhhhh we get recursive locking if we remove this
         """
       }
 
       it "is interpreted correctly" do
         assert { results.size == 10 }
+      end
+    end
+
+    f.describe "early exit for vectors" do
+      let(:input) {
+        """
+        for [0 (put 1 2 3 4 5 6 7 8 9 10 | (& drain; & drain))]
+        # sleep 1 # todo: uhhhh we get recursive locking if we remove this
+        """
+      }
+
+      it "is interpreted correctly" do
+        assert { results.size == 11 }
+      end
+    end
+
+    f.describe "slide example" do
+      let(:input) {
+        """
+        count-forever | (& drain; & drain; & drain) | take 30
+        """
+      }
+
+      it do
+        assert { results.size == 30 }
       end
     end
   end

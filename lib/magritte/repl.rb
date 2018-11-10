@@ -3,9 +3,9 @@ module Magritte
   module REPL
     def self.evaluate(source_name, source, env)
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
-      Code.new do
+      Spawn.s_ env do
         Interpret.interpret(ast)
-      end.spawn_collect(env).map(&:repr).join("\n")
+      end.collect.map(&:repr).join("\n")
     end
 
     def self.process_line(line_number, env)

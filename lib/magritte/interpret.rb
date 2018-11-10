@@ -2,11 +2,15 @@ module Magritte
   module Interpret
 
     def self.interpret(ast)
-      Interpreter.new.visit(ast)
+      Interpreter.new.interpret(ast)
     end
 
     class Interpreter < Tree::Walker
       include Code::DSL
+
+      def interpret(ast)
+        visit_exec(ast)
+      end
 
       def visit_default(node)
         raise "TODO #{node.inspect}"
@@ -43,9 +47,9 @@ module Magritte
       end
 
       def visit_subst(node)
-        c = Collector.new
-        s_ { node.elems.each { |elem| visit_exec(elem) } }.into(c).call
-        c.collection.each { |x| yield x }
+        s_ do
+          node.elems.each { |elem| visit_exec(elem) }
+        end.collect.each { |x| yield x }
       end
 
       def visit_pipe(node)
