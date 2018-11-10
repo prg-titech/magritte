@@ -55,5 +55,14 @@ module Magritte
     builtin :drain, [] do
       loop { put get }
     end
+
+    builtin :sleep, [:Number] do |n|
+      sleep(n.value.to_f)
+    end
+
+    builtin :'count-forever', [] do |n|
+      i = 0
+      loop { put Value::Number.new(i); i += 1 }
+    end
   end
 end
