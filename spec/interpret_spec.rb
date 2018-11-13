@@ -52,7 +52,6 @@ describe Magritte::Interpret do
       let(:input) {
         """
         put 1 2 3 4 5 6 7 8 9 10 | (& drain; & drain)
-        # sleep 1 # todo: uhhhh we get recursive locking if we remove this
         """
       }
 
@@ -65,7 +64,6 @@ describe Magritte::Interpret do
       let(:input) {
         """
         for [0 (put 1 2 3 4 5 6 7 8 9 10 | (& drain; & drain))]
-        # sleep 1 # todo: uhhhh we get recursive locking if we remove this
         """
       }
 
