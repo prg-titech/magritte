@@ -45,8 +45,8 @@ module Magritte
       end
 
       def call(args)
-        head, *rest = @elems
-        head.call(rest + args)
+        head, *rest = (@elems + args)
+        head.call(rest)
       end
 
       def repr
