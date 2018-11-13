@@ -122,5 +122,17 @@ describe Magritte::Interpret do
         assert { result == "103" }
       end
     end
+
+    describe "root-level blocks" do
+      let(:input) {
+        """
+        (put 1)
+        """
+      }
+
+      it do
+        assert { result == "1" }
+      end
+    end
   end
 end
