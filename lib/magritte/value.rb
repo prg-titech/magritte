@@ -3,7 +3,7 @@ module Magritte
 
     class Base
       def call(*args)
-        raise "Can't call this!"
+        raise "Can't call this! (#{self.inspect})"
       end
     end
 
