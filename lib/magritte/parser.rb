@@ -41,6 +41,14 @@ module Magritte
         return AST::Pipe[parse_line(before), parse_command(after)]
       end
 
+      item.match(lsplit(~_, token(:equal), ~_)) do |lhs, rhs|
+        unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) }
+          error!(lhs, "Invalid lhs")
+        end
+
+        return AST::Assignment[parse_terms(lhs), parse_terms(rhs)]
+      end
+
       # Default
       parse_command(item)
     end
@@ -105,7 +113,7 @@ module Magritte
       end
 
       term.match(~token(:num)) do |num|
-        return AST::String[num.value] # Should perhaps be changed to it's own AST node as we never want to call it?
+        return AST::Number[num.value]
       end
 
       term.match(nested(:lparen,~_)) do |item|

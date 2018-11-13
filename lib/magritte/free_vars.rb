@@ -4,6 +4,10 @@ module Magritte
       Scanner.new.collect(node)
     end
 
+    def self.of(node)
+      scan(node)[node]
+    end
+
     class Scanner < Tree::Collector
       def visit_lex_variable(node)
         Set.new([node.name])

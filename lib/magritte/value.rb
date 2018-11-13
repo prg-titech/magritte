@@ -81,19 +81,22 @@ module Magritte
     class Function < Base
       attr_reader :name
       attr_reader :env
-      attr_reader :bindname
+      attr_reader :bindnames
       attr_reader :expr
 
-      def initialize(name, env, bindname, expr)
+      def initialize(name, env, bindnames, expr)
         @name = name
         @env = env
-        @bindname = bindname
+        @bindnames = bindnames
         @expr = expr
       end
 
       def call(args)
-        #new_env = Proc.current.env.with(@env)
-        raise "TODO"
+        env = @env.splice(Proc.current.env)
+        args.zip(bindnames) do |arg, bind|
+          env.let(bind, arg)
+        end
+        Proc.with_env(env) { Interpret.interpret(@expr[0]) }
       end
 
       def repr

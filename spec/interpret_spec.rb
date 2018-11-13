@@ -24,7 +24,7 @@ describe Magritte::Interpret do
       end
     end
 
-    describe "single string" do
+    describe "single word" do
       let(:input) {
         """
         put hello
@@ -81,6 +81,45 @@ describe Magritte::Interpret do
 
       it do
         assert { results.size == 30 }
+      end
+    end
+
+    describe "lambdas" do
+      let(:input) {
+        """
+        (?x => put $x) 1
+        """
+      }
+
+      it do
+        assert { result == "1" }
+      end
+    end
+
+    describe "lexical vars" do
+      let(:input) {
+        """
+        (?x => put %x) 1
+        """
+      }
+
+      it do
+        assert { result == "1" }
+      end
+    end
+
+    describe "closures" do
+      let(:input) {
+        """
+        x = 100
+        f = (?y => add %x %y)
+        x = 0
+        f 3
+        """
+      }
+
+      it do
+        assert { result == "103" }
       end
     end
   end

@@ -17,6 +17,10 @@ module Magritte
       defdata :value
     end
 
+    class Number < Tree::Node
+      defdata :value
+    end
+
     class Lambda < Tree::Node
       defdata :name
       deflistrec :patterns
@@ -68,6 +72,11 @@ module Magritte
     class Access < Tree::Node
       defrec :source
       defrec :lookup
+    end
+
+    class Assignment < Tree::Node
+      deflistrec :lhs
+      deflistrec :rhs
     end
   end
 end

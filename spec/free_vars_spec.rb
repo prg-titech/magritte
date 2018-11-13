@@ -41,8 +41,8 @@ describe Magritte::FreeVars do
   end
 
   describe "a lambda" do
-    let(:expr) { _lambda("x",[_binder("foo")],[_command(_variable("hoge"),[_lex_variable("bar")],[])]) }
-    let(:expr2) { _lambda("x",[_binder("foo")],[_command(_variable("hoge"),[_lex_variable("foo")],[])]) }
+    let(:expr) { _lambda("x",[_binder("foo")],[_command([_variable("hoge"),_lex_variable("bar")],[])]) }
+    let(:expr2) { _lambda("x",[_binder("foo")],[_command([_variable("hoge"),_lex_variable("foo")],[])]) }
 
     it "has a free variables" do
       assert { free_vars == Set.new(["bar"]) }
@@ -70,7 +70,7 @@ describe Magritte::FreeVars do
   end
 
   describe "a spawn" do
-    let(:expr) { _spawn(_block([_command(_binder("bar"),[_lex_variable("foo")],[])])) }
+    let(:expr) { _spawn(_block([_command([_binder("bar"),_lex_variable("foo")],[])])) }
 
     it "has a free variable" do
       assert { free_vars == Set.new(["foo"]) }
@@ -78,7 +78,7 @@ describe Magritte::FreeVars do
   end
 
   describe "a command" do
-    let(:expr) { _command(_lex_variable("foo"),[_variable("bar")],[]) }
+    let(:expr) { _command([_lex_variable("foo"),_variable("bar")],[]) }
 
     it "has a free variable" do
       assert { free_vars == Set.new(["foo"]) }
@@ -86,8 +86,8 @@ describe Magritte::FreeVars do
   end
 
   describe "a block" do
-    let(:command1) { _command(_binder("foo"),[_lex_variable("hoge")],[]) }
-    let(:command2) { _command(_binder("zoo"),[_variable("bar")],[]) }
+    let(:command1) { _command([_binder("foo"),_lex_variable("hoge")],[]) }
+    let(:command2) { _command([_binder("zoo"),_variable("bar")],[]) }
     let(:expr) { _block([command1,command2]) }
 
     it "has a free variable" do

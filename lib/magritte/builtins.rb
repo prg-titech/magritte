@@ -79,11 +79,8 @@ module Magritte
       put Value::Number.new(nums.map { |x| x.value.to_i }.inject(0, &:+))
     end
 
-    builtin :exec, [:Vector] do |vec|
-      elems = vec.elems
-      head, *rest = elems
-      raise "empty exec" unless head
-      head.call(rest)
+    builtin :exec, [], :any do |*a|
+      Value::Vector.new([]).call(a)
     end
   end
 end

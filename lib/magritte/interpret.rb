@@ -28,6 +28,10 @@ module Magritte
         yield Value::String.new(node.value)
       end
 
+      def visit_number(node)
+        yield Value::Number.new(node.value)
+      end
+
       def visit_command(node)
         vec = visit_collect_all(node.vec)
         command, *args = vec
@@ -60,6 +64,25 @@ module Magritte
 
       def visit_spawn(node)
         s_ { visit_exec(node.expr) }.go
+      end
+
+      def visit_lambda(node)
+        free_vars = FreeVars.of(node)
+        yield Value::Function.new(node.name, Proc.current.env.slice(free_vars), node.patterns.map(&:name), node.bodies)
+      end
+
+      def visit_assignment(node)
+        values = visit_collect_all(node.rhs)
+        node.lhs.zip(values) do |bind, val|
+          case bind
+          when AST::String
+            Proc.current.env.let(bind.value, val)
+          when AST::Variable
+            Proc.current.env.set(bind.value, val)
+          when AST::LexVariable
+            raise "TODO"
+          end
+        end
       end
 
     private

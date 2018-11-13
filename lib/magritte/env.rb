@@ -72,7 +72,15 @@ module Magritte
     end
 
     def splice(new_parent)
-      new(new_parent, @keys, @own_inputs, @own_outputs)
+      Env.new(new_parent, @keys, @own_inputs, @own_outputs)
+    end
+
+    def slice(keys)
+      out = Env.empty
+      keys.each do |key|
+        out.let(key, get(key))
+      end
+      out
     end
 
     def self.empty
