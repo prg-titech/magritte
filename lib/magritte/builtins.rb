@@ -64,5 +64,26 @@ module Magritte
       i = 0
       loop { put Value::Number.new(i); i += 1 }
     end
+
+    builtin :list, [], :any do |*a|
+      put Value::Vector.new(a)
+    end
+
+    builtin :fan, [:Number, :any], :any do |times, fn, *a|
+      times.value.to_i.times do
+        Spawn.s_ { loop { fn.call([get] + a) } }.go
+      end
+    end
+
+    builtin :add, [], :Number do |*nums|
+      put Value::Number.new(nums.map { |x| x.value.to_i }.inject(0, &:+))
+    end
+
+    builtin :exec, [:Vector] do |vec|
+      elems = vec.elems
+      head, *rest = elems
+      raise "empty exec" unless head
+      head.call(rest)
+    end
   end
 end
