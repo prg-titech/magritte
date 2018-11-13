@@ -32,6 +32,9 @@ module Magritte
         rescue Interrupt
           PRINTER.puts('real proc interrupted')
           # pass
+        rescue RuntimeError => e
+          Kernel.puts "error: #{e.class.name}\n#{e.to_s}"
+          #raise
         rescue Exception => e
           PRINTER.p :exception
           PRINTER.p e

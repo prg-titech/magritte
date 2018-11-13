@@ -10,6 +10,9 @@ module Magritte
   class CompileError < StandardError
   end
 
+  class RuntimeError < StandardError
+  end
+
   LIB_DIR = File.dirname(__FILE__)
   load "#{LIB_DIR}/magritte/log.rb"
 

@@ -7,7 +7,7 @@ module Magritte
   end
 
   class Env
-    class MissingVariable < StandardError
+    class MissingVariable < RuntimeError
       def initialize(name, env)
         @name = name
         @env = env

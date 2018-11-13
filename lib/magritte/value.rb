@@ -1,9 +1,12 @@
 module Magritte
   module Value
 
+    class CallError < RuntimeError
+    end
+
     class Base
       def call(*args)
-        raise "Can't call this! (#{self.inspect})"
+        raise CallError.new("Can't call this! (#{self.repr})")
       end
     end
 
@@ -46,6 +49,7 @@ module Magritte
 
       def call(args)
         head, *rest = (@elems + args)
+        raise CallError.new("Empty call") if head.nil?
         head.call(rest)
       end
 
