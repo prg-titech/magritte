@@ -112,6 +112,10 @@ module Magritte
         return AST::String[bare.value]
       end
 
+      term.match(~token(:string)) do |bare|
+        return AST::String[bare.value]
+      end
+
       term.match(~token(:num)) do |num|
         return AST::Number[num.value]
       end
