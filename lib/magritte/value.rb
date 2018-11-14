@@ -24,7 +24,11 @@ module Magritte
       end
 
       def repr
-        value
+        if @value =~ /[\r\n\\]/
+          @value.inspect
+        else
+          value
+        end
       end
     end
 
