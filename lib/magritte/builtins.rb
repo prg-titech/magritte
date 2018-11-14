@@ -86,5 +86,11 @@ module Magritte
     builtin :exec, [], :any do |*a|
       Value::Vector.new([]).call(a)
     end
+
+    builtin :'file-lines', [:String] do |fname|
+      File.foreach(fname.value) do |line|
+        put(Value::String.new(line))
+      end
+    end
   end
 end
