@@ -1,9 +1,10 @@
 % notes
 
-\documentclass[format=sigconf, review=true, draft=true, screen=true]{acmart}
+% \documentclass[format=sigconf, review=true, draft=true, screen=true]{acmart}
+\documentclass[sigplan,10pt,nosumlimits]{acmart}
 
 % don't print the conference ref for now
-\settopmatter{printacmref=false}
+% \settopmatter{printacmref=false}
 
 \usepackage{comment}
 \usepackage{mathtools}
@@ -16,31 +17,44 @@
 \usepackage{listings}
 
 
-\title{A Concurrent Semantic for Shell-Like Processes}
+\title{Concurrency for Pipe-based Programming}
 \author{Jeanine Adkisson}
-\affiliation{Tokyo Institute of Technology}
-\email{jneen@prg.is.titech.edu}
+\affiliation{\institution{Tokyo Institute of Technology}}
+\email{jneen@prg.is.titech.ac.jp}
 
 \author{Hidehiko Masuhara}
-\affiliation{Tokyo Institute of Technology}
-\email{masuhara@prg.is.titech.edu}
+\affiliation{\institution{Tokyo Institute of Technology}}
+\email{masuhara@prg.is.titech.ac.jp}
 
 \begin{document}
 
+% thought experiment - parallel fetching
+% find an example of named pipes
+
 \begin{abstract}
-Despite the widespread use of GUI tools for configuration tasks, CLI tools, and more specifically shell-based interfaces remain a powerful standard for software distribution and integration. Several attempts have been made at solving the desktop-integration problem, most notably TCL(TODO: cite!) and Guile Scheme(TODO: cite!), but neither has been as succesful as they intended to be: the \emph{lingua franca} for a large portion of tools remains shell-oriented, relying on such concepts as standard I/O, string-based argument vectors, and the expectation that users will be able to freely pipe streams of bytes in a shell-like way.
+The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes. Beyond the most simple tasks, however, \texttt{bash} and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
 
-Unfortunately, shell languages have significant known interoperability issues, such as lack of any kind of usable encapsulation, and the lack of in-language data structures to represent any kind of value other than a string. We believe that a shell-compatible language with well-defined semantics that could also function as a general-purpose systems language could go a long way towards solving the desktop-integration problem.
+We explore a pipe-based programming model that attempts to synthesize the good parts of UNIX shells, departing at key points, along with a supporting concurrency model and a semantic of interruption.
 
-On the other hand, a persistent problem with more established systems like Erlang or Go is that they don't account for closing channels, and require manual cleanup of processes. In a systems programming context, errors and hangups are commonplace and expected, and it is critical to have some measure of automatic process cleanup for even naively-written code.
-
-We propose a channel-based communication system that integrates with a workflow compensation system and is capable of recovering from errors and, importantly, cleaning up processes when communication halts.
+% Despite the widespread use of GUI tools for configuration and orchestration tasks, CLI tools, and more specifically shell-based interfaces remain a powerful standard for software distribution and integration. Several attempts have been made at solving the desktop-integration problem: how should we allow programs written in different languages and on different platforms to be scripted and integrated in a coherent system? The most notable attempts at this problem have been TCL(TODO: cite!) and Guile Scheme(TODO: cite!), but neither has been as succesful as they intended to be: the common language for a large portion of tools remains shell-based, relying on such concepts as standard I/O, string-based argument vectors, and the expectation that users will be able to freely pipe streams of bytes in a pipe-based way.
+% 
+% Unfortunately, existing UNIX shell languages have significant known interoperability issues, such as lack of any kind of usable encapsulation, and the lack of in-language data structures to represent any kind of value other than a string. We believe that a shell-compatible language with well-defined semantics that could also function as a general-purpose systems language could go a long way towards solving the desktop-integration problem.
+% 
+% On the other hand, a persistent problem with more established systems like Erlang or Go is that they don't account for closing channels, and require manual cleanup of processes. In a systems programming context, errors and hangups are commonplace and expected, and it is critical to have some measure of automatic process cleanup for even naively-written code.
+% 
+% We propose a channel-based communication system that integrates with a workflow compensation system and is capable of recovering from errors and, importantly, cleaning up processes when communication halts.
 \end{abstract}
 \maketitle
 
 \section{Motivation}
 
-Consider the following pseudo-code for a shell-like language:
+The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes. Beyond the most simple tasks, however, \verb/bash/ and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
+
+In this paper, we use the term \emph{pipe-based language} to mean a programming language intended to be used on a command line, with the ability to spawn many processes in which communicate through synchronous channels or pipes in an ad-hoc manner --- and in which this facility is the primary method of composing different functions or units.
+
+Since UNIX pipes can only manage bytes, usually channels with a fixed buffer are specified for performance reasons. However, in the languages we consider, we assume we can transactionally write a single complex value to a channel, resulting in the ability to send data in batch without resorting to a queue that may interleave writes.
+
+A core requirement of pipe-based languages is a semantic of process \emph{interruption}: automatic clean-up of processes that will no longer be used. Consider the following pseudo-code for a pipe-based language:
 
 \begin{verbatim}
   read-lines tmp/large-file
@@ -50,18 +64,32 @@ Consider the following pseudo-code for a shell-like language:
 In this example, three processes are spawned: (1) a process with a file open that writes one line at a time to its output, (2) a process that reads 10 times from its input, writes each entry to the output, and then exits, and (3) a process that reads every input and calls a function to perform an expensive task.
 A user's intent when typing such code may be to read 10 lines from a file and synchronously perform an action on each line.
 
-In a pipeline-based programming system such as a shell, we expect all three to be running concurrently, communicating through anonymous pipes or channels.
-A user will also expect that, after the 10 lines are processed, the file is closed, and that all three processes exit.
+In a pipe-based language, we expect all three to be running concurrently, communicating through anonymous pipes or channels.
+A user will also expect that, after the first 10 lines are processed, the file is closed, and that all three processes exit.
 This expectation is despite the fact that process (1) is specified to read the entire file, and process (3) is a theoretically infinite loop.
 
 In a naive implementation using synchronous channels, process (1) will never be able to write more than 10 lines, and will remain blocked on its output with the file open forever.
 Similarly, the \verb/each/ function will never be notified that its input has finished, and will block forever on its input stream.
 
-To meet these expectations, we need to design a semantic of process \emph{interruption}.
+\section{Design Considerations}
+\paragraph{Compensation.} In order to observe interruption, we define a system of \emph{compensation actions}, which will be run in the case of an interruption.
+For example, the function \verb/file-lines/ above could be implemented as:
 
-\section{Interrupting on Operations vs. Eager Interruption}
+\begin{verbatim}
+(file-lines ?fname) = (
+  handle = (open-file $fname) %%! close-file $fname
+  until (=> eof? $handle) (=> read-until "\n" $handle)
+  checkpoint
+)
+\end{verbatim}
 
-Consider the following example:
+In this code, the \verb/%%!/ symbol registers a compensation action that will be run either at the next \verb/checkpoint/ invocation, or when the process is interrupted. In this way, we can ensure that the file is closed when the process exits. Compensations are the only way in which interruptions can be directly observed by client code - without compensations, the only way of observing forever-blocked processes would be to inspect the process table, or observe the memory footprint of the program. Thus, the primary task of our system is \emph{to run a process's compensation actions at the appropriate time}.
+
+\paragraph{Interrupting on Operations vs. Eager Interruption.}
+
+In designing an interruption semantic, we must first decide whether processes are eagerly interrupted when their channels close, or only interrupted on channel operations.
+
+Consider the following example, with the assumption that \verb/do-other-operation/ does not write to the standard output:
 
 \begin{verbatim}
 count-forever | ( take 5; do-other-operation ) | take 5
@@ -73,9 +101,7 @@ It is important to decide, then, whether the middle process should be \emph{inte
 
 (TODO show race condition with eager-interruption)
 
-(TODO give example and show race condition with channel-reopening)
-
-\section{Channel Closing / Interruption}
+\paragraph{Channel registration.}
 
 (TODO explain guiding principle: \emph{A process is interrupted exactly when it can no longer be woken up} and the addendum \emph{without spawning new processes})
 
@@ -85,7 +111,10 @@ In traditional channel-based systems, this is difficult to detect, because a ref
 
 (TODO therefore we add the constraint that processes must only interact with specifically registered channels)
 
-\section{Description of Semantics}
+\paragraph{Closing Permanence.}
+(TODO: explain why we do not reopen channels)
+
+\section{Description of Semantics.}
 
 (TODO: \verb/{add,remove}_{reader,writer}/ are hidden intrinsics, only called automatically at process spawn and exit (even for exits that are in error). and we only allow reads/writes for processes *attached* to channels, rather than freely through channel variables. explain this)
 
