@@ -32,6 +32,7 @@ module Magritte
   load "#{LIB_DIR}/magritte/std.rb"
   load "#{LIB_DIR}/magritte/code.rb"
   load "#{LIB_DIR}/magritte/channel.rb"
+  load "#{LIB_DIR}/magritte/streamer.rb"
   load "#{LIB_DIR}/magritte/proc.rb"
   load "#{LIB_DIR}/magritte/value.rb"
   load "#{LIB_DIR}/magritte/env.rb"
