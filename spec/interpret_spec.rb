@@ -167,7 +167,7 @@ describe Magritte::Interpret do
     describe "repeat" do
       let(:input) {
         """
-        repeat 7 3
+        repeat 3 7
         """
       }
 
