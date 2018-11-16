@@ -26,7 +26,7 @@ module Magritte
     end
 
     def parse_root(skel)
-      elems = skel.elems.map do |item|
+      elems = skel.sub_items.map do |item|
         parse_line(item)
       end
       AST::Block[elems]
@@ -41,7 +41,16 @@ module Magritte
         return AST::Pipe[parse_line(before), parse_command(after)]
       end
 
+      # Match any line that has an equal sign
       item.match(lsplit(~_, token(:equal), ~_)) do |lhs, rhs|
+        # Special syntax for lambda assignment
+        lhs.match(singleton(nested(:lparen, starts(~token(:bare), ~_)))) do |var, bindings|
+          unless bindings.elems.all? { |elem| elem.token?(:bind) }
+            error!(bindings,"Invalid pattern")
+          end
+          return AST::Assignment[[parse_term(var)], [parse_lambda("anon@#{item.range.repr}", bindings, rhs)]]
+        end
+        # Normal assignment
         unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) }
           error!(lhs, "Invalid lhs")
         end
@@ -55,6 +64,14 @@ module Magritte
 
     def parse_vector(vec)
       AST::Vector[parse_terms(vec)]
+    end
+
+    def parse_lambda(name, bindings, bodies)
+      unless bindings.elems.all? { |e| e.token?(:bind) }
+        error!(term, "TODO: Support patterns")
+      end
+      patterns = bindings.elems.map { |e| AST::Binder[e.value] }
+      return AST::Lambda[name, patterns, [parse_line(bodies)]]
     end
 
     def parse_command(command)
@@ -122,11 +139,7 @@ module Magritte
 
       term.match(nested(:lparen,~_)) do |item|
         item.match(lsplit(~_, token(:arrow), ~_)) do |before, after|
-          unless before.elems.all? { |e| e.token?(:bind) }
-            error!(term, "TODO: Support patterns")
-          end
-          patterns = before.elems.map { |e| AST::Binder[e.value] }
-          return AST::Lambda["anon@#{term.range.repr}", patterns, [parse_line(after)]]
+          return parse_lambda("anon@#{term.range.repr}", before, after)
         end
 
         return AST::Subst[item.sub_items.map { |e| parse_line(e) }]

@@ -37,6 +37,10 @@ module Magritte
         :arrow,
       ])
 
+      FREE_NL = Set.new([
+        :lbrack,
+      ])
+
       def initialize(type, value, range)
         @type = type
         @value = value
@@ -56,7 +60,7 @@ module Magritte
       end
 
       def free_nl?
-        false #TODO
+        FREE_NL.include?(@type)
       end
 
       def is?(type)

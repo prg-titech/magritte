@@ -68,7 +68,7 @@ describe Magritte::Skeleton do
     }
 
     it "parses correctly" do
-      assert { tree.repr == "((.bare/s [lbrack|([lparen|.arrow .bare/c .gt .lex_var/ch|rparen]) ([lparen|.arrow .bare/d .lt .lex_var/ch|rparen])|rbrack]))" }
+      assert { tree.repr == "((.bare/s [lbrack|[lparen|.arrow .bare/c .gt .lex_var/ch|rparen] [lparen|.arrow .bare/d .lt .lex_var/ch|rparen]|rbrack]))" }
     end
   end
 

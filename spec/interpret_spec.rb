@@ -135,4 +135,33 @@ describe Magritte::Interpret do
       end
     end
   end
+
+  describe "special syntax" do
+    describe "lambda assignment" do
+      let(:input) {
+        """
+        (f ?x) = put $x
+        f 5
+        """
+      }
+
+      it do
+        assert { result == "5" }
+      end
+    end
+  end
+
+  describe "standard library" do
+    describe "range" do
+      let(:input) {
+        """
+        range 5
+        """
+      }
+
+      it do
+        assert { result == "0\n1\n2\n3\n4" }
+      end
+    end
+  end
 end

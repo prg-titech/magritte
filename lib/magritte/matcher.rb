@@ -188,8 +188,8 @@ module Magritte
         Any[args]
       end
 
-      def all(*args)
-        All[args]
+      def all(arg)
+        All[arg]
       end
 
       def _

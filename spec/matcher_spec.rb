@@ -6,9 +6,6 @@ describe Magritte::Matcher do
   let(:matcher) { raise "Abstract" }
   let(:match_vars) { matcher.match_vars(tree) }
 
-  # Maybe add functionality to match many (not just singleton) matches
-  # E.g. a b c
-
   describe "a single token" do
     let(:input) {
       """
@@ -129,6 +126,24 @@ describe Magritte::Matcher do
         assert { match_vars.size == 2 }
         assert { match_vars[0].repr == "(.bare/p1 .pipe .bare/p2)" }
         assert { match_vars[1].repr == "(.bare/p3)" }
+      end
+    end
+  end
+
+  describe "lambda" do
+    let(:input) {
+      """
+      (f ?x) = add $x 1
+      """
+    }
+
+    describe "test lsplit" do
+      let(:matcher) { lsplit(~_, token(:equal), ~_) }
+
+      it "works" do
+        assert { match_vars.size == 2 }
+        assert { match_vars[0].repr == "([lparen|.bare/f .bind/x|rparen])" }
+        assert { match_vars[1].repr == "(.bare/add .var/x .num/1)" }
       end
     end
   end

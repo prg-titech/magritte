@@ -83,6 +83,10 @@ module Magritte
     class Root < Base
       defdata :elems # Same question as for Item class
 
+      def sub_items
+        elems
+      end
+
       def repr
         "(#{elems.map(&:repr).join(" ")})"
       end
