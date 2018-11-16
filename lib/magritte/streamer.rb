@@ -42,6 +42,14 @@ module Magritte
       end
     end
 
+    def reopen!
+      @mutex.synchronize do
+        raise "Oops" if @open
+        @close_waiters.clear
+        @writers.clear
+        @open = true
+      end
+    end
   end
 
   class Collector < Streamer

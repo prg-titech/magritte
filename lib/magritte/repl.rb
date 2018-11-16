@@ -2,8 +2,12 @@ require "readline"
 module Magritte
   class REPL
     def initialize(argv)
-      @env = Env.base
       @line_num = 0
+      @mutex = Mutex.new
+      @streamer = Streamer.new do |val|
+        @mutex.synchronize { puts val.repr }
+      end
+      @env = Env.base.extend([], [@streamer])
     end
 
     def self.run(argv)
@@ -16,21 +20,21 @@ module Magritte
 
     def evaluate(source)
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
-      c = Collector.new
-      @env.own_outputs[0] = c
       Proc.spawn(Code.new { Interpret.interpret(ast) }, @env).start
-      c.wait_for_close
-      c.collection.map(&:repr).join("\n")
+      @streamer.wait_for_close
+    rescue ::Interrupt => e
+      #pass
+    ensure
+      @streamer.reopen!
     end
 
     def process_line
-      string = Readline.readline("; ", true)
+      string = @mutex.synchronize { Readline.readline("; ", true) }
       raise IOError if string.nil?
-      output = evaluate(string)
-      puts output
+      evaluate(string)
       return true
     rescue CompileError => e
-      puts "error: #{e.class.name}\n#{e.to_s}"
+      @mutex.synchronize { puts "error: #{e.class.name}\n#{e.to_s}" }
       return false
     end
 
