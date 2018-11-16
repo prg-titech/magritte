@@ -87,6 +87,11 @@ module Magritte
       new(nil, {}, [], [])
     end
 
+    def self.base
+      env = Env.empty
+      Builtins.load(env)
+    end
+
     def extend(inputs=[], outputs=[])
       self.class.new(self, {}, inputs, outputs)
     end
