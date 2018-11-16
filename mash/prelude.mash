@@ -1,0 +1,5 @@
+(range ?n) = (count-forever | take %n)
+(repeat-forever ?val) = (put %val; repeat-forever %val)
+(repeat ?val ?n) = (repeat-forever %val | take %n)
+(inc ?val) = (add %val 1)
+(dec ?val) = (add %val -1)

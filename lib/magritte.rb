@@ -14,6 +14,7 @@ module Magritte
   end
 
   LIB_DIR = File.dirname(__FILE__)
+  ROOT_DIR = File.dirname(LIB_DIR)
   load "#{LIB_DIR}/magritte/log.rb"
 
   # AST

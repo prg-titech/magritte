@@ -40,7 +40,7 @@ module Magritte
       end
 
       def repr
-        value
+        value.to_s
       end
     end
 

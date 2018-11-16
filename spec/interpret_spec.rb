@@ -160,7 +160,45 @@ describe Magritte::Interpret do
       }
 
       it do
-        assert { result == "0\n1\n2\n3\n4" }
+        assert { results == ["0", "1", "2", "3", "4"] }
+      end
+    end
+
+    describe "repeat" do
+      let(:input) {
+        """
+        repeat 7 3
+        """
+      }
+
+      it do
+        assert { results == ["7", "7", "7"] }
+      end
+    end
+
+    describe "inc" do
+      let(:input) {
+        """
+        inc 1
+        inc 5
+        """
+      }
+
+      it do
+        assert { results == ["2","6"] }
+      end
+    end
+
+    describe "dec" do
+      let(:input) {
+        """
+        dec 1
+        dec 5
+        """
+      }
+
+      it do
+        assert { results == ["0","4"] }
       end
     end
   end

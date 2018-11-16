@@ -72,7 +72,7 @@ module Magritte
     end
 
     def splice(new_parent)
-      Env.new(new_parent, @keys, @own_inputs, @own_outputs)
+      Env.new(new_parent, @keys.dup, @own_inputs.dup, @own_outputs.dup)
     end
 
     def slice(keys)

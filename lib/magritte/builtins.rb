@@ -8,7 +8,7 @@ module Magritte
       @builtins.each do |(name, func)|
         env.let(name, func)
       end
-      load_lib("Standard lib", STD_LIB, env)
+      load_file("#{ROOT_DIR}/mash/prelude.mash", env)
     end
 
     @builtins = []
@@ -94,10 +94,6 @@ module Magritte
     end
 
     # Initialize environment with functions that can be defined in the language itself
-    STD_LIB = """
-    (range ?n) = (count-forever | take %n)
-    """
-
     def self.load_lib(lib_name, source, env)
       # Transform the lib string into an ast
       ast = Parser.parse(Skeleton.parse(Lexer.new(lib_name, source)))
@@ -107,6 +103,10 @@ module Magritte
       Proc.spawn(Code.new { Interpret.interpret(ast) }, env).start
       c.wait_for_close
       env
+    end
+
+    def self.load_file(file_path, env)
+      load_lib(file_path, File.read(file_path), env)
     end
   end
 end
