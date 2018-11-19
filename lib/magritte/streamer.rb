@@ -42,14 +42,57 @@ module Magritte
       end
     end
 
-    def reopen!
+    def reset!
       @mutex.synchronize do
-        raise "Oops" if @open
+        @open = true
         @close_waiters.clear
         @writers.clear
-        @open = true
       end
     end
+  end
+
+  class InputStreamer < Channel
+    def initialize(&b)
+      @block = b
+      @readers = Set.new
+      @mutex = Mutex.new
+      @open = true
+      @queue = []
+    end
+
+    def add_reader(*); end
+    def add_writer(*); end
+    def remove_reader(*); end
+    def remove_writer(*); end
+
+    def write(*); end
+
+    def read
+      @mutex.synchronize do
+        call_out while @open && @queue.empty?
+
+        next unless @open
+
+        return @queue.shift
+      end
+
+      Proc.current.interrupt!
+    end
+
+    def reset!
+      @mutex.synchronize do
+        @open = true
+        @queue.clear
+        @readers.clear
+      end
+    end
+
+  private
+    def call_out
+      input = @block.call or return (@open = false)
+      @queue.concat(input)
+    end
+
   end
 
   class Collector < Streamer
