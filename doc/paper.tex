@@ -14,10 +14,13 @@
 \usepackage{pstricks,pst-node,pst-tree}
 \usepackage{auto-pst-pdf}
 
+% from matias
+\usepackage{balance}
+
 \usepackage{listings}
 
 
-\title{Concurrency for Pipe-based Programming}
+\title{Pipe-based Programming}
 \author{Jeanine Adkisson}
 \affiliation{\institution{Tokyo Institute of Technology}}
 \email{jneen@prg.is.titech.ac.jp}
@@ -32,16 +35,36 @@
 % find an example of named pipes
 
 \begin{abstract}
-The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes. Beyond the most simple tasks, however, \texttt{bash} and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
+Shell languages such as bash are designed to integrate with an OS, which mainly involves managing processes with implicit input and output streams. They also attempt to do this in a compact way that could be reasonably typed on a command-line interface.
 
-We explore a pipe-based programming model that attempts to synthesize the good parts of UNIX shells, departing at key points, along with a supporting concurrency model and a semantic of interruption.
+However, existing shell languages are not sufficient to serve as general-purpose languages - values are not observable except in raw streams of bytes, and they lack modern language features such as lexical scope and higher-order functions.
+
+By way of a new programming language, \emph{Magritte}, we propose a general-purpose programming language with semantics similar to bash. In this paper, we discuss the early design of such a system, in which the primary unit of composition, like bash, is processes with asynchronous inputs and outputs, which can be read from or written to at any time, and which can be chained together via a pipe operator. We also explore concurrency semantics for such a language.
+
+We explore the implementation and design challenges that come with such a model, and also show that this model is able to easily create and compose concurrent algorithms.
+The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes.
+
+% Beyond the most simple tasks, however, \texttt{bash} and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
+% %
+% We explore a pipe-based programming model that attempts to synthesize the good parts of UNIX shells, departing at key points, along with a supporting concurrency model and a semantic of interruption.
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functional and object-oriented programming suffer from a disconnect between the concept of \emph{functions} and \emph{programs}.  Whereas functions and methods receive values as arguments and return single values as a result, programs can receive data not only as arguments but also asynchronously through an input, and write results asynchronously to an output.
+%
+% In functional and object-oriented languages, this can result in not only a significant amount of abstraction overhead for dealing with external functions, but the immediacy of function arguments and return values can make composing concurrent programs difficult.
+%
+% By way of a new programming language, \emph{Magritte}, we propose a programming model in which the primary unit of composition is not immediate function arguments and return values, but instead processes with asynchronous inputs and outputs, which can be read from or written to at any time, and which can be chained together via a pipe operator, much like programs in a UNIX environment. We also explore a concurrency semantic for such a language.
+%
+% We explore many implementation and programming challenges that come with such a model, and also show that this model is able to easily create and compose concurrent algorithms that would be difficult to write or compose in a functional or object-oriented language.
+
 
 % Despite the widespread use of GUI tools for configuration and orchestration tasks, CLI tools, and more specifically shell-based interfaces remain a powerful standard for software distribution and integration. Several attempts have been made at solving the desktop-integration problem: how should we allow programs written in different languages and on different platforms to be scripted and integrated in a coherent system? The most notable attempts at this problem have been TCL(TODO: cite!) and Guile Scheme(TODO: cite!), but neither has been as succesful as they intended to be: the common language for a large portion of tools remains shell-based, relying on such concepts as standard I/O, string-based argument vectors, and the expectation that users will be able to freely pipe streams of bytes in a pipe-based way.
-% 
+%
 % Unfortunately, existing UNIX shell languages have significant known interoperability issues, such as lack of any kind of usable encapsulation, and the lack of in-language data structures to represent any kind of value other than a string. We believe that a shell-compatible language with well-defined semantics that could also function as a general-purpose systems language could go a long way towards solving the desktop-integration problem.
-% 
+%
 % On the other hand, a persistent problem with more established systems like Erlang or Go is that they don't account for closing channels, and require manual cleanup of processes. In a systems programming context, errors and hangups are commonplace and expected, and it is critical to have some measure of automatic process cleanup for even naively-written code.
-% 
+%
 % We propose a channel-based communication system that integrates with a workflow compensation system and is capable of recovering from errors and, importantly, cleaning up processes when communication halts.
 \end{abstract}
 \maketitle
@@ -95,7 +118,7 @@ Consider the following example, with the assumption that \verb/do-other-operatio
 count-forever | ( take 5; do-other-operation ) | take 5
 \end{verbatim}
 
-The middle process will write five times, and then continue to do other processing in-thread that does not write to the standard output. 
+The middle process will write five times, and then continue to do other processing in-thread that does not write to the standard output.
 The final \verb/take 5/ operation will return after 5 inputs are read.
 It is important to decide, then, whether the middle process should be \emph{interrupted} in the middle of \verb/do-other-operation/, or should it be left alone?
 
@@ -177,7 +200,7 @@ PEP 533 Authors(TODO: cite properly) describe an automatic closing system for ge
 But channel-based systems generally allow for multiple concurrent readers and writers - so automatically cleaning up a channel when a single consumer exits would cause processes that are still able to communicate to be terminated early.
 We propose a system such that processes are interrupted as soon as it is no longer possible for them to resume.
 
-The Bourne Again Shell (\"bash\") 
+The Bourne Again Shell (\"bash\")
 
 Python PEP 533; Go, Erlang; Guile Scheme, TCL;
 
@@ -185,3 +208,15 @@ Python PEP 533; Go, Erlang; Guile Scheme, TCL;
 
 
 \end{document}
+
+%# fn pipe(lhs, rhs, inp, out) {
+%#   c = channel()
+%#   go fn () { lhs(inp, c); };
+%#   rhs(c, out)
+%# }
+%#
+%# collect = collector()
+%# pipe_collect(curry(range, 10), curry(fan, 2,
+%  fn(el, inp, out) { write(el + 1, out); }
+%), inp);
+%#
