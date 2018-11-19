@@ -20,6 +20,10 @@ module Magritte
         false
       end
 
+      def nested?(type = nil)
+        false
+      end
+
       def range
         raise "Abstract"
       end
@@ -56,6 +60,11 @@ module Magritte
 
       def repr
         "[#{open.repr}|#{elems.map(&:repr).join(" ")}|#{close.repr}]"
+      end
+
+      def nested?(type = nil)
+        return true unless type
+        open.is?(type)
       end
 
       def range
