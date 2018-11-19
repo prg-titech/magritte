@@ -43,8 +43,8 @@ module Magritte
       put(get)
     end
 
-    builtin :make_channel, [] do
-      put Channel.new
+    builtin :'make-channel', [] do
+      put Value::Channel.new(Channel.new)
     end
 
     builtin :for, [:Vector] do |vec|
