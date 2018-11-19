@@ -1,23 +1,21 @@
 describe Magritte::FreeVars do
-  abstract(:expr)
-  let(:result) { Magritte::FreeVars.scan(expr) }
+  abstract(:input)
+  let(:lex) { Magritte::Lexer.new("test",input) }
+  let(:skel) { Magritte::Skeleton::Parser.parse(lex) }
+  let(:ast) { Magritte::Parser.parse_root(skel) }
+  let(:result) { Magritte::FreeVars.scan(ast) }
 
   def free_vars(node = nil)
-    node ||= expr
+    node ||= ast
     result[node]
   end
 
-  # Define helper functions for setting up tests
-  # Example: Magritte::AST::Variable["foo"] = _variable("foo")
-  Magritte::AST.constants.each do |c|
-    c = Magritte::AST.const_get(c)
-    define_method("_#{c.short_name}") do |*a|
-      c.make(*a)
-    end
-  end
-
   describe "a variable" do
-    let(:expr) { _variable("foo") }
+    let(:input) {
+      """
+      $foo
+      """
+    }
 
     it "has no free variables" do
       assert { free_vars.empty? }
@@ -25,7 +23,11 @@ describe Magritte::FreeVars do
   end
 
   describe "a lexical variable" do
-    let(:expr) { _lex_variable("foo") }
+    let(:input) {
+      """
+      %foo
+      """
+    }
 
     it "has a free variable" do
       assert { free_vars == Set.new(["foo"]) }
@@ -33,7 +35,11 @@ describe Magritte::FreeVars do
   end
 
   describe "a binder" do
-    let(:expr) { _binder("hoge") }
+    let(:input) {
+      """
+      ?x
+      """
+    }
 
     it "has no free variables" do
       assert { free_vars.empty? }
@@ -41,36 +47,61 @@ describe Magritte::FreeVars do
   end
 
   describe "a lambda" do
-    let(:expr) { _lambda("x",[_binder("foo")],[_command([_variable("hoge"),_lex_variable("bar")],[])]) }
-    let(:expr2) { _lambda("x",[_binder("foo")],[_command([_variable("hoge"),_lex_variable("foo")],[])]) }
+    describe "has a free variable" do
+      let(:input) {
+        """
+        (x ?foo) = $hoge %bar
+        """
+      }
 
-    it "has a free variables" do
-      assert { free_vars == Set.new(["bar"]) }
+      it "has a free variables" do
+        assert { free_vars == Set.new(["bar"]) }
+      end
     end
 
-    it "has no free variables" do
-      assert { Magritte::FreeVars.scan(expr2)[expr2].empty? }
+    describe "has no free variable" do
+      let(:input) {
+        """
+        (x ?foo) = $hoge %foo
+        """
+      }
+
+      it "has no free variables" do
+        assert { free_vars.empty? }
+      end
     end
   end
 
   describe "a pipe" do
-    let(:expr) { _pipe(_binder("in"),_binder("out")) }
+    let(:input) {
+      """
+      ?in | ?out
+      """
+    }
 
     it "has no free variables" do
       assert { free_vars.empty? }
     end
   end
 
-  describe "a compensation" do
-    let(:expr) { _compensation(_lex_variable("hoge"),_lex_variable("bar"),"boo") }
+  #describe "a compensation" do
+  #  let(:input) {
+  #    """
+  #    %command %% %reset
+  #    """
+  #  }
 
-    it "has a free variable" do
-      assert { free_vars == Set.new(["hoge","bar"]) }
-    end
-  end
+  #  it "has a free variable" do
+  #    assert { free_vars == Set.new(["hoge","bar"]) }
+  #  end
+  #end
 
   describe "a spawn" do
-    let(:expr) { _spawn(_block([_command([_binder("bar"),_lex_variable("foo")],[])])) }
+    let(:input) {
+      """
+      & $x %foo
+      """
+    }
 
     it "has a free variable" do
       assert { free_vars == Set.new(["foo"]) }
@@ -78,7 +109,11 @@ describe Magritte::FreeVars do
   end
 
   describe "a command" do
-    let(:expr) { _command([_lex_variable("foo"),_variable("bar")],[]) }
+    let(:input) {
+      """
+      %foo $bar
+      """
+    }
 
     it "has a free variable" do
       assert { free_vars == Set.new(["foo"]) }
@@ -86,9 +121,12 @@ describe Magritte::FreeVars do
   end
 
   describe "a block" do
-    let(:command1) { _command([_binder("foo"),_lex_variable("hoge")],[]) }
-    let(:command2) { _command([_binder("zoo"),_variable("bar")],[]) }
-    let(:expr) { _block([command1,command2]) }
+    let(:input) {
+      """
+      (foo %hoge)
+      (zoo $bar)
+      """
+    }
 
     it "has a free variable" do
       assert { free_vars == Set.new(["hoge"]) }
@@ -96,7 +134,11 @@ describe Magritte::FreeVars do
   end
 
   describe "a vector" do
-    let(:expr) { _vector([_variable("a"),_lex_variable("b")]) }
+    let(:input) {
+      """
+      [$a %b]
+      """
+    }
 
     it "has a free variable" do
       assert { free_vars == Set.new(["b"]) }

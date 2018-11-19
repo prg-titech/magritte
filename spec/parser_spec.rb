@@ -58,12 +58,12 @@ describe Magritte::Parser do
       """
     }
 
-    it "parses correctly" do
-      assert { ast.elems.size == 1 }
-      assert { ast.elems.first.is_a?(Magritte::AST::Command) }
-      assert { ast.elems.first.vec.inspect == "[#<Magritte::AST::String[\"multi-arg-command\"]>, #<Magritte::AST::String[\"arg1\"]>, #<Magritte::AST::String[\"arg2\"]>]" }
-      assert { ast.elems.first.redirects.inspect == "[#<Magritte::AST::Redirect[:<, *#<Magritte::AST::Variable[\"in\"]>]>, #<Magritte::AST::Redirect[:>, *#<Magritte::AST::Variable[\"out\"]>]>]" }
-    end
+    #it "parses correctly" do
+    #  assert { ast.elems.size == 1 }
+    #  assert { ast.elems.first.is_a?(Magritte::AST::Command) }
+    #  assert { ast.elems.first.vec.inspect == "[#<Magritte::AST::String[\"multi-arg-command\"]>, #<Magritte::AST::String[\"arg1\"]>, #<Magritte::AST::String[\"arg2\"]>]" }
+    #  assert { ast.elems.first.redirects.inspect == "[#<Magritte::AST::Redirect[:<, *#<Magritte::AST::Variable[\"in\"]>]>, #<Magritte::AST::Redirect[:>, *#<Magritte::AST::Variable[\"out\"]>]>]" }
+    #end
   end
 
   describe "lambda" do
