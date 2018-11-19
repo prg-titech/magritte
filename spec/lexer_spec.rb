@@ -1,5 +1,5 @@
 describe Magritte::Lexer do
-  let(:input) { "" }
+  abstract(:input)
   let(:lex) { Magritte::Lexer.new("test",input) }
   let(:tokens) { lex.to_a }
 

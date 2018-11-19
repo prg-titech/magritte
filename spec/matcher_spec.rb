@@ -1,6 +1,6 @@
 describe Magritte::Matcher do
   include Magritte::Matcher::DSL
-  let(:input) { "" }
+  abstract(:input)
   let(:lex) { Magritte::Lexer.new("test",input) }
   let(:tree) { Magritte::Skeleton::Parser.parse(lex).elems.first }
   let(:matcher) { raise "Abstract" }

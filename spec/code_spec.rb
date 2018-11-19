@@ -24,6 +24,7 @@ describe Magritte::Code do
 
   let(:output) { with_no_dangling_threads { code.spawn_collect } }
 
+  abstract(:code)
   def self.code(&b)
     let(:code) { Magritte::Code.new { Magritte::Code::DSL.instance_eval(&b) } }
   end

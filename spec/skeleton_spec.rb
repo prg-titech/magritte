@@ -1,5 +1,5 @@
 describe Magritte::Skeleton do
-  let(:input) { "" }
+  abstract(:input)
   let(:lex) { Magritte::Lexer.new("test",input) }
   let(:tree) { Magritte::Skeleton::Parser.parse(lex) }
 

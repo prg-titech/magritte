@@ -1,5 +1,5 @@
 describe Magritte::FreeVars do
-  let(:expr) { raise "Abstract" }
+  abstract(:expr)
   let(:result) { Magritte::FreeVars.scan(expr) }
 
   def free_vars(node = nil)
