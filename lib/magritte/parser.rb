@@ -119,10 +119,10 @@ module Magritte
       elems = terms.elems.dup
       while x = elems.shift do
         if x.token?(:bang)
-          raise "Parse Error" if out == []
+          error!(terms, 'cannot start with a !') if out == []
           source = out.pop
           lookup = elems.shift
-          raise "Parse Errror" if lookup.nil?
+          error!(terms, 'cannot end with a !') if lookup.nil?
           out << AST::Access[source, parse_term(lookup)]
         else
           out << parse_term(x)
