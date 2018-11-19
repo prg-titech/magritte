@@ -47,9 +47,13 @@ module Magritte
       defrec :target
     end
 
+    class With < Tree::Node
+      deflistrec :redirects
+      defrec :expr
+    end
+
     class Command < Tree::Node
       deflistrec :vec
-      deflistrec :redirects
 
       def initialize(*)
         super

@@ -76,23 +76,42 @@ module Magritte
 
     def parse_command(command)
       redirects = []
-      matched = true
-      while matched
-        matched = command.match(rsplit(~_, ~any(token(:gt), token(:lt)), ~_)) do |direct, before, target|
-          unless target.elems.size == 1
-            error!(Skeleton::Item[[direct]+target.elems], "Redirect target must be a single term")
+      vec = []
+      while true do
+        break if command.elems.empty?
+
+        next if command.match(starts(~any(token(:gt), token(:lt)), ~_)) do |dir, rest|
+          error!(command, 'redirect at end') if rest.elems.empty?
+          target, *rest = rest.elems
+          direction = dir.token?(:gt) ? :> : :<
+          if target.nested?(:lparen)
+            error!(target, 'TODO: redir to paren')
+          else
+            redirects << AST::Redirect[direction, parse_term(target)]
           end
-          command = before
-          redirects << AST::Redirect[direct.token?(:gt) ? :> : :<, parse_term(target.elems.first)]
+
+          command = Skeleton::Item[rest]
+        end
+
+        next if command.match(starts(~_, ~_)) do |head, rest|
+          vec << head
+          command = rest
         end
       end
 
-      command.match(singleton(nested(:lparen,~_))) do |i|
-        return parse_root(i)
+      bare_command = Skeleton::Item[vec]
+
+      bare_command.match(singleton(nested(:lparen,~_))) do |i|
+        return with(redirects, parse_root(i))
       end
 
-      vec = parse_terms(command)
-      AST::Command[vec, redirects]
+      vec = parse_terms(bare_command)
+      with(redirects, AST::Command[vec])
+    end
+
+    def with(redirects, expr)
+      return expr if redirects.empty?
+      AST::With[redirects, expr]
     end
 
     def parse_terms(terms)
