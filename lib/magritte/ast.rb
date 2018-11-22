@@ -32,6 +32,21 @@ module Magritte
       defrec :consumer
     end
 
+    class Or < Tree::Node
+      defrec :lhs
+      defrec :rhs
+    end
+
+    class And < Tree::Node
+      defrec :lhs
+      defrec :rhs
+    end
+
+    class Else < Tree::Node
+      defrec :lhs
+      defrec :rhs
+    end
+
     class Compensation < Tree::Node
       defrec :expr
       defrec :compensation

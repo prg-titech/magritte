@@ -59,6 +59,23 @@ module Magritte
         return AST::Assignment[parse_terms(lhs), parse_terms(rhs)]
       end
 
+      # Parse double &
+      item.match(lsplit(~_, token(:d_amp), ~_)) do |lhs, rhs|
+        # Check for double !
+        rhs.match(lsplit(~nay(token(:d_bar)), token(:d_bang), ~nay(token(:d_bar)))) do |lhs2, rhs2|
+          return AST::Else[AST::And[parse_line(lhs), parse_line(lhs2)], parse_line(rhs2)]
+        end
+        return AST::And[parse_line(lhs), parse_line(rhs)]
+      end
+      # Parse double |
+      item.match(lsplit(~_, token(:d_bar), ~_)) do |lhs, rhs|
+        # Check for double !
+        rhs.match(lsplit(~nay(token(:d_amp)), token(:d_bang), ~nay(token(:d_amp)))) do |lhs2, rhs2|
+          return AST::Else[AST::Or[parse_line(lhs), parse_line(lhs2)], parse_line(rhs2)]
+        end
+        return AST::Or[parse_line(lhs), parse_line(rhs)]
+      end
+
       # Default
       parse_command(item)
     end
