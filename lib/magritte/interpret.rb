@@ -77,10 +77,8 @@ module Magritte
           case bind
           when AST::String
             Proc.current.env.let(bind.value, val)
-          when AST::Variable
-            Proc.current.env.set(bind.value, val)
-          when AST::LexVariable
-            raise "TODO"
+          when AST::Variable, AST::LexVariable
+            Proc.current.env.mut(bind.name, val)
           end
         end
       end
