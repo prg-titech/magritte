@@ -155,6 +155,17 @@ module Magritte
       end
     end
 
+    class Nay < Base
+      defrec :matcher
+
+      def test(skel, &b)
+        fail! unless skel.is_a? Skeleton::Item
+        skel.elems.each do |elem|
+          fail! if self.matcher.matches?(elem, &b)
+        end
+      end
+    end
+
     module DSL
       def token(type)
         TokenType[type]
@@ -190,6 +201,10 @@ module Magritte
 
       def all(arg)
         All[arg]
+      end
+
+      def nay(arg)
+        Nay[arg]
       end
 
       def _
