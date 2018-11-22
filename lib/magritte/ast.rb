@@ -73,6 +73,10 @@ module Magritte
       deflistrec :elems
     end
 
+    class Environment < Tree::Node
+      defrec :body
+    end
+
     class Access < Tree::Node
       defrec :source
       defrec :lookup

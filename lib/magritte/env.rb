@@ -116,6 +116,9 @@ module Magritte
       ref(key).value
     end
 
+    def unhinge!
+      @parent = nil
+    end
 
   protected
     def own_key?(key)

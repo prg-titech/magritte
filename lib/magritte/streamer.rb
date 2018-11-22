@@ -49,6 +49,10 @@ module Magritte
         @writers.clear
       end
     end
+
+    def inspect_crit
+      "#<#{self.class.name}>"
+    end
   end
 
   class InputStreamer < Channel
@@ -85,6 +89,10 @@ module Magritte
         @queue.clear
         @readers.clear
       end
+    end
+
+    def inspect_crit
+      "#<#{self.class.name}>"
     end
 
   private

@@ -93,6 +93,10 @@ module Magritte
       end
     end
 
+    builtin :local, [] do
+      put(Value::Environment.new(Proc.current.env))
+    end
+
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
       # Transform the lib string into an ast

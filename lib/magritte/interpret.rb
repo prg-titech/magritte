@@ -91,6 +91,15 @@ module Magritte
         yield source.env.get(lookup.value)
       end
 
+      def visit_environment(node)
+        env = Proc.current.env.extend
+        Proc.with_env(env) do
+          visit_exec(node.body)
+        end
+        env.unhinge!
+        yield Value::Environment.new(env)
+      end
+
     private
       def visit_exec(node)
         visit(node) {}

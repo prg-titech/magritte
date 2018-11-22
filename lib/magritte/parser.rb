@@ -168,6 +168,10 @@ module Magritte
         return parse_vector(item)
       end
 
+      term.match(nested(:lbrace, ~_)) do |item|
+        return AST::Environment[parse_root(item)]
+      end
+
       error!(term, "unrecognized syntax")
     end
   end
