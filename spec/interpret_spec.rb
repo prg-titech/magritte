@@ -203,4 +203,49 @@ describe Magritte::Interpret do
       end
     end
   end
+
+  describe "environment" do
+    describe "creation" do
+      let(:input) {
+        """
+        e = {x = 1; y = 0}
+        put $e!x $e!y
+        """
+      }
+
+      it do
+        assert { results = ["1", "0"] }
+      end
+    end
+
+    describe "complex creation" do
+      let(:input) {
+        """
+        x = 1
+        y = 0
+        e = {z = $x; k = $y}
+        put $e!z $e!k
+        """
+      }
+
+      it do
+        assert { results = ["1", "0"] }
+      end
+    end
+
+    describe "nesting" do
+      let(:input) {
+        """
+        e = {g = 3}
+        e2 = {h = 4}
+        e3 = {x = $e; y = $e2}
+        put $e3!x!g $e3!y!h
+        """
+      }
+
+      it do
+        assert { results = ["3", "4"] }
+      end
+    end
+  end
 end
