@@ -98,29 +98,32 @@ describe Magritte::Interpret do
     end
 
     describe "lexical vars" do
-      let(:input) {
-        """
-        (?x => put %x) 1
-        """
-      }
+      describe "basic" do
+        let(:input) {
+          """
+          (?x => put %x) 1
+          """
+        }
 
-      it do
-        assert { result == "1" }
+        it do
+          assert { result == "1" }
+        end
       end
-    end
 
-    describe "closures" do
-      let(:input) {
-        """
-        x = 100
-        f = (?y => add %x %y)
-        x = 0
-        f 3
-        """
-      }
 
-      it do
-        assert { result == "103" }
+      describe "shadowing" do
+        let(:input) {
+          """
+          x = 100
+          f = (?y => add %x %y)
+          x = 0
+          f 3
+          """
+        }
+
+        it do
+          assert { result == "103" }
+        end
       end
     end
 
