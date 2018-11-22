@@ -161,11 +161,12 @@ describe Magritte::Interpret do
         """
         (f ?x) = put $x
         f 5
+        put $f
         """
       }
 
       it do
-        assert { result == "5" }
+        assert { results == ["5","<func:f>"] }
       end
     end
   end

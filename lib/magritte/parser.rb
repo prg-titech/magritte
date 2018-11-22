@@ -48,7 +48,8 @@ module Magritte
           unless bindings.elems.all? { |elem| elem.token?(:bind) }
             error!(bindings,"Invalid pattern")
           end
-          return AST::Assignment[[parse_term(var)], [parse_lambda("anon@#{item.range.repr}", bindings, rhs)]]
+          binding = parse_term(var)
+          return AST::Assignment[[binding], [parse_lambda(binding.value, bindings, rhs)]]
         end
         # Normal assignment
         unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) }
