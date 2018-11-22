@@ -70,7 +70,7 @@ module Magritte
       end
 
       def repr
-        env.inspect
+        env.repr
       end
     end
 

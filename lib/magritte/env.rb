@@ -120,6 +120,18 @@ module Magritte
       @parent = nil
     end
 
+    def repr
+      out = '{'
+      @keys.each do |key|
+        out << ' ' << key.first << ' = ' << key[1].value.repr << ';'
+      end
+      out = out.chomp(';')
+      if !@parent.nil?
+        out << ' + ' << @parent.repr
+      end
+      out << ' }'
+    end
+
   protected
     def own_key?(key)
       @keys.key?(key.to_s)

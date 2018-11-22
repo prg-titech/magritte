@@ -263,7 +263,20 @@ describe Magritte::Interpret do
       }
 
       it do
-        assert { results = ["3", "4"] }
+        assert { results == ["3", "4"] }
+      end
+    end
+
+    describe "printing" do
+      let(:input) {
+        """
+        e = {g = 3; x = 1}
+        put $e
+        """
+      }
+
+      it do
+        assert { result == "{ g = 3; x = 1 }" }
       end
     end
   end
