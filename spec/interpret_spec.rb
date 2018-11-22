@@ -110,6 +110,21 @@ describe Magritte::Interpret do
         end
       end
 
+      describe "mutation" do
+        let(:input) {
+          """
+          x = 1
+          (get-x) = put %x
+          (set-x ?v) = (%x = $v)
+          set-x 10
+          get-x
+          """
+        }
+
+        it do
+          assert { result == "10" }
+        end
+      end
 
       describe "shadowing" do
         let(:input) {
