@@ -48,12 +48,12 @@ describe Magritte::Lexer do
   describe "error recovery tokens" do
     let(:input) {
       """
-      ||    &&  !! %%%%!&&
+      ||  &&  !! %%%%!
       """
     }
 
     it "parses tokens correctly" do
-      assert { tokens == [_token(:bar_bar), _token(:amp_amp), _token(:excl_excl), _token(:per_per), _token(:per_per_excl), _token(:amp_amp), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:d_bar), _token(:d_amp), _token(:d_bang), _token(:d_per), _token(:d_per_bang),  _token(:nl), _token(:eof)] }
     end
   end
 

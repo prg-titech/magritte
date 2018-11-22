@@ -150,19 +150,19 @@ module Magritte
        return token(:gt)
      elsif scan /%%!/
        skip_ws
-       return token(:per_per_excl)
+       return token(:d_per_bang)
      elsif scan /%%/
        skip_ws
-       return token(:per_per)
+       return token(:d_per)
      elsif scan /!!/
        skip_ws
-       return token(:excl_excl)
+       return token(:d_bang)
      elsif scan /&&/
        skip_ws
-       return token(:amp_amp)
+       return token(:d_amp)
      elsif scan /\|\|/
        skip_ws
-       return token(:bar_bar)
+       return token(:d_bar)
      elsif scan /&/
        skip_ws
        return token(:amp)
