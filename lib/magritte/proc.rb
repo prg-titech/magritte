@@ -1,6 +1,6 @@
 module Magritte
   class Proc
-    class Interrupt < Exception
+    class Interrupt < RuntimeError
     end
 
     def self.current

@@ -36,7 +36,7 @@ module Magritte
         vec = visit_collect_all(node.vec)
         command, *args = vec
 
-        raise RuntimeError.new("Empty command") unless command
+        error!("Empty command") unless command
 
         command.call(args)
       end
