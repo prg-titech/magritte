@@ -83,6 +83,14 @@ module Magritte
         end
       end
 
+      def visit_access(node)
+        source = visit_one(node.source)
+        lookup = visit_one(node.lookup)
+        error!("Cannot lookup, non-string key #{lookup.repr}") unless lookup.is_a?(Value::String)
+        error!("Cannot lookup key #{lookup.repr} in #{source.repr}") unless source.is_a?(Value::Environment)
+        yield source.env.get(lookup.value)
+      end
+
     private
       def visit_exec(node)
         visit(node) {}
@@ -96,6 +104,16 @@ module Magritte
         out = []
         nodes.each { |child| visit(child) { |x| out << x } }
         out
+      end
+
+      def visit_one(node)
+        out = visit_collect(node)
+        error!("Must resolve to one value") unless out.size == 1
+        out.first
+      end
+
+      def error!(msg)
+        raise RuntimeError.new(msg)
       end
     end
   end
