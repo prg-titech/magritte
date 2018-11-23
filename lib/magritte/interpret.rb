@@ -100,6 +100,13 @@ module Magritte
         yield Value::Environment.new(env)
       end
 
+      def visit_compensation(node)
+        visit_exec(node.expr)
+        name = "compensation@"
+        func = Value::Function.new(name, Env.empty, [], [node.compensation])
+        Proc.current.add_compensation(Value::Compensation.new(func, node.unconditional))
+      end
+
     private
       def visit_exec(node)
         visit(node) {}

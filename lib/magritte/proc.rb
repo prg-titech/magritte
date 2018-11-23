@@ -78,6 +78,7 @@ module Magritte
       @thread = thread
       @code = code
       @env = env
+      @compensation_stack = [[]]
 
       @interrupt_mutex = LogMutex.new :interrupt
     end
@@ -127,6 +128,21 @@ module Magritte
 
     def stdin
       @env.stdin || Channel::Null.new
+    end
+
+    def compensate(&b)
+      @compensation_stack << []
+      yield
+    ensure
+      @compensation_stack.pop
+    end
+
+    def add_compensation(comp)
+      @compensation_stack[-1] << comp
+    end
+
+    def current_compensations
+      @compensation_stack[-1]
     end
 
   protected

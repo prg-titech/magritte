@@ -129,5 +129,23 @@ module Magritte
         "<builtin:#{name}>"
       end
     end
+
+    class Compensation < Base
+      attr_reader :action
+      attr_reader :uncond
+
+      def initialize(action, uncond)
+        @action = action
+        @uncond = uncond
+      end
+
+      def run
+        @action.call([])
+      end
+
+      def run_checkpoint
+        run if @uncond == :unconditional
+      end
+    end
   end
 end

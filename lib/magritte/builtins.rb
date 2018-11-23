@@ -97,6 +97,19 @@ module Magritte
       put(Value::Environment.new(Proc.current.env))
     end
 
+    builtin :compensate, [:any] do |value|
+      Proc.current.compensate do
+        begin
+          value.call([])
+        rescue RuntimeError
+          Proc.current.current_compensations.reverse_each(&:run)
+          raise
+        else
+          Proc.current.current_compensations.reverse_each(&:run_checkpoint)
+        end
+      end
+    end
+
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
       # Transform the lib string into an ast

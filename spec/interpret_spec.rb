@@ -293,4 +293,18 @@ describe Magritte::Interpret do
       end
     end
   end
+
+  describe "compensations" do
+    describe "unconditional checkpoint" do
+      let(:input) {
+        """
+        compensate (=> (put 1 %%! put 2; put 3))
+        """
+      }
+
+      it do
+        assert { results == ["1", "3", "2"] }
+      end
+    end
+  end
 end
