@@ -88,7 +88,7 @@ describe Magritte::Matcher do
       it "works" do
         assert { match_vars.size == 2 }
         assert { match_vars[0].repr == "(.lex_var/a)" }
-        assert { match_vars[1].repr == "(.bare/g .lex_var/a)" } # Is this the order we want for the captures?
+        assert { match_vars[1].repr == "(.bare/g .lex_var/a)" }
       end
     end
 
