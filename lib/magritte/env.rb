@@ -76,11 +76,11 @@ module Magritte
     end
 
     def slice(keys)
-      out = Env.empty
+      refs = {}
       keys.each do |key|
-        out.let(key, get(key))
+        refs[normalize_key(key)] = ref(key)
       end
-      out
+      Env.new(nil, refs, [], [])
     end
 
     def self.empty
