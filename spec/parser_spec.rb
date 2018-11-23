@@ -168,4 +168,61 @@ describe Magritte::Parser do
       assert { ast.elems.first.rhs.rhs.rhs.vec.first.value == "c4" }
     end
   end
+
+  describe "compensation" do
+    let(:input) {
+      """
+      c a1 %% c2 a2
+      """
+    }
+
+    it do
+      assert { ast.elems.size == 1 }
+      assert { ast.elems.first.is_a?(Magritte::AST::Compensation) }
+      assert { ast.elems.first.expr.is_a?(Magritte::AST::Command) }
+      assert { ast.elems.first.compensation.is_a?(Magritte::AST::Command) }
+      assert { ast.elems.first.expr.vec.size == 2 }
+      assert { ast.elems.first.expr.vec[0].value == "c" }
+      assert { ast.elems.first.expr.vec[1].value == "a1" }
+      assert { ast.elems.first.compensation.vec.size == 2 }
+      assert { ast.elems.first.compensation.vec[0].value == "c2" }
+      assert { ast.elems.first.compensation.vec[1].value == "a2" }
+      assert { ast.elems.first.unconditional == :conditional }
+    end
+  end
+
+  describe "compensation with checkpoints" do
+    let(:input) {
+      """
+      c a1 %%! c2 a2
+      """
+    }
+
+    it do
+      assert { ast.elems.size == 1 }
+      assert { ast.elems.first.is_a?(Magritte::AST::Compensation) }
+      assert { ast.elems.first.expr.is_a?(Magritte::AST::Command) }
+      assert { ast.elems.first.compensation.is_a?(Magritte::AST::Command) }
+      assert { ast.elems.first.expr.vec.size == 2 }
+      assert { ast.elems.first.expr.vec[0].value == "c" }
+      assert { ast.elems.first.expr.vec[1].value == "a1" }
+      assert { ast.elems.first.compensation.vec.size == 2 }
+      assert { ast.elems.first.compensation.vec[0].value == "c2" }
+      assert { ast.elems.first.compensation.vec[1].value == "a2" }
+      assert { ast.elems.first.unconditional == :unconditional }
+    end
+  end
+
+  describe "only one compensation per line" do
+    let(:input) {
+      """
+      c a1 %% c2 a2 %% c3
+      """
+    }
+
+    it do
+      err = assert_raises { ast }
+      assert { err.message =~ /\Aunrecognized syntax at test@/ }
+    end
+  end
 end

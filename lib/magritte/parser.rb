@@ -75,6 +75,14 @@ module Magritte
         end
         return AST::Or[parse_line(lhs), parse_line(rhs)]
       end
+      # Parse double %%
+      item.match(lsplit(~_, token(:d_per), ~_)) do |lhs, rhs|
+        return AST::Compensation[parse_command(lhs), parse_command(rhs), :conditional]
+      end
+      # Parse double %%!
+      item.match(lsplit(~_, token(:d_per_bang), ~_)) do |lhs, rhs|
+        return AST::Compensation[parse_command(lhs), parse_command(rhs), :unconditional]
+      end
 
       # Default
       parse_command(item)
