@@ -131,7 +131,7 @@ describe Magritte::Parser do
     end
   end
 
-  describe "switch statement" do
+  describe "if-else statement" do
     let(:input) {
       """
       cond && (command) !! cond2 && (command2)
@@ -147,6 +147,25 @@ describe Magritte::Parser do
       assert { ast.elems.first.lhs.rhs.elems.first.vec.first.value == "command" }
       assert { ast.elems.first.rhs.lhs.vec.first.value == "cond2" }
       assert { ast.elems.first.rhs.rhs.elems.first.vec.first.value == "command2" }
+    end
+  end
+
+  describe "switch statement" do
+    let(:input) {
+      """
+      cond && c !! cond2 && c2 !! cond3 && c3 !! c4
+      """
+    }
+
+    it do
+      assert { ast.elems.size == 1 }
+      assert { ast.elems.first.is_a?(Magritte::AST::Else) }
+      assert { ast.elems.first.rhs.is_a?(Magritte::AST::Else) }
+      assert { ast.elems.first.rhs.rhs.is_a?(Magritte::AST::Else) }
+      assert { ast.elems.first.lhs.is_a?(Magritte::AST::And) }
+      assert { ast.elems.first.rhs.lhs.is_a?(Magritte::AST::And) }
+      assert { ast.elems.first.rhs.rhs.lhs.is_a?(Magritte::AST::And) }
+      assert { ast.elems.first.rhs.rhs.rhs.vec.first.value == "c4" }
     end
   end
 end
