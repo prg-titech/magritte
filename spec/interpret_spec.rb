@@ -279,5 +279,18 @@ describe Magritte::Interpret do
         assert { result == "{ g = 3; x = 1 }" }
       end
     end
+
+    describe "environment functions" do
+      let(:input) {
+        """
+        e = { x = 2; (f ?y) = (put %x %y) }
+        $e!f 1
+        """
+      }
+
+      it do
+        assert { results == ["2", "1"] }
+      end
+    end
   end
 end
