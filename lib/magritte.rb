@@ -29,6 +29,7 @@ module Magritte
   load "#{LIB_DIR}/magritte/parser.rb"
 
   # Runtime
+  load "#{LIB_DIR}/magritte/status.rb"
   load "#{LIB_DIR}/magritte/std.rb"
   load "#{LIB_DIR}/magritte/code.rb"
   load "#{LIB_DIR}/magritte/channel.rb"
