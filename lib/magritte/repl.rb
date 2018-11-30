@@ -45,25 +45,23 @@ module Magritte
 
     def evaluate(source)
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
-      Proc.spawn(Code.new { Interpret.interpret(ast) }, @env).start
+      status = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env).wait
       @streamer.wait_for_close
-    rescue ::Interrupt => e
-      #pass
-      false
     rescue CompileError => e
-      @mutex.synchronize { puts "error: #{e.class.name}\n#{e.to_s}" }
-      false
+      Status[:fail, msg: "error: #{e.class.name}\n#{e.to_s}"]
     else
       @streamer.reset!
       @input.reset!
-      true
+      status
     end
 
     def process_line
       string = @mutex.synchronize { Readline.readline("; ", true) }
       raise IOError if string.nil?
       return false if string =~ /\A\s*\z/m
-      evaluate(string)
+      status = evaluate(string)
+      @mutex.synchronize { puts "% #{status.repr}" }
+      !status.fail?
     end
 
     def run

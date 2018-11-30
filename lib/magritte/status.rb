@@ -17,5 +17,17 @@ module Magritte
     def self.normal
       new(Set.new)
     end
+
+    def fail?
+      property?(:fail) || property?(:crash)
+    end
+
+    def repr
+      out = ""
+      out << "!" if fail?
+      out << "[" << @properties.to_a.join(" ") << "]"
+      out << ":" << @msg if @msg
+      out
+    end
   end
 end
