@@ -100,6 +100,23 @@ module Magritte
         yield Value::Environment.new(env)
       end
 
+      def visit_with(node)
+        inputs = []
+        outputs = []
+        redir_vals = node.redirects.map { |redirect| [redirect.direction, visit_collect(redirect.target).first] }
+        redir_vals.each do |(dir, c)|
+          error!("Cannot redirect #{dir} #{c.repr}") unless c.is_a?(Value::Channel)
+          if dir == :<
+            inputs << c.channel
+          else
+            outputs << c.channel
+          end
+        end
+        Proc.with_env(Proc.current.env.extend(inputs, outputs)) do
+          visit_exec(node.expr)
+        end
+      end
+
       def visit_compensation(node)
         visit_exec(node.expr)
         name = "compensation@"
