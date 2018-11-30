@@ -130,19 +130,8 @@ module Magritte
       @env.stdin || Channel::Null.new
     end
 
-    def compensate(&b)
-      @compensation_stack << []
-      yield
-    ensure
-      @compensation_stack.pop
-    end
-
     def add_compensation(comp)
       @compensation_stack[-1] << comp
-    end
-
-    def current_compensations
-      @compensation_stack[-1]
     end
 
   protected
@@ -158,11 +147,14 @@ module Magritte
         @env = new_env
       end
 
+      @compensation_stack << []
       yield
     rescue Interrupt
       PRINTER.puts('virtual proc interrupted')
       # pass
     ensure
+      comps = @compensation_stack.pop
+      comps.each(&:run_checkpoint)
       @interrupt_mutex.synchronize do
         @env = old_env
       end

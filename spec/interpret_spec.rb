@@ -306,5 +306,22 @@ describe Magritte::Interpret do
         assert { results == ["1", "3", "2"] }
       end
     end
+
+    describe "interrupts" do
+      let(:input) {
+        """
+        c = (make-channel)
+        exec (=> (
+          put 1 %% (put comp > %c)
+          put 2 3 4 5 6
+        )) | take 2
+        get < $c
+        """
+      }
+
+      it do
+        assert { results == ["1", "2", "comp"] }
+      end
+    end
   end
 end
