@@ -33,3 +33,4 @@ module SpecFocus
 end
 
 Minitest::Spec.send(:extend, SpecFocus::DSL)
+include SpecFocus::DSL
