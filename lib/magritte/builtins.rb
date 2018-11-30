@@ -48,7 +48,6 @@ module Magritte
     end
 
     builtin :for, [:Vector] do |vec|
-      error!("Not a vector") unless vec.is_a?(Value::Vector)
       vec.elems.each { |val| put(val) }
     end
 
