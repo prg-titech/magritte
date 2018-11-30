@@ -156,6 +156,7 @@ module Magritte
     end
 
     def with_env(new_env, &b)
+      PRINTER.p :with_env => new_env.repr
       old_env = nil
 
       @interrupt_mutex.synchronize do

@@ -111,6 +111,7 @@ module Magritte
         :close
       end
 
+      PRINTER.p(closing_channel: @id) if action == :close
       @block_set.each { |b| b.interrupt!(Status.normal) } if action == :close
     end
 
@@ -127,6 +128,7 @@ module Magritte
         :close
       end
 
+      PRINTER.p(closing_channel: @id) if action == :close
       @block_set.each { |b| b.interrupt!(Status.normal) } if action == :close
     end
 
