@@ -164,6 +164,8 @@ module Magritte
         @env = new_env
       end
 
+      open_channels
+
       @compensation_stack << []
       yield
     rescue Interrupt => e
