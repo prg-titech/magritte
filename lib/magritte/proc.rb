@@ -1,6 +1,11 @@
 module Magritte
   class Proc
     class Interrupt < RuntimeError
+      attr_reader :status
+
+      def initialize(status)
+        @status = status
+      end
     end
 
     def self.current
@@ -94,12 +99,12 @@ module Magritte
       @alive && @thread.alive?
     end
 
-    def interrupt!
+    def interrupt!(status)
       @interrupt_mutex.synchronize do
         return unless alive?
 
         # will run cleanup in the thread via the ensure block
-        @thread.raise(Interrupt.new)
+        @thread.raise(Interrupt.new(status))
       end
     end
 

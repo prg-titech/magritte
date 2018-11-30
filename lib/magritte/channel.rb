@@ -2,8 +2,8 @@ module Magritte
   class Blocker
     attr_reader :thread, :val
 
-    def interrupt!
-      @thread[:magritte_proc].interrupt!
+    def interrupt!(status)
+      @thread[:magritte_proc].interrupt!(status)
     end
 
     def wakeup
@@ -111,7 +111,7 @@ module Magritte
         :close
       end
 
-      @block_set.each(&:interrupt!) if action == :close
+      @block_set.each { |b| b.interrupt!(Status.normal) } if action == :close
     end
 
     def remove_writer(p)
@@ -127,7 +127,7 @@ module Magritte
         :close
       end
 
-      @block_set.each(&:interrupt!) if action == :close
+      @block_set.each { |b| b.interrupt!(Status.normal) } if action == :close
     end
 
     def read
@@ -160,7 +160,7 @@ module Magritte
         end
       end
 
-      Proc.current.interrupt!
+      Proc.current.interrupt!(Status.normal)
     end
 
     def write(val)
@@ -189,7 +189,7 @@ module Magritte
         end
       end
 
-      Proc.current.interrupt!
+      Proc.current.interrupt!(Status.normal)
     end
 
     def inspect
