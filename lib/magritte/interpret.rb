@@ -55,14 +55,17 @@ module Magritte
       end
 
       def visit_block(node)
-        node.elems.each { |elem| visit_exec(elem) }
-        Status.normal
+        out = Status.normal
+        node.elems.each { |elem| out = visit_exec(elem) }
+        out
       end
 
       def visit_subst(node)
+        out = Status.normal
         s_ do
-          node.elems.each { |elem| visit_exec(elem) }
+          node.elems.each { |elem| out = visit_exec(elem) }
         end.collect.each { |x| yield x }
+        out
       end
 
       def visit_pipe(node)
@@ -73,6 +76,7 @@ module Magritte
 
       def visit_spawn(node)
         s_ { visit_exec(node.expr) }.go
+        Status.normal
       end
 
       def visit_lambda(node)
@@ -90,6 +94,7 @@ module Magritte
             Proc.current.env.mut(bind.name, val)
           end
         end
+        Status.normal
       end
 
       def visit_access(node)

@@ -38,6 +38,7 @@ module Magritte
           Proc.current.checkpoint
         rescue Interrupt => e
           Proc.current.compensate
+          Thread.current[:status] = e.status
         rescue Exception => e
           PRINTER.p :exception
           PRINTER.p e
