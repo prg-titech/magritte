@@ -80,7 +80,7 @@ module Magritte
       @thread = thread
       @code = code
       @env = env
-      @compensation_stack = [[]]
+      @compensation_stack = []
 
       @interrupt_mutex = LogMutex.new :interrupt
     end
@@ -163,7 +163,7 @@ module Magritte
       PRINTER.puts('interrupt')
       compensate
 
-      interrupt!(e.status) if e.status.property?(:crash)
+      interrupt!(e.status) if @compensation_stack.any? && e.status.property?(:crash)
 
       e.status
     else
