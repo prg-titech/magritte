@@ -105,7 +105,6 @@ module Magritte
 
     def spawn
       PRINTER.p :spawn => [in_ch, out_ch, as_code]
-      # TODO: env
       Proc.spawn(as_code, @env.extend(in_ch, out_ch))
     end
 
