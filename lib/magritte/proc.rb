@@ -163,6 +163,8 @@ module Magritte
       PRINTER.puts('interrupt')
       compensate
 
+      # in the case the compensation stack is empty, there is nowhere left
+      # to raise out to, so we return the status and it gets set as @thread[:status]
       interrupt!(e.status) if @compensation_stack.any? && e.status.property?(:crash)
 
       e.status
