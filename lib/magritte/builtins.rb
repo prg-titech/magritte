@@ -56,6 +56,10 @@ module Magritte
       take(n.value.to_i)
     end
 
+    builtin :debug, [] do
+      binding.pry
+    end
+
     builtin :drain, [] do
       loop { put get }
     end
