@@ -34,16 +34,14 @@ module Magritte
           start_mutex.lock
 
           code.run
-        rescue Interrupt
-          PRINTER.puts('real proc interrupted')
-          # pass
-        rescue RuntimeError => e
-          Kernel.puts "error: #{e.class.name}\n#{e.to_s}"
-          #raise
+          Proc.current.checkpoint
+        rescue Interrupt => e
+          Proc.current.compensate
         rescue Exception => e
           PRINTER.p :exception
           PRINTER.p e
           PRINTER.puts e.backtrace
+          Proc.current.compensate
           raise
         ensure
           @alive = false
@@ -139,6 +137,16 @@ module Magritte
       @compensation_stack[-1] << comp
     end
 
+    def compensate
+      comps = @compensation_stack.pop
+      comps.each(&:run)
+    end
+
+    def checkpoint
+      comps = @compensation_stack.pop
+      comps.each(&:run_checkpoint)
+    end
+
   protected
     def with_channels(new_in, new_out, &b)
       with_env(@env.extend(new_in, new_out), &b)
@@ -154,12 +162,16 @@ module Magritte
 
       @compensation_stack << []
       yield
-    rescue Interrupt
+    rescue Interrupt => e
       PRINTER.puts('virtual proc interrupted')
-      # pass
+      compensate
+
+      if e.status.property?(:crash)
+        interrupt!(e.status)
+      end
+    else
+      checkpoint
     ensure
-      comps = @compensation_stack.pop
-      comps.each(&:run_checkpoint)
       @interrupt_mutex.synchronize do
         @env = old_env
       end

@@ -23,7 +23,7 @@ module Magritte
           ast = Parser.parse(Skeleton.parse(Lexer.new(input_name, source)))
 
           Spawn.s_ { Interpret.interpret(ast) }.collect
-        rescue CompileError, RuntimeError
+        rescue CompileError
           []
         end
       end
@@ -50,7 +50,7 @@ module Magritte
     rescue ::Interrupt => e
       #pass
       false
-    rescue CompileError, RuntimeError => e
+    rescue CompileError => e
       @mutex.synchronize { puts "error: #{e.class.name}\n#{e.to_s}" }
       false
     else

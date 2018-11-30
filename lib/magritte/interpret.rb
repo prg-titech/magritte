@@ -18,10 +18,14 @@ module Magritte
 
       def visit_variable(node)
         yield Proc.current.env.get(node.name)
+      rescue Env::MissingVariable => e
+        Proc.current.interrupt!(Status[:crash, msg: e.to_s])
       end
 
       def visit_lex_variable(node)
         yield Proc.current.env.get(node.name)
+      rescue Env::MissingVariable => e
+        Proc.current.interrupt!(Status[:crash, msg: e.to_s])
       end
 
       def visit_string(node)
@@ -146,7 +150,7 @@ module Magritte
       end
 
       def error!(msg)
-        raise RuntimeError.new(msg)
+        Proc.current.interrupt!(Status[:crash, msg: msg])
       end
     end
   end
