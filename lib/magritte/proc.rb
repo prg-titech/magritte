@@ -110,6 +110,10 @@ module Magritte
       end
     end
 
+    def crash!(msg=nil)
+      interrupt!(Status[:crash, msg: msg])
+    end
+
     def sleep
       @thread.stop
     end

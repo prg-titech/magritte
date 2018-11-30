@@ -1,12 +1,9 @@
 module Magritte
   module Value
 
-    class CallError < RuntimeError
-    end
-
     class Base
       def call(*args)
-        raise CallError.new("Can't call this! (#{self.repr})")
+        Proc.current.crash!("Can't call this! (#{self.repr})")
       end
     end
 
@@ -53,7 +50,7 @@ module Magritte
 
       def call(args)
         head, *rest = (@elems + args)
-        raise CallError.new("Empty call") if head.nil?
+        Proc.current.crash!("Empty call") if head.nil?
         head.call(rest)
       end
 
@@ -124,7 +121,7 @@ module Magritte
       def call(args)
         Std.instance_exec(*args, &@block) || Status.normal
       rescue Builtins::ArgError => e
-        Proc.current.interrupt!(Status[:crash, msg: e.to_s])
+        Proc.current.crash!(e.to_s)
       end
 
       def repr

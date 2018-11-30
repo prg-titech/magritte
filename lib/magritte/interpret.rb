@@ -52,6 +52,7 @@ module Magritte
       def visit_vector(node)
         elems = visit_collect_all(node.elems)
         yield Value::Vector.new(elems)
+        Status.normal
       end
 
       def visit_block(node)
