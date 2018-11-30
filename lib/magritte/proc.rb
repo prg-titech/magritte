@@ -33,17 +33,12 @@ module Magritte
           # wait for Proc#start
           start_mutex.lock
           Thread.current[:status] = Status[:incomplete]
-
-          Thread.current[:status] = code.run
-          Proc.current.checkpoint
-        rescue Interrupt => e
-          Proc.current.compensate
-          Thread.current[:status] = e.status
+          Thread.current[:status] = Proc.current.with_compensations { code.run }
         rescue Exception => e
           PRINTER.p :exception
           PRINTER.p e
           PRINTER.puts e.backtrace
-          Proc.current.compensate
+          Proc.current.compensate_all
           Thread.current[:status] = Status[:crash, :bug, msg: e.to_s]
           raise
         ensure
@@ -147,12 +142,32 @@ module Magritte
 
     def compensate
       comps = @compensation_stack.pop
-      comps.each(&:run)
+      return if comps.empty?
+      with_compensations { comps.each(&:run); Status.normal }
+    end
+
+    def compensate_all
+      compensate until @compensation_stack.empty?
     end
 
     def checkpoint
       comps = @compensation_stack.pop
-      comps.each(&:run_checkpoint)
+      return if comps.empty?
+      with_compensations { comps.each(&:run_checkpoint); Status.normal }
+    end
+
+    def with_compensations(&b)
+      @compensation_stack << []
+      yield
+    rescue Interrupt => e
+      PRINTER.puts('interrupt')
+      compensate
+
+      interrupt!(e.status) if e.status.property?(:crash)
+
+      e.status
+    else
+      checkpoint
     end
 
   protected
@@ -171,19 +186,7 @@ module Magritte
 
       open_channels
 
-      @compensation_stack << []
-      yield
-    rescue Interrupt => e
-      PRINTER.puts('virtual proc interrupted')
-      compensate
-
-      if e.status.property?(:crash)
-        interrupt!(e.status)
-      end
-
-      e.status
-    else
-      checkpoint
+      with_compensations { yield }
     ensure
       @interrupt_mutex.synchronize do
         @env = old_env
