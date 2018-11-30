@@ -122,7 +122,7 @@ module Magritte
       end
 
       def call(args)
-        Std.instance_exec(*args, &@block)
+        Std.instance_exec(*args, &@block) || Status.normal
       rescue Builtins::ArgError => e
         Proc.current.interrupt!(Status[:crash, msg: e.to_s])
       end

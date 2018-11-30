@@ -18,22 +18,26 @@ module Magritte
 
       def visit_variable(node)
         yield Proc.current.env.get(node.name)
+        Status.normal
       rescue Env::MissingVariable => e
         Proc.current.interrupt!(Status[:crash, msg: e.to_s])
       end
 
       def visit_lex_variable(node)
         yield Proc.current.env.get(node.name)
+        Status.normal
       rescue Env::MissingVariable => e
         Proc.current.interrupt!(Status[:crash, msg: e.to_s])
       end
 
       def visit_string(node)
         yield Value::String.new(node.value)
+        Status.normal
       end
 
       def visit_number(node)
         yield Value::Number.new(node.value)
+        Status.normal
       end
 
       def visit_command(node)
@@ -52,6 +56,7 @@ module Magritte
 
       def visit_block(node)
         node.elems.each { |elem| visit_exec(elem) }
+        Status.normal
       end
 
       def visit_subst(node)

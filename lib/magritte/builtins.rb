@@ -37,22 +37,27 @@ module Magritte
 
     builtin :put, [], :any  do |*vals|
       vals.each { |val| put(val) }
+      Status.normal
     end
 
     builtin :get, [] do
       put(get)
+      Status.normal
     end
 
     builtin :'make-channel', [] do
       put Value::Channel.new(Channel.new)
+      Status.normal
     end
 
     builtin :for, [:Vector] do |vec|
       vec.elems.each { |val| put(val) }
+      Status.normal
     end
 
     builtin :take, [:Number] do |n|
       take(n.value.to_i)
+      Status.normal
     end
 
     builtin :debug, [] do
@@ -65,6 +70,7 @@ module Magritte
 
     builtin :sleep, [:Number] do |n|
       sleep(n.value.to_f)
+      Status.normal
     end
 
     builtin :'count-forever', [] do |n|
@@ -74,30 +80,36 @@ module Magritte
 
     builtin :list, [], :any do |*a|
       put Value::Vector.new(a)
+      Status.normal
     end
 
     builtin :fan, [:Number, :any], :any do |times, fn, *a|
       times.value.to_i.times do
         Spawn.s_ { loop { fn.call([get] + a) } }.go
       end
+      Status.normal
     end
 
     builtin :add, [], :Number do |*nums|
       put Value::Number.new(nums.map { |x| x.value.to_i }.inject(0, &:+))
+      Status.normal
     end
 
     builtin :exec, [], :any do |*a|
       Value::Vector.new([]).call(a)
+      Status.normal
     end
 
     builtin :'file-lines', [:String] do |fname|
       File.foreach(fname.value) do |line|
         put(Value::String.new(line))
       end
+      Status.normal
     end
 
     builtin :local, [] do
       put(Value::Environment.new(Proc.current.env))
+      Status.normal
     end
 
     # Initialize environment with functions that can be defined in the language itself

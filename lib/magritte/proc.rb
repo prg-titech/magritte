@@ -32,8 +32,9 @@ module Magritte
         begin
           # wait for Proc#start
           start_mutex.lock
+          Thread.current[:status] = Status[:incomplete]
 
-          code.run
+          Thread.current[:status] = code.run
           Proc.current.checkpoint
         rescue Interrupt => e
           Proc.current.compensate
@@ -42,6 +43,7 @@ module Magritte
           PRINTER.p e
           PRINTER.puts e.backtrace
           Proc.current.compensate
+          Thread.current[:status] = Status[:crash, :bug, msg: e.to_s]
           raise
         ensure
           @alive = false
@@ -69,6 +71,7 @@ module Magritte
       PRINTER.p waiting: self
       start
       @thread.join
+      @thread[:status]
     end
 
     def join
@@ -169,6 +172,8 @@ module Magritte
       if e.status.property?(:crash)
         interrupt!(e.status)
       end
+
+      e.status
     else
       checkpoint
     ensure
