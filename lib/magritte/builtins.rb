@@ -112,6 +112,18 @@ module Magritte
       Status.normal
     end
 
+    builtin :true, [] do
+      Status.normal
+    end
+
+    builtin :false, [] do
+      Status[:fail]
+    end
+
+    builtin :crash, [], :String do |*a|
+      Proc.current.interrupt!(Status[:crash, msg: a.map(&:value).join(" ")])
+    end
+
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
       # Transform the lib string into an ast
