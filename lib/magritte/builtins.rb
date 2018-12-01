@@ -61,6 +61,7 @@ module Magritte
     end
 
     builtin :debug, [] do
+      require 'pry'
       binding.pry
     end
 
