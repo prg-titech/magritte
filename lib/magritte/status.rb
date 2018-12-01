@@ -29,8 +29,9 @@ module Magritte
     def repr
       out = ""
       out << "!" if fail?
-      out << "[" << @properties.to_a.join(" ") << "]"
+      out << "[" << @properties.to_a.join(" ") << "]" if @properties.any?
       out << ":" << @msg if @msg
+      out << "(normal)" if out.empty?
       out
     end
   end
