@@ -87,6 +87,8 @@ module Magritte
 
       def visit_assignment(node)
         values = visit_collect_all(node.rhs)
+        error! "not enough values for assignment" if node.lhs.size > values.size
+
         node.lhs.zip(values) do |bind, val|
           case bind
           when AST::String

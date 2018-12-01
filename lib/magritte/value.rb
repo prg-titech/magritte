@@ -98,6 +98,14 @@ module Magritte
 
       def call(args)
         env = @env.splice(Proc.current.env)
+        if args.size < bindnames.size
+          Proc.current.crash!("#{repr}: not enough arguments: #{args.size} < #{bindnames.size}")
+        end
+
+        if args.size > bindnames.size
+          binding.pry
+          Proc.current.crash!("#{repr}: too many arguments: #{args.size} > #{bindnames.size}")
+        end
         args.zip(bindnames) do |arg, bind|
           env.let(bind, arg)
         end
