@@ -1,17 +1,65 @@
 module Magritte
-  class Status
+  module Reason
+    class Base
+      def to_s
+        raise 'abstract'
+      end
+    end
 
-    def initialize(properties, msg = nil)
+    class Crash < Base
+      attr_reader :msg
+      def initialize(msg)
+        @msg = msg
+      end
+
+      def to_s
+        msg
+      end
+    end
+
+    class Close < Base
+      attr_reader :channel
+      def initialize(channel)
+        @channel = channel
+      end
+
+      def to_s
+        "channel closed: #{@channel.inspect}"
+      end
+    end
+
+    class Bug < Base
+      attr_reader :exception
+      def initialize(exception)
+        @exception = exception
+      end
+
+      def to_s
+        "internal bug: #{@exception.to_s}"
+      end
+    end
+
+    class Compile < Bug
+      def to_s
+        "compile error: #{@exception.class.name}\n#{@exception.to_s}"
+      end
+    end
+
+  end
+
+  class Status
+    attr_reader :reason
+    def initialize(properties, reason = nil)
       @properties = properties
-      @msg = msg
+      @reason = reason
     end
 
     def property?(name)
       @properties.include?(name.to_sym)
     end
 
-    def self.[](*args, msg: nil)
-      new(Set.new(args), msg)
+    def self.[](*args, reason: nil)
+      new(Set.new(args), reason)
     end
 
     def self.normal
@@ -30,7 +78,7 @@ module Magritte
       out = ""
       out << "!" if fail?
       out << "[" << @properties.to_a.join(" ") << "]" if @properties.any?
-      out << ":" << @msg if @msg
+      out << ":" << @reason.to_s if @reason
       out << "(normal)" if out.empty?
       out
     end

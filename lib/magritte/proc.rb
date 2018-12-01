@@ -39,7 +39,7 @@ module Magritte
           PRINTER.p e
           PRINTER.puts e.backtrace
           Proc.current.compensate_all
-          Thread.current[:status] = Status[:crash, :bug, msg: e.to_s]
+          Thread.current[:status] = Status[:crash, :bug, reason: Reason::Bug.new(e)]
           raise
         ensure
           @alive = false
@@ -111,7 +111,7 @@ module Magritte
     end
 
     def crash!(msg=nil)
-      interrupt!(Status[:crash, msg: msg])
+      interrupt!(Status[:crash, reason: Reason::Crash.new(msg)])
     end
 
     def sleep

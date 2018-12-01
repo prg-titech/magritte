@@ -48,7 +48,9 @@ module Magritte
       status = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env).wait
       @streamer.wait_for_close
     rescue CompileError => e
-      Status[:fail, msg: "error: #{e.class.name}\n#{e.to_s}"]
+      Status[:fail, reason: Reason::Compile.new(e)]
+    rescue ::Interrupt => e
+      Status[:crash, reason: Reason::Crash.new("interrupted")]
     else
       @streamer.reset!
       @input.reset!

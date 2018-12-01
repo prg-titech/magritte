@@ -126,7 +126,7 @@ module Magritte
     end
 
     builtin :crash, [], :String do |*a|
-      Proc.current.interrupt!(Status[:crash, msg: a.map(&:value).join(" ")])
+      Proc.current.crash!(a.map(&:value).join(" "))
     end
 
     builtin :try, [:any], :any do |h, *a|

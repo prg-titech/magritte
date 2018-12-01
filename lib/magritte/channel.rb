@@ -112,7 +112,7 @@ module Magritte
       end
 
       PRINTER.p(closing_channel: @id) if action == :close
-      @block_set.each { |b| b.interrupt!(Status.normal) } if action == :close
+      @block_set.each { |b| interrupt_process!(b) } if action == :close
     end
 
     def remove_writer(p)
@@ -129,7 +129,7 @@ module Magritte
       end
 
       PRINTER.p(closing_channel: @id) if action == :close
-      @block_set.each { |b| b.interrupt!(Status.normal) } if action == :close
+      @block_set.each { |b| interrupt_process!(b) } if action == :close
     end
 
     def read
@@ -162,7 +162,7 @@ module Magritte
         end
       end
 
-      Proc.current.interrupt!(Status.normal)
+      interrupt_process!(Proc.current)
     end
 
     def write(val)
@@ -191,7 +191,7 @@ module Magritte
         end
       end
 
-      Proc.current.interrupt!(Status.normal)
+      interrupt_process!(Proc.current)
     end
 
     def inspect
@@ -202,6 +202,10 @@ module Magritte
     end
 
     protected
+
+    def interrupt_process!(process)
+      process.interrupt!(Status[reason: Reason::Close.new(self)])
+    end
 
     def inspect_crit
       dots = '*' * @block_set.size
