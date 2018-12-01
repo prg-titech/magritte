@@ -35,11 +35,19 @@ module Magritte
     class Or < Tree::Node
       defrec :lhs
       defrec :rhs
+
+      def continue?(status)
+        status.fail?
+      end
     end
 
     class And < Tree::Node
       defrec :lhs
       defrec :rhs
+
+      def continue?(status)
+        status.normal?
+      end
     end
 
     class Else < Tree::Node

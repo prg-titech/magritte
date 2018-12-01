@@ -324,4 +324,48 @@ describe Magritte::Interpret do
       end
     end
   end
+
+  describe "conditionals" do
+    describe "simple" do
+      let(:input) {
+        """
+        true && put 1
+        false || put 2
+        true || put 3
+        false && put 4
+        """
+      }
+
+      it do
+        assert { results == ["1", "2"] }
+      end
+    end
+
+    describe "else" do
+      let(:input) {
+        """
+        true && put 1 !! put 2
+        false && put 3 !! put 4
+        true || put 5 !! put 6
+        false || put 7 !! put 8
+        """
+      }
+
+      it do
+        assert { results == ["1", "4", "6", "7"] }
+      end
+    end
+
+    describe "try" do
+      let(:input) {
+        """
+        try crash && put success !! put crashed
+        """
+      }
+
+      it do
+        assert { result == "crashed" }
+      end
+    end
+  end
 end

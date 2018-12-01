@@ -139,7 +139,31 @@ module Magritte
         Proc.current.add_compensation(Value::Compensation.new(func, node.unconditional))
       end
 
+      def visit_and(node)
+        guard(node, nil)
+      end
+
+      def visit_or(node)
+        guard(node, nil)
+      end
+
+      def visit_else(node)
+        guard(node.lhs, node.rhs)
+      end
+
     private
+      def guard(cond, else_)
+        status = visit_exec(cond.lhs)
+
+        if cond.continue?(status)
+          visit_exec(cond.rhs)
+        elsif else_
+          visit_exec(else_)
+        else
+          status
+        end
+      end
+
       def visit_exec(node)
         visit(node) {}
       end
