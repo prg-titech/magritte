@@ -88,6 +88,14 @@ module Magritte
       loop { h.call(a + [get]) }
     end
 
+    builtin :stdin, [] do
+      put Value::Channel.new(Proc.current.stdin)
+    end
+
+    builtin :stdout, [] do
+      put Value::Channel.new(Proc.current.stdout)
+    end
+
     builtin :fan, [:Number, :any], :any do |times, fn, *a|
       times.value.to_i.times do
         Spawn.s_ { loop { fn.call(a + [get]) } }.go
@@ -96,7 +104,12 @@ module Magritte
     end
 
     builtin :add, [], :Number do |*nums|
-      put Value::Number.new(nums.map { |x| x.value.to_i }.inject(0, &:+))
+      put Value::Number.new(nums.map { |x| x.value.to_f }.inject(0, &:+))
+      Status.normal
+    end
+
+    builtin :mul, [], :Number do |*nums|
+      put Value::Number.new(nums.map { |x| x.value.to_f }.inject(1, &:*))
       Status.normal
     end
 
@@ -143,6 +156,29 @@ module Magritte
 
     builtin :fail, [] do
       Proc.current.interrupt!(Status[:fail])
+    end
+
+    builtin :rand, [] do
+      put Value::Number.new(rand)
+    end
+
+    builtin :gt, [:Number, :Number] do |than, is|
+      bool(is.value.to_f > than.value.to_f)
+    end
+
+    builtin :lt, [:Number, :Number] do |than, is|
+      bool(is.value.to_f < than.value.to_f)
+    end
+
+    builtin :div, [:Number, :Number] do |den, num|
+      put Value::Number.new(num.value.to_f / den.value.to_f)
+    end
+
+    builtin :filter, [:any], :any do |h, *a|
+      loop do
+        val = get
+        put val unless h.call(a + [val]).fail?
+      end
     end
 
     # Initialize environment with functions that can be defined in the language itself

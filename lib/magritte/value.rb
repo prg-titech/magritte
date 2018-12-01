@@ -37,7 +37,7 @@ module Magritte
       end
 
       def repr
-        value.to_s
+        value.to_s.gsub(/\.0$/, '')
       end
     end
 

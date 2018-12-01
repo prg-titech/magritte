@@ -11,6 +11,10 @@ module Magritte
       out
     end
 
+    def bool(b)
+      b ? Status.normal : Status[:fail]
+    end
+
     def make_channel
       Channel.new
     end
