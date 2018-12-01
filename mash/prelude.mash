@@ -5,6 +5,22 @@
 (repeat ?n ?val) = (repeat-forever %val | take %n)
 (inc ?val) = (add %val 1)
 (dec ?val) = (add %val -1)
+
+
+(prob ?total ?amt) = (lt %amt (mul %total (rand)))
+
+(sample) = (
+  hold = (get)
+  i = 1
+  each (?v => (
+    # local
+    $i = (inc $i)
+    prob $i 1 && ($hold = %v)
+  ))
+
+  put $hold
+)
+
 (produce ?fn) = (loop-channel (stdout) $fn)
 (consume ?fn) = (loop-channel (stdin) $fn)
 
