@@ -72,13 +72,26 @@ describe Magritte::Code do
     # for [0 1 2 3] | map [mul 2]
     code do
       s { for_ (0..3) }
-        .p { loop { put (get * 2) } }.call
+        .p { map { |x| x * 2 } }.call
 
       put 10
     end
 
     it 'returns normally' do
       assert { output == [0, 2, 4, 6, 10] }
+    end
+  end
+
+  describe 'regular looping' do
+    code do
+      s { for_ (0..3) }
+        .p { loop { put (get * 2) } }.call
+
+      raise "never reached"
+    end
+
+    it 'interrupts the parent process' do
+      assert { output == [0, 2, 4, 6] }
     end
   end
 

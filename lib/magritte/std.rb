@@ -11,6 +11,21 @@ module Magritte
       out
     end
 
+    def loop_channel(c, &b)
+      loop { b.call }
+    rescue Proc::Interrupt => e
+      reason = e.status.reason
+      raise unless reason && reason.is_a?(Reason::Close) && reason.channel == c
+    end
+
+    def produce(&b)
+      loop_channel(Proc.current.stdout, &b)
+    end
+
+    def consume(&b)
+      loop_channel(Proc.current.stdin, &b)
+    end
+
     def bool(b)
       b ? Status.normal : Status[:fail]
     end
@@ -24,15 +39,11 @@ module Magritte
     end
 
     def each
-      loop do
-        yield get
-      end
+      consume { yield get }
     end
 
     def map
-      loop do
-        put (yield get)
-      end
+      consume { put (yield get) }
     end
 
     def take(n)

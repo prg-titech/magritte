@@ -1,5 +1,12 @@
+# __repr__ = (=> put "<root>")
+
 (range ?n) = (count-forever | take %n)
 (repeat-forever ?val) = (put %val; repeat-forever %val)
 (repeat ?n ?val) = (repeat-forever %val | take %n)
 (inc ?val) = (add %val 1)
 (dec ?val) = (add %val -1)
+(produce ?fn) = (loop-channel (stdout) $fn)
+(consume ?fn) = (loop-channel (stdin) $fn)
+
+(iter ?fn ?a) = (produce (=> (put %a; %a = (%fn %a))))
+(each ?fn) = (consume (=> %fn (get)))

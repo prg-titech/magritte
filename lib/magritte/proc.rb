@@ -195,7 +195,7 @@ module Magritte
 
       open_channels
 
-      with_compensations { yield }
+      yield
     ensure
       @interrupt_mutex.synchronize do
         @env = old_env

@@ -66,7 +66,7 @@ module Magritte
     end
 
     builtin :drain, [] do
-      loop { put get }
+      consume { put get }
     end
 
     builtin :sleep, [:Number] do |n|
@@ -76,7 +76,7 @@ module Magritte
 
     builtin :'count-forever', [] do |n|
       i = 0
-      loop { put Value::Number.new(i); i += 1 }
+      produce { put Value::Number.new(i); i += 1 }
     end
 
     builtin :list, [], :any do |*a|
@@ -84,8 +84,10 @@ module Magritte
       Status.normal
     end
 
-    builtin :each, [:any], :any do |h, *a|
-      loop { h.call(a + [get]) }
+    builtin :'loop-channel', [:Channel, :any], :any do |c, h, *a|
+      channel = c.channel
+
+      loop_channel(c.channel) { h.call(a) }
     end
 
     builtin :stdin, [] do
@@ -98,7 +100,7 @@ module Magritte
 
     builtin :fan, [:Number, :any], :any do |times, fn, *a|
       times.value.to_i.times do
-        Spawn.s_ { loop { fn.call(a + [get]) } }.go
+        Spawn.s_ { consume { fn.call(a + [get]) } }.go
       end
       Status.normal
     end
@@ -175,7 +177,7 @@ module Magritte
     end
 
     builtin :filter, [:any], :any do |h, *a|
-      loop do
+      consume do
         val = get
         put val unless h.call(a + [val]).fail?
       end
