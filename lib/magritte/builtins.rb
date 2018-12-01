@@ -124,6 +124,22 @@ module Magritte
       Proc.current.interrupt!(Status[:crash, msg: a.map(&:value).join(" ")])
     end
 
+    builtin :try, [:any], :any do |h, *a|
+      begin
+        h.call(a)
+      rescue Proc::Interrupt => e
+        e.status
+      end
+    end
+
+    builtin :return, [] do
+      Proc.current.interrupt!(Status.normal)
+    end
+
+    builtin :fail, [] do
+      Proc.current.interrupt!(Status[:fail])
+    end
+
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
       # Transform the lib string into an ast

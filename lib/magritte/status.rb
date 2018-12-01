@@ -18,6 +18,10 @@ module Magritte
       new(Set.new)
     end
 
+    def normal?
+      @properties.empty?
+    end
+
     def fail?
       property?(:fail) || property?(:crash)
     end
