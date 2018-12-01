@@ -67,6 +67,11 @@ module Magritte
       PRINTER.p waiting: self
       start
       @thread.join
+
+      if Proc.current?
+        Proc.current.interrupt!(@thread[:status]) if @thread[:status].property?(:crash)
+      end
+
       @thread[:status]
     end
 
@@ -158,7 +163,7 @@ module Magritte
 
     def with_compensations(&b)
       @compensation_stack << []
-      yield
+      status = yield
     rescue Interrupt => e
       PRINTER.puts('interrupt')
       compensate
@@ -170,6 +175,8 @@ module Magritte
       e.status
     else
       checkpoint
+
+      status
     end
 
   protected
