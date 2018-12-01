@@ -83,9 +83,13 @@ module Magritte
       Status.normal
     end
 
+    builtin :each, [:any], :any do |h, *a|
+      loop { h.call(a + [get]) }
+    end
+
     builtin :fan, [:Number, :any], :any do |times, fn, *a|
       times.value.to_i.times do
-        Spawn.s_ { loop { fn.call([get] + a) } }.go
+        Spawn.s_ { loop { fn.call(a + [get]) } }.go
       end
       Status.normal
     end
