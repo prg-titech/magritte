@@ -121,15 +121,7 @@ module Magritte
     end
 
     def repr
-      out = '{'
-      @keys.each do |key|
-        out << ' ' << key.first << ' = ' << key[1].value.repr << ';'
-      end
-      out = out.chomp(';')
-      if !@parent.nil?
-        out << ' + ' << @parent.repr
-      end
-      out << ' }'
+      recursive_repr([])
     end
 
   protected
@@ -164,6 +156,27 @@ module Magritte
   private
     def parent(method, *a, &b)
       @parent && @parent.__send__(method, *a, &b)
+    end
+
+    def recursive_repr(visited_envs)
+      if visited_envs.include? self
+        return "<circular>"
+      end
+      visited_envs << self
+
+      out = "{"
+
+      env_content = []
+      env_content.concat (@keys.map { |key| " #{key.first} = #{key[1].value.repr}" })
+      env_content.concat (@own_inputs.map { |input| " < #{input.inspect}" })
+      env_content.concat (@own_outputs.map { |output| " > #{output.inspect}" })
+
+      out << env_content.join(";")
+
+      if !@parent.nil?
+        out << " + #{@parent.repr}"
+      end
+      out << " }"
     end
   end
 end
