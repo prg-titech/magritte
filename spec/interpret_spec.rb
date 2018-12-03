@@ -210,6 +210,41 @@ describe Magritte::Interpret do
         assert { result == "4" }
       end
     end
+
+    describe "lambda body stretching multiple lines" do
+      let(:input) {
+        """
+        (f ?x) = (
+          y = (inc %x)
+          z = (inc $y) # Might be a bug, but if you change $y to %y then y is apparently a free variable
+          put $z
+        )
+        put (f 5)
+        """
+      }
+
+      it do
+        assert { result == "7" }
+      end
+    end
+
+    describe "nested lambda body stretching multiple lines" do
+      let(:input) {
+        """
+        (f ?x ?y) = (
+          z = (?a => (
+              put (dec $a) 1
+          ))
+          put (z $x) $y
+        )
+        put (f 1 2)
+        """
+      }
+
+      it do
+        assert { results == ["0", "1", "2"] }
+      end
+    end
   end
 
   describe "standard library" do

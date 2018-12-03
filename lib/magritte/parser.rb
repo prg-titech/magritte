@@ -115,7 +115,7 @@ module Magritte
         error!(term, "TODO: Support patterns")
       end
       patterns = bindings.elems.map { |e| AST::Binder[e.value] }
-      return AST::Lambda[name, patterns, [parse_line(bodies)]]
+      return AST::Lambda[name, patterns, [parse_root(bodies)]]
     end
 
     def parse_command(command)
