@@ -44,15 +44,33 @@ module Magritte
       # Match any line that has an equal sign
       item.match(lsplit(~_, token(:equal), ~_)) do |lhs, rhs|
         # Special syntax for lambda assignment
-        lhs.match(singleton(nested(:lparen, starts(~token(:bare), ~_)))) do |var, bindings|
+        lhs.match(singleton(nested(:lparen, starts(~any(token(:bare),token(:var)), ~_)))) do |var, bindings|
+          # Determine whether we got a bare word or an access variable
+          is_bare = var.token?(:bare)
+          # Check that there're at least 2 elements in binding unless we have a bare word as a variable
+          # These two elements should be the bang token and bare token used in an access
+          unless is_bare || bindings.elems.length > 1
+            error!(var,"Invalid access variable")
+          end
+          # Pop the bang and bare token used for access and put it in the variable
+          if !is_bare
+            var = Skeleton::Item[[var, bindings.elems.shift, bindings.elems.shift]]
+          end
+          # Check all remainding bindings are actually bindings
           unless bindings.elems.all? { |elem| elem.token?(:bind) }
             error!(bindings,"Invalid pattern")
           end
-          binding = parse_term(var)
-          return AST::Assignment[[binding], [parse_lambda(binding.value, bindings, rhs)]]
+          if is_bare
+            var = parse_term(var)
+            return AST::Assignment[[var], [parse_lambda(var.value, bindings, rhs)]]
+          else
+            var = parse_terms(var)
+            return AST::Assignment[var, [parse_lambda(var.first.lookup, bindings, rhs)]]
+          end
         end
+
         # Normal assignment
-        unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) }
+        unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) || elem.token?(:bang) }
           error!(lhs, "Invalid lhs")
         end
 

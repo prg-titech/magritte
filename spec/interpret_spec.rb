@@ -110,6 +110,33 @@ describe Magritte::Interpret do
         end
       end
 
+      describe "assignment" do
+        let(:input) {
+          """
+          x = 2
+          put $x
+          """
+        }
+
+        it do
+          assert { result == "2" }
+        end
+      end
+
+      describe "access assignment" do
+        let(:input) {
+          """
+          e = { v = 2 }
+          $e!v = 13
+          put $e!v
+          """
+        }
+
+        it do
+          assert { result == "13" }
+        end
+      end
+
       describe "mutation" do
         let(:input) {
           """
@@ -167,6 +194,20 @@ describe Magritte::Interpret do
 
       it do
         assert { results == ["5","<func:f>"] }
+      end
+    end
+
+    describe "lambda assignment with access expression" do
+      let(:input) {
+        """
+        e = { f = 5 }
+        ($e!f ?x) = (inc %x)
+        put ($e!f 3)
+        """
+      }
+
+      it do
+        assert { result == "4" }
       end
     end
   end

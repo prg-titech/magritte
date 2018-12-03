@@ -95,6 +95,13 @@ module Magritte
             Proc.current.env.let(bind.value, val)
           when AST::Variable, AST::LexVariable
             Proc.current.env.mut(bind.name, val)
+          when AST::Access
+            # Pretty much code duplication with visist_access, should be improved
+            source = visit_one(bind.source)
+            lookup = visit_one(bind.lookup)
+            error!("Cannot lookup, non-string key #{lookup.repr}") unless lookup.is_a?(Value::String)
+            error!("Cannot lookup key #{lookup.repr} in #{source.repr}") unless source.is_a?(Value::Environment)
+            source.env.let(lookup.value, val)
           end
         end
         Status.normal
