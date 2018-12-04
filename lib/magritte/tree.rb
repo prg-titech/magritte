@@ -198,24 +198,24 @@ module Magritte
         @collection = Hash.new
       end
 
-      def visit(node)
-        collection[node] ||= node.accept(self)
+      def visit(node, *args)
+        collection[node] ||= node.accept(self, *args)
       end
 
-      def visit_default(node)
-        collect_from(node)
+      def visit_default(node, *args)
+        collect_from(node, *args)
       end
 
-      def collect(node)
-        visit(node)
+      def collect(node, *args)
+        visit(node, *args)
         collection
       end
 
     protected
-      def collect_from(enum)
+      def collect_from(enum, *args)
         out = Set.new
         enum.each do |child|
-          out.merge(visit(child))
+          out.merge(visit(child, *args))
         end
         out
       end

@@ -216,7 +216,7 @@ describe Magritte::Interpret do
         """
         (f ?x) = (
           y = (inc %x)
-          z = (inc $y) # Might be a bug, but if you change $y to %y then y is apparently a free variable
+          z = (inc %y)
           put $z
         )
         put (f 5)

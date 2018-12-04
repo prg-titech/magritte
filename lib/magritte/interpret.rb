@@ -2,14 +2,19 @@ module Magritte
   module Interpret
 
     def self.interpret(ast)
-      Interpreter.new.interpret(ast)
+      Interpreter.new(ast).interpret
     end
 
     class Interpreter < Tree::Walker
       include Code::DSL
 
-      def interpret(ast)
-        visit_exec(ast)
+      def initialize(root)
+        @root = root
+        @free_vars = FreeVars.scan(@root)
+      end
+
+      def interpret
+        visit_exec(@root)
       end
 
       def visit_default(node)
@@ -81,7 +86,7 @@ module Magritte
       end
 
       def visit_lambda(node)
-        free_vars = FreeVars.of(node)
+        free_vars = @free_vars[node]
         yield Value::Function.new(node.name, Proc.current.env.slice(free_vars), node.patterns.map(&:name), node.bodies)
       end
 
