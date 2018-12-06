@@ -123,6 +123,34 @@ describe Magritte::Interpret do
         end
       end
 
+      describe "dynamic assignment" do
+        let(:input) {
+          """
+          x = 2
+          $x = -1
+          put $x
+          """
+        }
+
+        it do
+          assert { result == "-1" }
+        end
+      end
+
+      describe "lexical assignment" do
+        let(:input) {
+          """
+          x = 2
+          %x = -1
+          put $x
+          """
+        }
+
+        it do
+          assert { result == "-1" }
+        end
+      end
+
       describe "access assignment" do
         let(:input) {
           """
@@ -187,6 +215,36 @@ describe Magritte::Interpret do
       let(:input) {
         """
         (f ?x) = put $x
+        f 5
+        put $f
+        """
+      }
+
+      it do
+        assert { results == ["5","<func:f>"] }
+      end
+    end
+
+    describe "lambda assignment with dynamic var" do
+      let(:input) {
+        """
+        f = 1
+        ($f ?x) = put $x
+        f 5
+        put $f
+        """
+      }
+
+      it do
+        assert { results == ["5","<func:f>"] }
+      end
+    end
+
+    describe "lambda assignment with lexical var" do
+      let(:input) {
+        """
+        f = 1
+        (%f ?x) = put $x
         f 5
         put $f
         """
