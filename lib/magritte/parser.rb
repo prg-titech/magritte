@@ -43,38 +43,7 @@ module Magritte
 
       # Match any line that has an equal sign
       item.match(lsplit(~_, token(:equal), ~_)) do |lhs, rhs|
-        # Special syntax for lambda assignment
-        lhs.match(singleton(nested(:lparen, starts(~any(token(:bare),token(:var)), ~_)))) do |var, bindings|
-          # Determine whether we got a bare word or an access variable
-          is_bare = var.token?(:bare)
-          # Check that there're at least 2 elements in binding unless we have a bare word as a variable
-          # These two elements should be the bang token and bare token used in an access
-          unless is_bare || bindings.elems.length > 1
-            error!(var,"Invalid access variable")
-          end
-          # Pop the bang and bare token used for access and put it in the variable
-          if !is_bare
-            var = Skeleton::Item[[var, bindings.elems.shift, bindings.elems.shift]]
-          end
-          # Check all remainding bindings are actually bindings
-          unless bindings.elems.all? { |elem| elem.token?(:bind) }
-            error!(bindings,"Invalid pattern")
-          end
-          if is_bare
-            var = parse_term(var)
-            return AST::Assignment[[var], [parse_lambda(var.value, bindings, rhs)]]
-          else
-            var = parse_terms(var)
-            return AST::Assignment[var, [parse_lambda(var.first.lookup, bindings, rhs)]]
-          end
-        end
-
-        # Normal assignment
-        unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) || elem.token?(:bang) }
-          error!(lhs, "Invalid lhs")
-        end
-
-        return AST::Assignment[parse_terms(lhs), parse_terms(rhs)]
+        return parse_assignment(lhs, rhs)
       end
 
       # Parse double &
@@ -108,6 +77,40 @@ module Magritte
 
     def parse_vector(vec)
       AST::Vector[parse_terms(vec)]
+    end
+
+    def parse_assignment(lhs, rhs)
+      # Check if lhs have parenthesis
+      # In this case we're doing a special lambda assigment
+      lhs.match(singleton(nested(:lparen, starts(~_, ~_)))) do |var, bindings|
+        lambda_name = ""
+
+        # If we have an access variable we need to move the bang + one more token
+        # to the var
+        if !var.token?(:bare) && bindings.elems.length > 1 && bindings.elems.first.token?(:bang)
+          var = Skeleton::Item[[var, bindings.elems.shift, bindings.elems.shift]]
+          lambda_name = var.elems[2].value
+        else
+          # Note: we are only encapulating var inside an Item in this case
+          # so we can call parse_terms no matter which situation we are in
+          var = Skeleton::Item[[var]]
+          lambda_name = var.elems[0].value
+        end
+
+        # Check all remainding bindings are actually bindings
+        unless bindings.elems.all? { |elem| elem.token?(:bind) }
+          error!(bindings,"Invalid pattern")
+        end
+
+        return AST::Assignment[parse_terms(var), [parse_lambda(lambda_name, bindings, rhs)]]
+      end
+
+      # Normal assignment
+      unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) || elem.token?(:bang) }
+        error!(lhs, "Invalid lhs")
+      end
+
+      return AST::Assignment[parse_terms(lhs), parse_terms(rhs)]
     end
 
     def parse_lambda(name, bindings, bodies)
