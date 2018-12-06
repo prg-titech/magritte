@@ -362,7 +362,7 @@ describe Magritte::Interpret do
       let(:input) {
         """
         e = {x = 1; y = 0}
-        put $e!x $e!y
+        put %e!x %e!y
         """
       }
 
