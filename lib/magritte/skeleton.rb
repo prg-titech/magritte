@@ -132,7 +132,7 @@ module Magritte
       end
 
       def parse(lexer)
-        loop do # Is there any reason why we do a "loop do" instead of "lexer.each do |token|"
+        loop do
           token = lexer.next
           if token.eof? and @open.nil?
             return Root[items]
