@@ -117,7 +117,6 @@ module Magritte
         end
 
         if args.size > bindnames.size
-          binding.pry
           Proc.current.crash!("#{repr}: too many arguments: #{args.size} > #{bindnames.size}")
         end
         args.zip(bindnames) do |arg, bind|
