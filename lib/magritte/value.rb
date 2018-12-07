@@ -10,8 +10,16 @@ module Magritte
     class String < Base
       attr_reader :value
 
+      def to_s
+        @value
+      end
+
       def initialize(value)
         @value = value
+      end
+
+      def ==(other)
+        other.is_a?(self.class) && other.value = @value
       end
 
       def call(args)
@@ -38,6 +46,10 @@ module Magritte
 
       def repr
         value.to_s.gsub(/\.0$/, '')
+      end
+
+      def to_s
+        repr
       end
     end
 
