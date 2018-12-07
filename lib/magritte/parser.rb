@@ -204,8 +204,21 @@ module Magritte
       end
 
       term.match(nested(:lparen,~_)) do |item|
+        # Anon lambda spanning one line
         item.match(lsplit(~_, token(:arrow), ~_)) do |before, after|
           return parse_lambda("anon@#{term.range.repr}", before, after)
+        end
+
+        # Anon lambda spanning multiple lines
+        item.elems.first.match(lsplit(~_, token(:arrow), ~_)) do |bindings, body|
+          name = "anon@#{term.range.repr}"
+          bodies = item.elems.drop(1).unshift(body)
+
+          unless bindings.elems.all? { |e| e.token?(:bind) }
+            error!(term, "TODO: Support patterns")
+          end
+          patterns = bindings.elems.map { |e| AST::Binder[e.value] }
+          return AST::Lambda[name, patterns, [AST::Block[bodies.map { |body| parse_line(body) }]]]
         end
 
         return AST::Subst[item.sub_items.map { |e| parse_line(e) }]

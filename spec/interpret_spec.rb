@@ -303,6 +303,18 @@ describe Magritte::Interpret do
         assert { results == ["0", "1", "2"] }
       end
     end
+
+    describe "lambda body with anon lambda" do
+      let(:input) {
+        """
+        put 1 2 3 | each (?a => put 10; put $a)
+        """
+      }
+
+      it do
+        assert { results == %w(10 1 10 2 10 3) }
+      end
+    end
   end
 
   describe "standard library" do
