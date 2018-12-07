@@ -33,17 +33,22 @@ module Magritte
           # wait for Proc#start
           start_mutex.lock
           Thread.current[:status] = Status[:incomplete]
-          Thread.current[:status] = Proc.current.with_compensations { code.run }
+          Thread.current[:status] = begin
+            code.run
+          rescue Interrupt => e
+            Proc.current.compensate(e)
+          end
         rescue Exception => e
           PRINTER.p :exception
           PRINTER.p e
           PRINTER.puts e.backtrace
-          Proc.current.compensate_all
-          Thread.current[:status] = Status[:crash, :bug, reason: Reason::Bug.new(e)]
+          status = Status[:crash, :bug, reason: Reason::Bug.new(e)]
+          Proc.current.compensate_all(status)
+          Thread.current[:status] = status
           raise
         ensure
           @alive = false
-          Proc.current.cleanup!
+          Proc.current.checkpoint_all
           PRINTER.puts('exiting')
         end
       end
@@ -79,20 +84,29 @@ module Magritte
       alive? && @thread.join
     end
 
-    attr_reader :thread, :env
+    attr_reader :thread
     def initialize(thread, code, env)
       @alive = false
       @thread = thread
       @code = code
       @env = env
-      @compensation_stack = []
+      @stack = []
 
       @interrupt_mutex = LogMutex.new :interrupt
     end
 
+    def env
+      frame.env
+    end
+
+    def frame
+      @stack.last
+    end
+
     def start
       @alive = true
-      open_channels
+      @stack << Frame.new(@env, self)
+      frame.open_channels
       @thread[:magritte_start_mutex].unlock
       self
     end
@@ -122,61 +136,34 @@ module Magritte
       @thread.run
     end
 
-    def cleanup!
-      PRINTER.p :cleanup => self
-      @env.each_input { |c| c.remove_reader(self) }
-      @env.each_output { |c| c.remove_writer(self) }
-    end
-
-    def open_channels
-      @env.each_input { |c| c.add_reader(self) }
-      @env.each_output { |c| c.add_writer(self) }
-    end
-
     def stdout
-      @env.stdout || Channel::Null.new
+      env.stdout || Channel::Null.new
     end
 
     def stdin
-      @env.stdin || Channel::Null.new
+      env.stdin || Channel::Null.new
     end
 
     def add_compensation(comp)
-      @compensation_stack[-1] << comp
+      frame.add_compensation(comp)
     end
 
-    def compensate
-      comps = @compensation_stack.pop
-      return if comps.empty?
-      with_compensations { comps.each(&:run); Status.normal }
-    end
-
-    def compensate_all
-      compensate until @compensation_stack.empty?
+    def compensate(status)
+      frame = @stack.pop
+      frame.compensate(status)
     end
 
     def checkpoint
-      comps = @compensation_stack.pop
-      return if comps.empty?
-      with_compensations { comps.each(&:run_checkpoint); Status.normal }
+      frame = @stack.pop
+      frame.checkpoint
     end
 
-    def with_compensations(&b)
-      @compensation_stack << []
-      status = yield
-    rescue Interrupt => e
-      PRINTER.puts('interrupt')
-      compensate
+    def compensate_all(e)
+      compensate(e) until @stack.empty?
+    end
 
-      # in the case the compensation stack is empty, there is nowhere left
-      # to raise out to, so we return the status and it gets set as @thread[:status]
-      interrupt!(e.status) if @compensation_stack.any? && e.status.property?(:crash)
-
-      e.status
-    else
-      checkpoint
-
-      status
+    def checkpoint_all
+      checkpoint until @stack.empty?
     end
 
   protected
@@ -185,24 +172,25 @@ module Magritte
     end
 
     def with_env(new_env, &b)
-      PRINTER.p :with_env => new_env.repr
-      old_env = nil
+      stack_size = @stack.size
 
       @interrupt_mutex.synchronize do
-        old_env = @env
-        @env = new_env
+        frame = Frame.new(new_env, self)
+        PRINTER.p :stack => @stack
+        @stack << frame
       end
 
-      open_channels
+      frame.open_channels
 
       yield
-    ensure
-      @interrupt_mutex.synchronize do
-        @env = old_env
-      end
-
-      new_env.own_inputs.each { |c| c.remove_reader(self) }
-      new_env.own_outputs.each { |c| c.remove_writer(self) }
+    rescue Interrupt => e
+      compensate(e)
+      PRINTER.p :interrupt => @stack
+      raise
+    else
+      binding.pry if stack_size+1 != @stack.size
+      checkpoint
+      PRINTER.p :checkpoint => @stack
     end
   end
 end
