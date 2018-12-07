@@ -26,6 +26,8 @@ module Magritte
         # Semantics: Look up the thing in current env and call it
         # Proc.current.env
         Proc.current.env.get(@value).call(args)
+      rescue Env::MissingVariable => e
+        Proc.current.crash!(e.to_s)
       end
 
       def repr
