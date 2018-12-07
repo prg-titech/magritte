@@ -513,5 +513,44 @@ describe Magritte::Interpret do
         assert { result == "crashed" }
       end
     end
+
+    describe "interrupts on redirections" do
+      let(:input) {
+        """
+        c = (make-channel)
+        & put 1 2 3 > $c
+        drain < $c
+        (dr) = (put (get); dr)
+        dr < $c
+
+        # we never get here, because we get
+        # interrupted by the above
+        put 4
+        """
+      }
+
+      it do
+        assert { results == %w(1 2 3) }
+      end
+    end
+
+    describe "get masking" do
+      let(:input) {
+        """
+        c = (make-channel)
+        & put 1 > $c
+        get < $c
+        get < $c
+
+        # we never get here, because we get interrupted
+        # by the above
+        put 4
+        """
+      }
+
+      it do
+        assert { results == %w(1) }
+      end
+    end
   end
 end
