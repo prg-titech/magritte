@@ -17,6 +17,10 @@ module Magritte
         shadow(node.bodies, bound_vars, to_bind)
       end
 
+      def visit_subst(node, bound_vars)
+        visit_block(node, bound_vars)
+      end
+
       def visit_block(node, bound_vars)
         out = Set.new
         so_far = Set.new
