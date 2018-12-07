@@ -45,16 +45,15 @@ module Magritte
 
     def evaluate(source)
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
-      status = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env).wait
+      p = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env)
+      status = p.wait
       @streamer.wait_for_close
     rescue CompileError => e
       Status[:fail, reason: Reason::Compile.new(e)]
-    rescue ::Interrupt => e
-      Status[:crash, reason: Reason::Crash.new("interrupted")]
     else
-      @streamer.reset!
-      @input.reset!
       status
+    ensure
+      p && p.crash!("ended")
     end
 
     def process_line
@@ -64,6 +63,12 @@ module Magritte
       status = evaluate(string)
       @mutex.synchronize { puts "% #{status.repr}" }
       !status.fail?
+    rescue ::Interrupt => e
+      puts "^C"
+      false
+    ensure
+      @streamer.reset!
+      @input.reset!
     end
 
     def run
