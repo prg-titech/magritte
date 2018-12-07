@@ -183,6 +183,36 @@ module Magritte
       end
     end
 
+    builtin :size, [:any] do |e|
+      s = case e
+      when Value::String
+        e.value.size
+      when Value::Vector
+        e.elems.size
+      when Value::Environment
+        e.env.size
+      else
+        Proc.current.crash!("size: don't know how to size #{e.repr}")
+      end
+
+      put Value::Number.new(s)
+    end
+
+    builtin :str, [], :any do |*a|
+      put Value::String.new(a.map(&:to_s).join)
+    end
+
+    builtin :contains, [:any, :any] do |e, container|
+      case container
+      when Value::Vector
+        bool(container.elems.any? { |el| el == e })
+      when Value::String
+        bool(container.value[e.to_s])
+      else
+        bool(false)
+      end
+    end
+
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
       # Transform the lib string into an ast
