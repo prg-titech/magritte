@@ -1,7 +1,7 @@
 % notes
 
-% \documentclass[format=sigconf, review=true, draft=true, screen=true]{acmart}
-\documentclass[sigplan,10pt,nosumlimits]{acmart}
+\documentclass[format=sigconf, review=true, draft=true, screen=true]{acmart}
+% \documentclass[sigplan,authorversion,draft]{acmart}
 
 % don't print the conference ref for now
 % \settopmatter{printacmref=false}
@@ -18,21 +18,73 @@
 \usepackage{balance}
 
 \usepackage{listings}
-
-
-\title{Pipe-based Programming}
+\lstset{
+language=bash,
+% backgroundcolor=\color[rgb]{0.95, 0.95, 0.95},
+tabsize=2,
+rulecolor=,
+basicstyle=\ttfamily,
+upquote=true,
+% aboveskip={1.5\baselineskip},
+columns=fullflexible,
+% columns=fixed,
+showstringspaces=false,
+extendedchars=true,
+breaklines=true,
+prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+frame=L,
+showtabs=false,
+showspaces=false,
+showstringspaces=false,
+% identifierstyle=\ttfamily,
+keywordstyle=\color[rgb]{1.0,0,0}\bfseries,
+keywordstyle=[1]\color[rgb]{0,0,0.75}\bfseries,
+keywordstyle=[2]\color[rgb]{0.5,0.0,0.0},
+keywordstyle=[3]\color[rgb]{0.127,0.427,0.514},
+keywordstyle=[4]\color[rgb]{0.4,0.4,0.4},
+commentstyle=\color[rgb]{0.5,0.5,0.5}\itshape,
+stringstyle=\color[rgb]{0.639,0.082,0.082},
+morekeywords={read-lines, take, each},
+deletekeywords={do, read},
+%numbers=left,%
+numbersep=5pt,%
+numberstyle=\tiny\color{gray},%
+emphstyle=\bfseries,%
+breaklines=true,
+breakatwhitespace=true,%
+escapechar=`,
+%numbers=left,
+}
+\lstset{escapeinside={<@}{@>}}
+\definecolor{ttblue}{rgb}{0,0,0.75}
+\title{A Shell-like Model for General Purpose Programming}
 \author{Jeanine Adkisson}
 \affiliation{\institution{Tokyo Institute of Technology}}
 \email{jneen@prg.is.titech.ac.jp}
+
+\author{Johannes Westlund}
+\affiliation{\institution{TODO}}
+\email{TODO}
+\begin{document}
 
 \author{Hidehiko Masuhara}
 \affiliation{\institution{Tokyo Institute of Technology}}
 \email{masuhara@prg.is.titech.ac.jp}
 
-\begin{document}
-
 % thought experiment - parallel fetching
 % find an example of named pipes
+
+% TODO LIST
+% * Find an example of named pipes reopening
+% * Find an example of a non-linear pipe arrangement (prob. from flow-based programming)
+% * Plan the Description of Magritte section
+% * Add Call Semantics to Design Considerations
+% * Institute and email addr from Johannes
+% * Explain why we do not do eager interruption (limit sources of interruptions)
+% * Finish Non-Interruption section
+% * Completely redo the Magritte section
+% * Bibliography
+% * Pretty Syntax
 
 \begin{abstract}
 Shell languages such as bash are designed to integrate with an OS, which mainly involves managing processes with implicit input and output streams. They also attempt to do this in a compact way that could be reasonably typed on a command-line interface.
@@ -41,8 +93,8 @@ However, existing shell languages are not sufficient to serve as general-purpose
 
 By way of a new programming language, \emph{Magritte}, we propose a general-purpose programming language with semantics similar to bash. In this paper, we discuss the early design of such a system, in which the primary unit of composition, like bash, is processes with asynchronous inputs and outputs, which can be read from or written to at any time, and which can be chained together via a pipe operator. We also explore concurrency semantics for such a language.
 
-We explore the implementation and design challenges that come with such a model, and also show that this model is able to easily create and compose concurrent algorithms.
-The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes.
+% We explore the implementation and design challenges that come with such a model, and also show that this model is able to easily create and compose concurrent algorithms.
+% The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes.
 
 % Beyond the most simple tasks, however, \texttt{bash} and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
 % %
@@ -75,15 +127,59 @@ The UNIX shell programming model has been shown to be a successful model for com
 
 In this paper, we use the term \emph{pipe-based language} to mean a programming language intended to be used on a command line, with the ability to spawn many processes in which communicate through synchronous channels or pipes in an ad-hoc manner --- and in which this facility is the primary method of composing different functions or units.
 
+Our overarching goal is to create a language and a programming system that retains the pipe-based programming and interaction model of bash, but allows for large programs in a way that existing shell languages do not.
+
+\section{Design Considerations}
+In this section we discuss several feature requirements and design considerations for a pipe-based language to be viable for large programs.
+
+\paragraph{Not Everything Is a String.}
+The first core issue that prevents most shells from being viable for large programs is that only strings are allowed as values.
+
+Several projects, including bash itself, have attempted to add lists and hash-maps as standard objects. Unfortunately, while they allow these values to be stored in variables, most projects do not allow these data structures to be passed into or returned from functions normally.
+
+The \verb/es/ shell (TODO: cite) attempts to extend the standard shell model with lambda functions with lexical scoping. However, 
+
+\paragraph{Transactional Channels.}
 Since UNIX pipes can only manage bytes, usually channels with a fixed buffer are specified for performance reasons. However, in the languages we consider, we assume we can transactionally write a single complex value to a channel, resulting in the ability to send data in batch without resorting to a queue that may interleave writes.
 
-A core requirement of pipe-based languages is a semantic of process \emph{interruption}: automatic clean-up of processes that will no longer be used. Consider the following pseudo-code for a pipe-based language:
+Consider the fairly common architecture of producer/consumer: A \emph{producer} process producese values that are processed in parallel by multiple \emph{consumer} processes, and then the values are collected in a single output. This might be expressed in bash as:
+
+\begin{lstlisting}
+# pass through the stream, labeling every line
+label() {
+  while read line; do echo "$1$line"; done
+}
+
+# process the stream with different labels
+split() {
+  label a &
+  label b &
+}
+
+# process the numbers 1-100, limiting the
+# output to the first 3 lines
+seq 100 | split | head -3
+\end{lstlisting}
+
+Unfortunately, when we run this process, the outputs from the \verb/label/ function become interleaved, resulting in outputs such as:
 
 \begin{verbatim}
+a1    b12   a
+a2    a     b12
+a3    a4    a34
+\end{verbatim}
+In a language intended for large programs, therefore, writes to a channel must be \emph{transactional} - a single write must be sent wholesale to a single reader without any interleaving, no matter how big the write.
+
+
+\paragraph{Interruption.}
+A core requirement of pipe-based languages is a semantic of process \emph{interruption}: automatic clean-up of processes that will no longer be used. Consider the following pseudo-code for a pipe-based language:
+
+\begin{lstlisting}
   read-lines tmp/large-file
     | take 10
-    | each (?line => do-expensive-work $line)
-\end{verbatim}
+    | each (?line => do-expensive-work <@\$@>line)
+\end{lstlisting}
+
 In this example, three processes are spawned: (1) a process with a file open that writes one line at a time to its output, (2) a process that reads 10 times from its input, writes each entry to the output, and then exits, and (3) a process that reads every input and calls a function to perform an expensive task.
 A user's intent when typing such code may be to read 10 lines from a file and synchronously perform an action on each line.
 
@@ -94,25 +190,24 @@ This expectation is despite the fact that process (1) is specified to read the e
 In a naive implementation using synchronous channels, process (1) will never be able to write more than 10 lines, and will remain blocked on its output with the file open forever.
 Similarly, the \verb/each/ function will never be notified that its input has finished, and will block forever on its input stream.
 
-\section{Design Considerations}
-\paragraph{Compensation.} In order to observe interruption, we define a system of \emph{compensation actions}, which will be run in the case of an interruption.
+\paragraph{Compensation.} In order to observe interruption, user code must be able to react to and handle interruption. The most direct way to observe interruption is through a system of \emph{compensation actions}, which are expressions which will be evaluated in the case of an interruption.
+
 For example, the function \verb/file-lines/ above could be implemented as:
 
 \begin{verbatim}
 (file-lines ?fname) = (
   handle = (open-file $fname) %%! close-file $fname
   until (=> eof? $handle) (=> read-until "\n" $handle)
-  checkpoint
 )
 \end{verbatim}
 
-In this code, the \verb/%%!/ symbol registers a compensation action that will be run either at the next \verb/checkpoint/ invocation, or when the process is interrupted. In this way, we can ensure that the file is closed when the process exits. Compensations are the only way in which interruptions can be directly observed by client code - without compensations, the only way of observing forever-blocked processes would be to inspect the process table, or observe the memory footprint of the program. Thus, the primary task of our system is \emph{to run a process's compensation actions at the appropriate time}.
+In this code, the \verb/%%!/ symbol registers a compensation action that will be run either at the next checkpoint (the end of the function), or when the process is interrupted. In this way, we can ensure that the file is closed when the process exits. Compensations are the only way in which interruptions can be directly observed by client code - without compensations, the only way of observing forever-blocked processes would be to inspect the process table, or observe the memory footprint of the program. Thus, we can define the primary task of our system as \emph{running a process's compensation actions at the appropriate time}.
 
 \paragraph{Interrupting on Operations vs. Eager Interruption.}
 
 In designing an interruption semantic, we must first decide whether processes are eagerly interrupted when their channels close, or only interrupted on channel operations.
 
-Consider the following example, with the assumption that \verb/do-other-operation/ does not write to the standard output:
+Consider the following example, with the assumption that \\ \verb/do-other-operation/ does not write to the standard output:
 
 \begin{verbatim}
 count-forever | ( take 5; do-other-operation ) | take 5
@@ -124,7 +219,7 @@ It is important to decide, then, whether the middle process should be \emph{inte
 
 (TODO show race condition with eager-interruption)
 
-\paragraph{Channel registration.}
+\paragraph{Non-closing of Channels.}
 
 (TODO explain guiding principle: \emph{A process is interrupted exactly when it can no longer be woken up} and the addendum \emph{without spawning new processes})
 
@@ -134,10 +229,12 @@ In traditional channel-based systems, this is difficult to detect, because a ref
 
 (TODO therefore we add the constraint that processes must only interact with specifically registered channels)
 
+\paragraph{Masking Interruptions.} (TODO: explain \verb/produce/ and \verb/consume/)
+
 \paragraph{Closing Permanence.}
 (TODO: explain why we do not reopen channels)
 
-\section{Description of Semantics.}
+\section{Description of Magritte.}
 
 (TODO: \verb/{add,remove}_{reader,writer}/ are hidden intrinsics, only called automatically at process spawn and exit (even for exits that are in error). and we only allow reads/writes for processes *attached* to channels, rather than freely through channel variables. explain this)
 
