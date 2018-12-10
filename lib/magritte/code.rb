@@ -115,7 +115,7 @@ module Magritte
     def call
       if Proc.current?
         env = @env.extend(in_ch, out_ch)
-        Proc.with_env(env, &@block)
+        Proc.enter_frame(env, &@block)
       else
         spawn.wait
       end

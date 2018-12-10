@@ -122,7 +122,7 @@ module Magritte
 
       def visit_environment(node)
         env = Proc.current.env.extend
-        Proc.with_env(env) do
+        Proc.enter_frame(env) do
           visit_exec(node.body)
         end
         env.unhinge!
@@ -141,7 +141,7 @@ module Magritte
             outputs << c.channel
           end
         end
-        Proc.with_env(Proc.current.env.extend(inputs, outputs)) do
+        Proc.enter_frame(Proc.current.env.extend(inputs, outputs)) do
           visit_exec(node.expr)
         end
       end

@@ -20,8 +20,8 @@ module Magritte
       current.send(:with_channels, in_ch, out_ch, &b)
     end
 
-    def self.with_env(env, &b)
-      current.send(:with_env, env, &b)
+    def self.enter_frame(*args, &b)
+      current.send(:enter_frame, *args, &b)
     end
 
     def self.spawn(code, env)
@@ -167,11 +167,7 @@ module Magritte
     end
 
   protected
-    def with_channels(new_in, new_out, &b)
-      with_env(@env.extend(new_in, new_out), &b)
-    end
-
-    def with_env(new_env, &b)
+    def enter_frame(*args, &b)
       stack_size = @stack.size
 
       @interrupt_mutex.synchronize do
@@ -182,7 +178,7 @@ module Magritte
 
       frame.open_channels
 
-      yield
+      out = yield
     rescue Interrupt => e
       compensate(e)
       PRINTER.p :interrupt => @stack
@@ -191,6 +187,7 @@ module Magritte
       binding.pry if stack_size+1 != @stack.size
       checkpoint
       PRINTER.p :checkpoint => @stack
+      out
     end
   end
 end

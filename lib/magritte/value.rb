@@ -122,7 +122,7 @@ module Magritte
         args.zip(bindnames) do |arg, bind|
           env.let(bind, arg)
         end
-        Proc.with_env(env) { Interpret.interpret(@expr[0]) }
+        Proc.enter_frame(env) { Interpret.interpret(@expr[0]) }
       end
 
       def repr
