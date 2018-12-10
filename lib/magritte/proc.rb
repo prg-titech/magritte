@@ -37,6 +37,7 @@ module Magritte
             code.run
           rescue Interrupt => e
             Proc.current.compensate(e)
+            e.status
           end
         rescue Exception => e
           PRINTER.p :exception
