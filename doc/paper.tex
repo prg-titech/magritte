@@ -127,17 +127,31 @@ The UNIX shell programming model has been shown to be a successful model for com
 
 In this paper, we use the term \emph{pipe-based language} to mean a programming language intended to be used on a command line, with the ability to spawn many processes in which communicate through synchronous channels or pipes in an ad-hoc manner --- and in which this facility is the primary method of composing different functions or units.
 
+% TODO: discuss this
+%# fn pipe(lhs, rhs, inp, out) {
+%#   c = channel()
+%#   go fn () { lhs(inp, c); };
+%#   rhs(c, out)
+%# }
+%#
+%# collect = collector()
+%# pipe_collect(curry(range, 10), curry(fan, 2,
+%  fn(el, inp, out) { write(el + 1, out); }
+%), inp);
+%#
+
 Our overarching goal is to create a language and a programming system that retains the pipe-based programming and interaction model of bash, but allows for large programs in a way that existing shell languages do not.
 
 \section{Design Considerations}
 In this section we discuss several feature requirements and design considerations for a pipe-based language to be viable for large programs.
 
 \paragraph{Not Everything Is a String.}
-The first core issue that prevents most shells from being viable for large programs is that only strings are allowed as values.
+The first core issue that prevents most shells from being viable for large programs is that only strings are allowed as first-class values.
 
-Several projects, including bash itself, have attempted to add lists and hash-maps as standard objects. Unfortunately, while they allow these values to be stored in variables, most projects do not allow these data structures to be passed into or returned from functions normally.
+Several projects\cite{haahr}\cite{duff}, including bash itself, have attempted to add lists and hash-maps as standard objects. Unfortunately, while they allow these values to be stored in variables, most projects do not allow these data structures to be passed into or returned from functions, or importantly, passed through pipes normally.
+Since values in these languages cannot be passed through pipes, they are relegated to a second class of value, one for which pipe-based composition is not available.
 
-The \verb/es/ shell (TODO: cite) attempts to extend the standard shell model with lambda functions with lexical scoping. However, 
+Thus if we are to allow for pipe-based composition to be the core composition method for large programs, we must allow rich values to be passed through channels.
 
 \paragraph{Transactional Channels.}
 Since UNIX pipes can only manage bytes, usually channels with a fixed buffer are specified for performance reasons. However, in the languages we consider, we assume we can transactionally write a single complex value to a channel, resulting in the ability to send data in batch without resorting to a queue that may interleave writes.
@@ -170,9 +184,10 @@ a3    a4    a34
 \end{verbatim}
 In a language intended for large programs, therefore, writes to a channel must be \emph{transactional} - a single write must be sent wholesale to a single reader without any interleaving, no matter how big the write.
 
+Luckily, given the decision to allow rich values to be passed through channels, a buffer is not as necessary for performance purposes, since a single write may contain an arbitrarily large amount of data - or for that matter a pointer.
 
 \paragraph{Interruption.}
-A core requirement of pipe-based languages is a semantic of process \emph{interruption}: automatic clean-up of processes that will no longer be used. Consider the following pseudo-code for a pipe-based language:
+A core requirement of pipe-based languages is a semantic of process \emph{interruption}: automatic clean-up of processes that will no longer be used. Consider the following Magritte code:
 
 \begin{lstlisting}
   read-lines tmp/large-file
@@ -194,12 +209,12 @@ Similarly, the \verb/each/ function will never be notified that its input has fi
 
 For example, the function \verb/file-lines/ above could be implemented as:
 
-\begin{verbatim}
+\begin{lstlisting}
 (file-lines ?fname) = (
   handle = (open-file $fname) %%! close-file $fname
   until (=> eof? $handle) (=> read-until "\n" $handle)
 )
-\end{verbatim}
+\end{lstlisting}
 
 In this code, the \verb/%%!/ symbol registers a compensation action that will be run either at the next checkpoint (the end of the function), or when the process is interrupted. In this way, we can ensure that the file is closed when the process exits. Compensations are the only way in which interruptions can be directly observed by client code - without compensations, the only way of observing forever-blocked processes would be to inspect the process table, or observe the memory footprint of the program. Thus, we can define the primary task of our system as \emph{running a process's compensation actions at the appropriate time}.
 
@@ -217,22 +232,67 @@ The middle process will write five times, and then continue to do other processi
 The final \verb/take 5/ operation will return after 5 inputs are read.
 It is important to decide, then, whether the middle process should be \emph{interrupted} in the middle of \verb/do-other-operation/, or should it be left alone?
 
-(TODO show race condition with eager-interruption)
+An advantage of lazy interruption is that a user can identify precisely which points in the code have the potential to be interrupted - those points which run a \verb/put/ or a \verb/get/. Whereas with eager-interruption semantics any point in the code may be interrupted, introducing the need for users to either mark critical uninterruptible sections or be very careful about setting correct compensations in the case of mutative algorithms.
+
+On the other hand, lazy interruption has the disadvantage that a producing process must do enough work to produce one more value than will be consumed. If each value is relatively cheap to produce, this is not a problem, but in the case that the values are expensive to produce, this would result in doing a large amount of unnecessary work.
+
+Overall, we have decided that the predictability of lazy interruption is worth the tradeoff for extra values, and we discuss some features that may mitigate this problem in \emph{Future Work}.
 
 \paragraph{Non-closing of Channels.}
 
-(TODO explain guiding principle: \emph{A process is interrupted exactly when it can no longer be woken up} and the addendum \emph{without spawning new processes})
+Given that multiple processes may be reading from and writing to a channel, it is often the case that a communicating process will end when there are other processes still communicating over the channel. It would not be appropriate in this case to interrupt other processes attached to the channel, as they are still able to communicate.
 
+We define our guiding principle for the appropriate time to interrupt a process as: \emph{A process is interrupted exactly when it can no longer be woken up}.
 When a process is blocked on a synchronous channel, it will be woken up as soon as another process communicates on the other end.
-Therefore the appropriate time for a process to be interrupted is if it is blocked on a channel that will never receive any more operations.
+Therefore the appropriate time for it to be interrupted is if it is blocked on a channel that will never receive any more operations.
 In traditional channel-based systems, this is difficult to detect, because a reference to a channel could be passed anywhere in the program as a standard value, and be interacted with in any way at any time.
 
-(TODO therefore we add the constraint that processes must only interact with specifically registered channels)
-
-\paragraph{Masking Interruptions.} (TODO: explain \verb/produce/ and \verb/consume/)
+Luckily, in pipe-based languages, the arrangement of pipes is usually specified at process spawn time. This enables us to maintain a process register inside of each channel, so that we can decide when all readers or all writers have detached from a channel, at which time the channel closes and interrupts all blocked processes.
 
 \paragraph{Closing Permanence.}
-(TODO: explain why we do not reopen channels)
+Though we close a channel when all processes on the read or write sides close, there is always the possibility of new processes spawning and attempting to connect to a channel. In such a case, some systems leave open the possibility of \emph{reopening} a channel for further use. In UNIX, for example, the named-pipes API allows for persistent channels (TODO: cite!) that, being merely files, can be reopened at any time.
+
+However, this can lead to some unexpected races between a channel closing and a new process spawning. Consider the example:
+
+\begin{lstlisting}
+c = (make-channel)
+& count-forever > $c
+& take 10 < $c
+put 10 > $c
+\end{lstlisting}
+
+This example, while contrived, represents an unavoidable race with first-class channels - whether the process running \verb/take 10/ closes the channel before or
+after the \verb/put 10/ invocation opens the channel for writing. If we allow channel reopening, we will either block forever, or insert the number 10 into the stream, depending on which happens first. However if we do not allow channel reopening, we can say that, if a process initiates a read or write on a closed channel, it is immediately interrupted. In this case, both sides of the former race have the same termination behavior - the process is closed when \verb/take 10/ returns.
+
+\paragraph{Masking Interruptions.}
+
+A user will often wish to continue after a particular output channel has closed, and in this case will need a facility to mask exceptions for particular channels. Consider the following example, which uses reservoir-sampling to select a uniform random element from a stream:
+
+\begin{lstlisting}
+(sample) = (
+  hold = (get)
+  i = 1
+  each (?v =>
+    $i = (inc $i)
+    # mutate the $hold variable with probability 1/$i
+    prob $i 1 && ($hold = %v)
+  )
+
+  put $hold
+)
+\end{lstlisting}
+
+In this example, the function \verb/each/ will consume the entire input stream and mutate a variable with a given probability. After the entire input stream is consumed, we wish to output the resulting value stored in the \verb/$hold/ variable.
+
+However, with the semantics described above, the \verb/each/ function will loop until it is given an interrupt signal from the input channel closing, which will interrupt the entire process and not continue to the following line. In order to avoid this situation, the \verb/each/ function must somehow indicate that it intends to consume the entire stream, and handle the interrupt signal.
+
+While we plan to explore more general mechanisms for error handling, for cases such as this it suffices to provide two builtins, \verb/produce/ and \verb/consume/, each of which takes a single function to loop forever until the standard output or standard input respectively is consumed, whereby control flow continues after the invocation. Using these functions, we might define \verb/each/ as:
+
+\begin{lstlisting}
+(each ?fn) = (consume (=> %fn (get)))
+\end{lstlisting}
+
+With this definition, the call to \verb/consume/ will mask the interruption, and control flow within the \verb/sample/ function will proceed as normal.
 
 \section{Description of Magritte.}
 
@@ -301,19 +361,13 @@ The Bourne Again Shell (\"bash\")
 
 Python PEP 533; Go, Erlang; Guile Scheme, TCL;
 
+The \verb/rc/ shell \cite{duff} from the Plan 9 operating system from Bell Labs introduces a list data type to shell, and cleans up some of the historical surprising quotation behavior of bash. However its list type is not nestable - nested lists are automatically flattened at creation time. Additionally, these lists cannot be passed through channels.
+
+The \verb/es/ shell \cite{haahr} attempts to extend the standard shell model with lambda functions with lexical scoping. These shell functions are marshalled into strings when passed through pipes (whether to shell functions or external programs), but are still written byte-by-byte and thus are subject to interleaving in concurrent cases.
 
 
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{paper}
 
 \end{document}
 
-%# fn pipe(lhs, rhs, inp, out) {
-%#   c = channel()
-%#   go fn () { lhs(inp, c); };
-%#   rhs(c, out)
-%# }
-%#
-%# collect = collector()
-%# pipe_collect(curry(range, 10), curry(fan, 2,
-%  fn(el, inp, out) { write(el + 1, out); }
-%), inp);
-%#
