@@ -4,4 +4,10 @@
 *.log
 *.pdf
 *.out
+*.bbl
 /tmp
+
+# latexmk
+*.blg
+*.fdb_latexmk
+*.fls
