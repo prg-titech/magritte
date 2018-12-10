@@ -1,8 +1,9 @@
 module Magritte
   class Frame
-    attr_reader :env
-    def initialize(env, p)
+    attr_reader :env, :lex_env
+    def initialize(p, env, lex_env = nil)
       @env = env
+      #@lex_env = lex_env || p.lex_env
       @proc = p
       @compensations = []
     end

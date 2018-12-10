@@ -105,7 +105,7 @@ module Magritte
 
     def start
       @alive = true
-      @stack << Frame.new(@env, self)
+      @stack << Frame.new(self, @env)
       frame.open_channels
       @thread[:magritte_start_mutex].unlock
       self
@@ -171,7 +171,7 @@ module Magritte
       stack_size = @stack.size
 
       @interrupt_mutex.synchronize do
-        frame = Frame.new(new_env, self)
+        frame = Frame.new(self, *args)
         PRINTER.p :stack => @stack
         @stack << frame
       end
