@@ -41,7 +41,6 @@ module Magritte
 
   private
     def unregister_channels
-      PRINTER.p :unregister_channels => [@env.own_inputs, @env.own_outputs]
       @env.each_input { |c| c.remove_reader(self) }
       @env.each_output { |c| c.remove_writer(self) }
     end
