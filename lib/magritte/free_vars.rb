@@ -4,17 +4,25 @@ module Magritte
       Scanner.new.collect(node, Set.new)
     end
 
+    class BinderScanner < Tree::Collector
+      def visit_binder(node)
+        Set.new([node.name])
+      end
+    end
+
     class Scanner < Tree::Collector
       def visit_lex_variable(node, bound_vars)
         Set.new([node.name])
       end
 
       def visit_lambda(node, bound_vars)
-        unless node.patterns.all? { |n| n.is_a? AST::Binder }
-          raise "Not implemented yet!"
+        out = Set.new
+        node.patterns.zip(node.bodies) do |pat, body|
+          binders = BinderScanner.new.collect_one(pat)
+          out.merge(shadow(body, bound_vars, binders))
         end
-        to_bind = node.patterns.map(&:name)
-        shadow(node.bodies, bound_vars, to_bind)
+        #p :lambda_free => [node.name, out]
+        out
       end
 
       def visit_subst(node, bound_vars)

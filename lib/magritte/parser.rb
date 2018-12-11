@@ -118,7 +118,7 @@ module Magritte
         error!(term, "TODO: Support patterns")
       end
       patterns = bindings.elems.map { |e| AST::Binder[e.value] }
-      return AST::Lambda[name, patterns, [parse_root(bodies)]]
+      return AST::Lambda[name, [AST::VectorPattern[patterns, nil]], [parse_root(bodies)]]
     end
 
     def parse_command(command)
@@ -210,15 +210,26 @@ module Magritte
         end
 
         # Anon lambda spanning multiple lines
-        item.elems.first.match(lsplit(~_, token(:arrow), ~_)) do |bindings, body|
+        item.elems.first.match(lsplit(_, token(:arrow), _)) do
+          bindings = []
+          bodies = []
           name = "anon@#{term.range.repr}"
-          bodies = item.elems.drop(1).unshift(body)
+          item.elems.each do |elem|
+            tmp = elem
+            elem.match(lsplit(~_, token(:arrow), ~_)) do |patterns, body|
+              bindings << patterns
+              bodies << []
+              tmp = body
+            end
+            bodies.last << tmp
+          end
 
-          unless bindings.elems.all? { |e| e.token?(:bind) }
+          unless bindings.all? { |i| i.elems.all? { |e| e.token?(:bind) }}
             error!(term, "TODO: Support patterns")
           end
-          patterns = bindings.elems.map { |e| AST::Binder[e.value] }
-          return AST::Lambda[name, patterns, [AST::Block[bodies.map { |body| parse_line(body) }]]]
+
+          patterns = bindings.map { |i| AST::VectorPattern[i.elems.map { |e| AST::Binder[e.value] }, nil]}
+          return AST::Lambda[name, patterns, bodies.map { |body| AST::Block[body.map { |line| parse_line(line) }]}]
         end
 
         return AST::Subst[item.sub_items.map { |e| parse_line(e) }]

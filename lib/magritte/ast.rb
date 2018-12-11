@@ -21,10 +21,20 @@ module Magritte
       defdata :value
     end
 
+    class VectorPattern < Tree::Node
+      deflistrec :patterns
+      defopt :rest
+    end
+
     class Lambda < Tree::Node
       defdata :name
       deflistrec :patterns
       deflistrec :bodies
+
+      def initialize(*)
+        super
+        raise "Pattern and body mismatch" unless patterns.size == bodies.size
+      end
     end
 
     class Pipe < Tree::Node

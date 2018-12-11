@@ -215,6 +215,10 @@ module Magritte
         collection
       end
 
+      def collect_one(node, *args)
+        collect(node, *args)[node]
+      end
+
     protected
       def collect_from(enum, *args)
         out = Set.new

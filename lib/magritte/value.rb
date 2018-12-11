@@ -100,29 +100,33 @@ module Magritte
     class Function < Base
       attr_reader :name
       attr_reader :env
-      attr_reader :bindnames
+      attr_reader :patterns
       attr_reader :expr
 
-      def initialize(name, env, bindnames, expr)
+      def initialize(name, env, patterns, expr)
         @name = name
         @env = env
-        @bindnames = bindnames
+        @patterns = patterns
         @expr = expr
+
+        if @patterns.size != @expr.size
+          raise "malformed function (#{@patterns.size} patterns, #{@expr.size} bodies"
+        end
       end
 
       def call(args)
         env = @env.splice(Proc.current.env)
-        if args.size < bindnames.size
-          Proc.current.crash!("#{repr}: not enough arguments: #{args.size} < #{bindnames.size}")
-        end
+        bound, match_index = match(args, env)
+        Proc.enter_frame(bound) { Interpret.interpret(@expr[match_index]) }
+      end
 
-        if args.size > bindnames.size
-          Proc.current.crash!("#{repr}: too many arguments: #{args.size} > #{bindnames.size}")
+      def match(args, env)
+        args = Vector.new(args)
+        @patterns.each_with_index do |pat, i|
+          bound = Pattern.evaluate(pat, args, env)
+          return [bound, i] if bound
         end
-        args.zip(bindnames) do |arg, bind|
-          env.let(bind, arg)
-        end
-        Proc.enter_frame(env) { Interpret.interpret(@expr[0]) }
+        Proc.current.crash!("Pattern match failed on #{self.repr} for #{args.repr}")
       end
 
       def repr

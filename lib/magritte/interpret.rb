@@ -87,7 +87,7 @@ module Magritte
 
       def visit_lambda(node)
         free_vars = @free_vars[node]
-        yield Value::Function.new(node.name, Proc.current.env.slice(free_vars), node.patterns.map(&:name), node.bodies)
+        yield Value::Function.new(node.name, Proc.current.env.slice(free_vars), node.patterns, node.bodies)
       end
 
       def visit_assignment(node)
@@ -149,7 +149,7 @@ module Magritte
       def visit_compensation(node)
         visit_exec(node.expr)
         name = "compensation@"
-        func = Value::Function.new(name, Env.empty, [], [node.compensation])
+        func = Value::Function.new(name, Env.empty, [AST::VectorPattern[[], nil]], [node.compensation])
         Proc.current.add_compensation(Value::Compensation.new(func, node.unconditional))
       end
 

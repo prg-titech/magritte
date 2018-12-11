@@ -86,14 +86,66 @@ describe Magritte::Interpret do
     end
 
     describe "lambdas" do
-      let(:input) {
-        """
-        (?x => put $x) 1
-        """
-      }
+      describe "call" do
+        let(:input) {
+          """
+          (?x => put $x) 1
+          """
+        }
 
-      it do
-        assert { result == "1" }
+        it do
+          assert { result == "1" }
+        end
+      end
+
+      describe "zero argument lambdas" do
+        let(:input) {
+          """
+          exec (=> put 1)
+          """
+        }
+
+        it do
+          assert { result == "1" }
+        end
+      end
+
+      describe "argument length patterns" do
+        describe "reducing" do
+          let(:input) {
+            """
+            f = (
+              ?x ?y => put [two %x %y]
+              ?x => put [one %x]
+            )
+
+            f 3
+            f 5 6
+            """
+          }
+
+          it do
+            assert { results == ["[one 3]", "[two 5 6]"] }
+          end
+        end
+
+        describe "increasing" do
+          let(:input) {
+            """
+            f = (
+              ?x => put [one %x]
+              ?x ?y => put [two %x %y]
+            )
+
+            f 3
+            f 5 6
+            """
+          }
+
+          it do
+            assert { results == ["[one 3]", "[two 5 6]"] }
+          end
+        end
       end
     end
 
