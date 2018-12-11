@@ -125,6 +125,10 @@ module Magritte
           defattr(name, ListRecAttr)
         end
 
+        def defopt(name)
+          defattr(name, OptAttr)
+        end
+
         def make(*attrs)
           if attrs.size != types.size
             raise ArgumentError.new("Expected #{types.size} arguments, got #{attrs.size}")
