@@ -247,6 +247,21 @@ describe Magritte::Interpret do
           assert { result == "103" }
         end
       end
+
+      describe "block scoping" do
+        let(:input) {
+          """
+          x = 1
+          put (x = 2; put $x)
+          (x = 3; put $x)
+          put $x
+          """
+        }
+
+        it do
+          assert { results == %w(2 3 1) }
+        end
+      end
     end
 
     describe "root-level blocks" do
