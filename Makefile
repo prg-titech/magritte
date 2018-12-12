@@ -1,6 +1,7 @@
 LATEX_OPTS += -shell-escape
+LATEX_OPTS += -kanji=utf8 -kanji-internal=utf8 -etex
 
-CLEAN = doc/paper.pdf doc/paper.log doc/paper.aux doc/paper.out doc/paper-autopp* doc/paper.bbl
+CLEAN = doc/paper.pdf doc/paper.log doc/paper.aux doc/paper.out doc/paper-autopp* doc/paper.bbl doc/paper.dvi
 
 .PHONY: open-doc
 open-doc: doc/paper.pdf
@@ -9,13 +10,24 @@ open-doc: doc/paper.pdf
 .PHONY: doc
 doc: doc/paper.pdf
 
-%.pdf: %.tex
-	pdflatex $(LATEX_OPTS) -output-directory $(dir $^) $^
+%.dvi: %.tex
+	uplatex $(LATEX_OPTS) -output-directory $(dir $^) $^
+
+%.pdf: %.dvi
+	dvipdf "$^" "$@"
+
 
 .PHONY: clean
 clean:
-	rm -- $(CLEAN)
+	rm -f -- $(CLEAN)
+
+# LATEXMK_OPTS += $(LATEX_OPTS)
+LATEXMK_OPTS += -pdfdvi -latex='uplatex $(LATEX_OPTS)'
+LATEXMK_OPTS += -view=none
+LATEXMK_OPTS += -output-directory=doc
+LATEXMK_OPTS += -e '$$bibtex="pbibtex"'
+
 
 .PHONY: paper-watch
 paper-watch:
-	latexmk -pvc -pdf $(LATEX_OPTS) -view=none -output-directory=doc doc/paper.tex
+	latexmk $(LATEXMK_OPTS) doc/paper.tex

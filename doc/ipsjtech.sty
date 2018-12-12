@@ -1,0 +1,354 @@
+
+% ipsjtech.sty  (C) 2012 Information Processing Society of Japan
+% Copyright (C) 1995-2010 by Hiroshi Nakashima, Yasuki Saito and
+%                            The Editorial Board of the IPSJ Journal
+
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ipsj}
+% [2012/03/26-05/02 v1.00-2.00 IPSJTECH.STY]
+ [2012/06/01 v3.00 IPSJTECH.STY]
+
+
+
+
+%%%%%%%%
+%techrep
+%%%%%%%%
+\def\biography{\ipsjnobiography}
+\def\endbiography{\ipsjendnobiography}
+
+\def\ipsjnobiography{\let\profile\@gobble
+	\ifDS@english \let\author\@gobble \fi
+	\let\adjust\@gobble \setbox0\vbox\bgroup
+	\tolerance\@M \hbadness\@M \hfuzz\maxdimen}
+\def\ipsjendnobiography{\egroup\setbox0\hbox{}}
+
+
+
+
+\def\@uketsuke{%
+\leavevmode%
+\phantom{@received}
+\@ifundefined{@rereceived}{\phantom{, }}{%
+   \phantom{\@rereceived}
+   \@ifundefined{@rerereceived}{\phantom{, }}{\phantom{\@rerereceived}}%
+   \par
+}%
+\phantom{\@accepted}%
+\@ifundefined{@released}{}{, \@released}%
+}
+
+
+\def\@euketsuke{%
+\leavevmode%
+\phantom{\@ereceived}
+\@ifundefined{@erereceived}{\phantom{, }}{%
+   \phantom{\@erereceived}
+   \@ifundefined{@ererereceived}{\phantom{, }}{\phantom{\@ererereceived}}%
+   \par
+}%
+\phantom{\@eaccepted}
+}
+
+
+
+
+
+%%
+\def\SIGHead{\ifDS@english%
+{IPSJ SIG Technical Report}%
+\else 情報処理学会研究報告\fi}%%
+%
+
+\def\signame@DAM{\ifDS@english%
+IPSJ SIG Technical Report%
+\else 情報処理学会研究報告\fi}%%
+
+
+
+\def\signame@ACS{\SIGHead}
+\def\signame@PRO{\SIGHead}
+\def\signame@TOM{\SIGHead}
+\def\signame@TOD{\SIGHead}
+\def\signame@CDS{\SIGHead}
+\def\signame@CVA{\SIGHead}
+\def\signame@TBIO{\SIGHead}
+\def\signame@SLDM{\SIGHead}
+\def\signame@JIP{\SIGHead}
+
+
+\def\HeadfontE{%
+\ifDS@english
+   \fontsize{13\Q}{0\h}\sffamily\bfseries\selectfont%
+\else
+   \fontsize{13\Q}{0\h}\bfseries\selectfont%
+\fi
+}
+
+\def\DOIHeadfont{\fontsize{11\Q}{0\h}%\usefont{OT1}{phv}{m}{n}\selectfont
+\selectfont}
+
+
+
+%%%<<<< 1.02
+\ifDS@english
+\def\ps@IPSJTITLEheadings{%
+ \def\@oddhead{\@Ltop%
+\rlap{\small{%%
+%%
+{\HeadfontE{\signame}}%%
+}}%
+%%%%%
+%}}}}%
+\hfil\@Rtop}%
+%%%%%
+ \let\@evenhead\@oddhead
+ \def\@oddfoot{\@Lbot%
+\rlap{%\fontsize{10\Q}{0\h}%
+{\bothashira%
+\copyright \ {\@footyear} Information Processing Society of Japan%
+}}%
+\hfil
+{\botnomble
+{\thepage}
+\@Rbot}%
+ \let\@evenfoot\@oddfoot
+ \let\@mkboth\@gobbletwo
+}}
+%%%
+%%%%%%%%%
+\else
+%%%%%%%%%
+%%%
+\def\ps@IPSJTITLEheadings{%
+ \def\@oddhead{\@Ltop%
+\rlap{\small%
+%%
+{\HeadfontJ{\signame}}%%
+%%%%%
+{%%
+\ifDS@abstract\else\fi
+}}%
+%%%%
+\smash{\raisebox{-4mm}{\rlap{%
+{\DOIHeadfont%%
+IPSJ SIG Technical Report%
+}%
+}}}%
+\hfil\@Rtop}%
+%%
+ \let\@evenhead\@oddhead
+ \def\@oddfoot{\@Lbot%
+\rlap{%
+{\bothashira%
+{\textcopyrighttx} \ {\@footyear} Information Processing Society of Japan%
+}}%
+\hfil%
+{\botnomble%
+{\thepage}}%
+\@Rbot}%
+ \let\@evenfoot\@oddfoot
+ \let\@mkboth\@gobbletwo
+}
+\fi
+
+
+
+
+
+%==========================================
+
+\newif\if@ET
+\def\etitle#1{\global\@ETtrue%
+\gdef\@etitle{#1}}
+
+\newif\if@JK
+
+\def\jkeyword{\@par%
+\global\@JKtrue%
+\global\setbox\@jkeywordbox\hbox\bgroup
+  \begin{minipage}[t]{.8\textwidth}%
+\fontsize{12\JQ}{15\h}\selectfont%
+{\noindent{\JKEYWORD}}%
+\ignorespaces}
+\def\endjkeyword{%
+\par\end{minipage}%
+\egroup\ignorespaces}
+
+
+
+\newif\if@EAB
+
+\def\eabstract{%
+\global\@EABtrue%
+ \global\setbox\@eabstractbox\hbox\bgroup%
+  \begin{minipage}[t]{.8\textwidth}% 12Q 16H
+\fontsize{12\Q}{15\h}\selectfont%
+\noindent{\EGAIYOU}%
+\ignorespaces}
+
+
+
+\newif\if@EK
+
+\def\ekeyword{\@par%
+\global\@EKtrue%
+ \global\setbox\@ekeywordbox\hbox\bgroup
+  \begin{minipage}[t]{.8\textwidth}%
+\fontsize{12\Q}{15\h}\selectfont%
+{\noindent{\EKEYWORD}}%
+\ignorespaces}
+\def\endekeyword{%
+\par\end{minipage}%
+\egroup\ignorespaces}
+
+
+
+\def\@maketitle{%
+\newpage\null
+%%%%%%%%%%
+\ifDS@english
+%%
+\vskip-1.3mm%<--
+\ifx\SHUBETUname\relax%
+{\SHUBETUfontE{\vphantom{\SHUBETUname@DEF}}}%%
+\else
+{\SHUBETUfontE{\vphantom{\SHUBETUname}}}%%
+\fi
+%%
+\else
+\ifx\SHUBETUname\relax%
+{\SHUBETUfontJ{\SHUBETUname@DEF}}%%
+\else
+{\SHUBETUfontJ{\SHUBETUname}}%%
+\fi\fi
+%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\shubetutitlesep%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%\vskip 10mm%
+\begin{center}
+\authortitle %%<---
+\end{center}
+%%%%%%%%%%%%%%%%%%%
+%
+}
+
+
+
+
+
+
+\ifDS@english
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\authortitle{%
+{\Engtitlefont%
+{\@title}\par}
+%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Etitleauthorsep%
+%%%%%%%%%%%%%%%%%%%%%%%
+{\Engeauthorfont%
+\authoroutput{e}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Eauthorreceivesep%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+{\Enguketukefont%
+{\@uketsuke}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Ereceiveabstsep%
+%%%%%%%%%%%%%%%%%%%%%%%
+\mbox{\box\@abstractbox}\par%
+%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Eabstkeywordsep%
+%%%%%%%%%%%%%%%%%%%%%%%
+\let\@keywordbox\@ekeywordbox
+\mbox{\box\@ekeywordbox}\par%
+%%%%%%%%%%%%%%%%%%%
+\vskip\JEhonbunsep%
+%%%%%%%%%%%%%%%%%%%
+}
+%===========
+\else
+%==========
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\authortitle{%
+{\jtitlefont%
+{\@title}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Jtitlejauthorsep%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%======
+{\authorfont%
+\authoroutput{}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Jauthorjreceivesep%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%======
+{\juketukefont%
+{\@uketsuke}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Jreceivejabstsep%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\mbox{\box\@abstractbox}\par%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\if@JK%<-----
+\vskip\Jabstsepjkeyword%
+%
+\mbox{\box\@jkeywordbox}\par%
+\fi%<-----
+\if@ET%<-----
+%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Jkeywordetitle%
+%%%%%%%%%%%%%%%%%%%%%%
+{\etitlefont%
+{\bfseries{\@etitle}}}\par%
+\fi%<-----
+%%%%%%%%%%%%%%%%%%%%%%
+\ifDS@noauthor%%%%!!!!!!!!!!!!!!
+\else%
+\vskip\Jetitleeauthor% 
+%%%%%%%%%%%%%%%%%%%%%%
+%% eauthor
+{\eauthorfont%
+\authoroutput{e}
+\par}%
+\vskip\Jeauthorereceivesep% 
+\fi%%%%%%!!!!!!!!!!!!!!!!!
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\ifDS@noauthor%%%%!!!!!!!!!!!!!!
+%\else%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{\euketukefont%
+{\@euketsuke}\par}%
+%\fi%%%!!!!
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\if@EAB%<-----
+\vskip\Jereceiveeabstsep% 
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\mbox{\box\@eabstractbox}\par%
+\fi%<-----j
+\if@EK%<-----
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Jeabstekeywordsep% 
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\mbox{\box\@ekeywordbox}\par%
+\fi%<-----
+%%%%%%%%%%%%%%%%%%%
+\vskip\JEhonbunsep%
+%%%%%%%%%%%%%%%%%%%
+}
+\fi
+
+
+
+
+\pagestyle{IPSJTITLEheadings}
+
+
+
+\endinput
+
+

@@ -1,11 +1,11 @@
 % notes
-
-\documentclass[format=sigconf, review=true, draft=true, screen=true]{acmart}
+% \documentclass[format=sigconf, review=true, draft=true, screen=true]{acmart}
+\documentclass[english,preprint,JIP]{ipsj}
 % \documentclass[sigplan,authorversion,draft]{acmart}
 
-% don't print the conference ref for now
-% \settopmatter{printacmref=false}
+% \usepackage[utf8]{inputenc}
 
+\usepackage{textcomp}
 \usepackage{comment}
 \usepackage{mathtools}
 \usepackage{amssymb}
@@ -14,12 +14,13 @@
 \usepackage{pstricks,pst-node,pst-tree}
 \usepackage{auto-pst-pdf}
 
+
 % from matias
 \usepackage{balance}
 
 \usepackage{listings}
 \lstset{
-language=bash,
+language=ruby,
 % backgroundcolor=\color[rgb]{0.95, 0.95, 0.95},
 tabsize=2,
 rulecolor=,
@@ -32,7 +33,7 @@ showstringspaces=false,
 extendedchars=true,
 breaklines=true,
 prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
-frame=L,
+frame=shadowbox,
 showtabs=false,
 showspaces=false,
 showstringspaces=false,
@@ -44,7 +45,7 @@ keywordstyle=[3]\color[rgb]{0.127,0.427,0.514},
 keywordstyle=[4]\color[rgb]{0.4,0.4,0.4},
 commentstyle=\color[rgb]{0.5,0.5,0.5}\itshape,
 stringstyle=\color[rgb]{0.639,0.082,0.082},
-morekeywords={read-lines, take, each},
+morekeywords={read-lines, take, each, produce, consume, put, get, make-channel},
 deletekeywords={do, read},
 %numbers=left,%
 numbersep=5pt,%
@@ -57,21 +58,26 @@ escapechar=`,
 }
 \lstset{escapeinside={<@}{@>}}
 \definecolor{ttblue}{rgb}{0,0,0.75}
-\title{A Shell-like Model for General Purpose Programming}
-\author{Jeanine Adkisson}
-\affiliation{\institution{Tokyo Institute of Technology}}
-\email{jneen@prg.is.titech.ac.jp}
 
-\author{Johannes Westlund}
-\affiliation{\institution{TODO}}
-\email{TODO}
+\usepackage[varg]{txfonts}%%!!
+\makeatletter%
+\input{ot1txtt.fd}
+\makeatother%
+
 \begin{document}
+\title{A Shell-like Model for General Purpose Programming}
 
-\author{Hidehiko Masuhara}
-\affiliation{\institution{Tokyo Institute of Technology}}
-\email{masuhara@prg.is.titech.ac.jp}
+\affiliate{TITech}{東京工業大学情報理工学院数理・計算科学系 \\
+Department of Mathematical and Computing Science, Tokyo Institute of Technology,
+Meguro, Tokyo 152-8552}
+\affiliate{KTH}{Kungliga Tekniska H\"ogskolan\\
+KTH Royal Institute of Technology, Stockholm, Sweden, 10044}
 
-% thought experiment - parallel fetching
+\author{Jeanine Miller Adkisson}{TITech}[jneen@prg.is.titech.ac.jp]
+\author{Hidehiko Masuhara}{TITech}[masuhara@acm.org]
+\author{Johannes Westlund}{TITech,KTH}[jwestlun@kth.se]
+
+% thought experiment---parallel fetching
 % find an example of named pipes
 
 % TODO LIST
@@ -89,12 +95,12 @@ escapechar=`,
 \begin{abstract}
 Shell languages such as bash are designed to integrate with an OS, which mainly involves managing processes with implicit input and output streams. They also attempt to do this in a compact way that could be reasonably typed on a command-line interface.
 
-However, existing shell languages are not sufficient to serve as general-purpose languages - values are not observable except in raw streams of bytes, and they lack modern language features such as lexical scope and higher-order functions.
+However, existing shell languages are not sufficient to serve as general-purpose languages---values are not observable except in raw streams of bytes, and they lack modern language features such as lexical scope and higher-order functions.
 
 By way of a new programming language, \emph{Magritte}, we propose a general-purpose programming language with semantics similar to bash. In this paper, we discuss the early design of such a system, in which the primary unit of composition, like bash, is processes with asynchronous inputs and outputs, which can be read from or written to at any time, and which can be chained together via a pipe operator. We also explore concurrency semantics for such a language.
 
 % We explore the implementation and design challenges that come with such a model, and also show that this model is able to easily create and compose concurrent algorithms.
-% The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes.
+% The UNIX shell programming model has been shown to be a successful model for composing programs---spawning unrelated programs in parallel to communicate over operating-system pipes.
 
 % Beyond the most simple tasks, however, \texttt{bash} and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
 % %
@@ -119,26 +125,14 @@ By way of a new programming language, \emph{Magritte}, we propose a general-purp
 %
 % We propose a channel-based communication system that integrates with a workflow compensation system and is capable of recovering from errors and, importantly, cleaning up processes when communication halts.
 \end{abstract}
+
 \maketitle
 
 \section{Motivation}
 
-The UNIX shell programming model has been shown to be a successful model for composing programs - spawning unrelated programs in parallel to communicate over operating-system pipes. Beyond the most simple tasks, however, \verb/bash/ and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
+The UNIX shell programming model has been shown to be a successful model for composing programs---spawning unrelated programs in parallel to communicate over operating-system pipes. Beyond the most simple tasks, however, \verb/bash/ and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
 
 In this paper, we use the term \emph{pipe-based language} to mean a programming language intended to be used on a command line, with the ability to spawn many processes in which communicate through synchronous channels or pipes in an ad-hoc manner --- and in which this facility is the primary method of composing different functions or units.
-
-% TODO: discuss this
-%# fn pipe(lhs, rhs, inp, out) {
-%#   c = channel()
-%#   go fn () { lhs(inp, c); };
-%#   rhs(c, out)
-%# }
-%#
-%# collect = collector()
-%# pipe_collect(curry(range, 10), curry(fan, 2,
-%  fn(el, inp, out) { write(el + 1, out); }
-%), inp);
-%#
 
 Our overarching goal is to create a language and a programming system that retains the pipe-based programming and interaction model of bash, but allows for large programs in a way that existing shell languages do not.
 
@@ -156,8 +150,7 @@ Thus if we are to allow for pipe-based composition to be the core composition me
 \paragraph{Transactional Channels.}
 Since UNIX pipes can only manage bytes, usually channels with a fixed buffer are specified for performance reasons. However, in the languages we consider, we assume we can transactionally write a single complex value to a channel, resulting in the ability to send data in batch without resorting to a queue that may interleave writes.
 
-Consider the fairly common architecture of producer/consumer: A \emph{producer} process producese values that are processed in parallel by multiple \emph{consumer} processes, and then the values are collected in a single output. This might be expressed in bash as:
-
+Consider the fairly common architecture of producer/consumer: A \emph{producer} process produces values that are processed in parallel by multiple \emph{consumer} processes, and then the values are collected in a single output. This might be expressed in bash as:
 \begin{lstlisting}
 # pass through the stream, labeling every line
 label() {
@@ -182,13 +175,43 @@ a1    b12   a
 a2    a     b12
 a3    a4    a34
 \end{verbatim}
-In a language intended for large programs, therefore, writes to a channel must be \emph{transactional} - a single write must be sent wholesale to a single reader without any interleaving, no matter how big the write.
+In a language intended for large programs, therefore, writes to a channel must be \emph{transactional}---a single write must be sent wholesale to a single reader without any interleaving, no matter how big the write.
 
-Luckily, given the decision to allow rich values to be passed through channels, a buffer is not as necessary for performance purposes, since a single write may contain an arbitrarily large amount of data - or for that matter a pointer.
+Luckily, given the decision to allow rich values to be passed through channels, a buffer is not as necessary for performance purposes, since a single write may contain an arbitrarily large amount of data---or for that matter a pointer.
+
+\paragraph{Return Semantics.}
+Pipeline elements such as these do not generally return values---instead, they output data to their output stream. However, for serious programs it is desirable to capture some kind of return value from functions. ES Shell \cite{haahr} accomplishes this by introducing a \emph{return value} which is separate from stream output and can be accessed via special-purpose call syntax.
+
+If we allow values to be written to output streams, however, this approach is redundant---a function author must decide whether to return a value or write it to standard output. Thus it is desirable to have an interpolation syntax which \emph{collects} the output of a command synchronously.
+
+A priori, such a collection mechanism would have to return an array, as any function call may output zero or more values. However, that approach would lead to the callers of functions needing to manually unwrap arrays on every function call. In order to avoid this, we \emph{expand} the return values into the command vector---increasing the argument number by the number of values output from the function.
+
+In Magritte, normal parentheses in argument position will collect and expand output values in exactly this manner:
+\begin{lstlisting}
+# a function defintion: output three values
+(count-three) = (put 1; put 2; put 3)
+
+# a function call, using the above function
+other-fn 0 (count-three) 4
+
+# expands to
+other-fn 0 1 2 3 4
+\end{lstlisting}
+
+In this way, we can use output values in exactly the same way as return values seamlessly. These semantics are similar to the \verb/$(...)/ syntax in bash, with the exception that because we write transactional values to the output, we have the ability to properly separate values without relying on whitespace.
+
+\paragraph{Variable Scope.}
+Like the Es shell\cite{haahr}, we also wish to provide lambda functions with lexically scoped variables. However, Es has an ambiguity with respect to its variables---since both lexically scoped variables and dynamically scoped variables share the same syntax, the scope of a variable depends on runtime information. Additionally, since Es has no syntactic difference between let-binding and mutation, even code with no free variables may change in meaning signifcantly depending on what variables are in scope in its context.
+
+To remedy this issue, we introduce a separate syntax for lexically scoped variables, using a \verb/%/ instead of \verb/$/ (for example, \verb/%x/). Let-binding will bind a variable both lexically and dynamically, and uses an unadorned variable (e.g. \verb/x = 1/), so that we can maintain compatibility with standard environment files. Variable binders in lambda arguments are similarly both lexical and dynamic, and use \verb/?/ (e.g. \verb/?x/) to allow for a planned extension for pattern matching. For mutation, we use assignment syntax, but with the location (dynamic or lexical) specified on the left-hand side, e.g. \verb/%x = 1/ or \verb/$x = 1/. In this way we avoid the need to declare variables, and allow ourselves to throw an exception when trying to mutate a non-existent variable, rather than silently creating a new local binding.
+
+\paragraph{Objects.}
+For large programs, an object system is desirable as a way to provide user defined types and abstractions. The existing foundations of shell languages already make use of the UNIX \emph{environments} API, which consists of a map of strings to strings, together with a parent pointer. If we allow environments as first-class objects, they can be used in a straightforward manner as prototype-based objects.
+
+A future planned extension would allow an environment to have multiple prototype pointers, with lookup defined in a depth-first manner.
 
 \paragraph{Interruption.}
 A core requirement of pipe-based languages is a semantic of process \emph{interruption}: automatic clean-up of processes that will no longer be used. Consider the following Magritte code:
-
 \begin{lstlisting}
   read-lines tmp/large-file
     | take 10
@@ -208,7 +231,6 @@ Similarly, the \verb/each/ function will never be notified that its input has fi
 \paragraph{Compensation.} In order to observe interruption, user code must be able to react to and handle interruption. The most direct way to observe interruption is through a system of \emph{compensation actions}, which are expressions which will be evaluated in the case of an interruption.
 
 For example, the function \verb/file-lines/ above could be implemented as:
-
 \begin{lstlisting}
 (file-lines ?fname) = (
   handle = (open-file $fname) %%! close-file $fname
@@ -216,7 +238,7 @@ For example, the function \verb/file-lines/ above could be implemented as:
 )
 \end{lstlisting}
 
-In this code, the \verb/%%!/ symbol registers a compensation action that will be run either at the next checkpoint (the end of the function), or when the process is interrupted. In this way, we can ensure that the file is closed when the process exits. Compensations are the only way in which interruptions can be directly observed by client code - without compensations, the only way of observing forever-blocked processes would be to inspect the process table, or observe the memory footprint of the program. Thus, we can define the primary task of our system as \emph{running a process's compensation actions at the appropriate time}.
+In this code, the \verb/%%!/ symbol registers a compensation action that will be run either at the next checkpoint (the end of the function), or when the process is interrupted. In this way, we can ensure that the file is closed when the process exits. Compensations are the only way in which interruptions can be directly observed by client code---without compensations, the only way of observing forever-blocked processes would be to inspect the process table, or observe the memory footprint of the program. Thus, we can define the primary task of our system as \emph{running a process's compensation actions at the appropriate time}.
 
 \paragraph{Interrupting on Operations vs. Eager Interruption.}
 
@@ -232,7 +254,7 @@ The middle process will write five times, and then continue to do other processi
 The final \verb/take 5/ operation will return after 5 inputs are read.
 It is important to decide, then, whether the middle process should be \emph{interrupted} in the middle of \verb/do-other-operation/, or should it be left alone?
 
-An advantage of lazy interruption is that a user can identify precisely which points in the code have the potential to be interrupted - those points which run a \verb/put/ or a \verb/get/. Whereas with eager-interruption semantics any point in the code may be interrupted, introducing the need for users to either mark critical uninterruptible sections or be very careful about setting correct compensations in the case of mutative algorithms.
+An advantage of lazy interruption is that a user can identify precisely which points in the code have the potential to be interrupted---those points which run a \verb/put/ or a \verb/get/. Whereas with eager-interruption semantics any point in the code may be interrupted, introducing the need for users to either mark critical uninterruptible sections or be very careful about setting correct compensations in the case of mutative algorithms.
 
 On the other hand, lazy interruption has the disadvantage that a producing process must do enough work to produce one more value than will be consumed. If each value is relatively cheap to produce, this is not a problem, but in the case that the values are expensive to produce, this would result in doing a large amount of unnecessary work.
 
@@ -253,7 +275,6 @@ Luckily, in pipe-based languages, the arrangement of pipes is usually specified 
 Though we close a channel when all processes on the read or write sides close, there is always the possibility of new processes spawning and attempting to connect to a channel. In such a case, some systems leave open the possibility of \emph{reopening} a channel for further use. In UNIX, for example, the named-pipes API allows for persistent channels (TODO: cite!) that, being merely files, can be reopened at any time.
 
 However, this can lead to some unexpected races between a channel closing and a new process spawning. Consider the example:
-
 \begin{lstlisting}
 c = (make-channel)
 & count-forever > $c
@@ -261,13 +282,12 @@ c = (make-channel)
 put 10 > $c
 \end{lstlisting}
 
-This example, while contrived, represents an unavoidable race with first-class channels - whether the process running \verb/take 10/ closes the channel before or
-after the \verb/put 10/ invocation opens the channel for writing. If we allow channel reopening, we will either block forever, or insert the number 10 into the stream, depending on which happens first. However if we do not allow channel reopening, we can say that, if a process initiates a read or write on a closed channel, it is immediately interrupted. In this case, both sides of the former race have the same termination behavior - the process is closed when \verb/take 10/ returns.
+This example, while contrived, represents an unavoidable race with first-class channels---whether the process running \verb/take 10/ closes the channel before or
+after the \verb/put 10/ invocation opens the channel for writing. If we allow channel reopening, we will either block forever, or insert the number 10 into the stream, depending on which happens first. However if we do not allow channel reopening, we can say that, if a process initiates a read or write on a closed channel, it is immediately interrupted. In this case, both sides of the former race have the same termination behavior---the process is closed when \verb/take 10/ returns.
 
 \paragraph{Masking Interruptions.}
 
 A user will often wish to continue after a particular output channel has closed, and in this case will need a facility to mask exceptions for particular channels. Consider the following example, which uses reservoir-sampling to select a uniform random element from a stream:
-
 \begin{lstlisting}
 (sample) = (
   hold = (get)
@@ -284,89 +304,94 @@ A user will often wish to continue after a particular output channel has closed,
 
 In this example, the function \verb/each/ will consume the entire input stream and mutate a variable with a given probability. After the entire input stream is consumed, we wish to output the resulting value stored in the \verb/$hold/ variable.
 
-However, with the semantics described above, the \verb/each/ function will loop until it is given an interrupt signal from the input channel closing, which will interrupt the entire process and not continue to the following line. In order to avoid this situation, the \verb/each/ function must somehow indicate that it intends to consume the entire stream, and handle the interrupt signal.
+However, with the semantics described above, the \verb/each/ function will loop until it receives an interrupt signal from the input channel closing, which will interrupt the entire process and not continue to the following line. In order to avoid this situation, the \verb/each/ function must somehow indicate that it intends to consume the entire stream, and handle the interrupt signal.
 
-While we plan to explore more general mechanisms for error handling, for cases such as this it suffices to provide two builtins, \verb/produce/ and \verb/consume/, each of which takes a single function to loop forever until the standard output or standard input respectively is consumed, whereby control flow continues after the invocation. Using these functions, we might define \verb/each/ as:
-
+While we plan to explore more general mechanisms for error handling, for cases such a this it suffices to provide two builtins, \verb/produce/ and \verb/consume/, each of which takes a single function to loop forever until the standard output or standard input respectively is consumed, whereby control flow continues after the invocation. Using these functions, we might define \verb/each/ as:
 \begin{lstlisting}
 (each ?fn) = (consume (=> %fn (get)))
 \end{lstlisting}
 
 With this definition, the call to \verb/consume/ will mask the interruption, and control flow within the \verb/sample/ function will proceed as normal.
 
-\section{Description of Magritte.}
+\section{Implementation of Magritte}
 
-(TODO: \verb/{add,remove}_{reader,writer}/ are hidden intrinsics, only called automatically at process spawn and exit (even for exits that are in error). and we only allow reads/writes for processes *attached* to channels, rather than freely through channel variables. explain this)
+The current version of Magritte is implemented as a straightforward interpreter written in Ruby, using Ruby's builtin threads, exceptions, and mutexes to implement processes and channels.
 
-We extend the notion of a synchronous channel with \emph{registered readers} and \emph{registered writers}, and add four intrinsic functions: \verb/add_reader/, \verb/remove_reader/, \verb/add_writer/, and \verb/remove_writer/, each receiving a channel and a process handle.
-These store and delete processes from the channel's internal sets of registered readers and registered writers.
+\paragraph{Channel Registry.}
 
-In this way, we can know relatively certainly when a channel will never unblock - if either the read or the write end has no remaining processes holding it open, we immediately close it. While it is still possible for processes to attempt to attach new processes to a closed channel
+Our channel implementation is a standard implementation of synchronous channels, with the addition of four intrinsic methods, used only internally by the interpreter: \verb/add_reader/, \verb/remove_reader/, \verb/add_writer/, and \verb/remove_writer/, which register and deregister processes as described above. When \verb/remove_reader/ or \verb/remove_writer/ result in an empty registered set, they additionally close the channel and raise an internal \verb/Interrupt/ exception in every blocked thread.
 
-Additionally, \verb/remove_reader/ and \verb/remove_writer/ will cause the channel to close if their corresponding sets are empty after the operation.
+Once the channel is closed, every call to \verb/read/ and \verb/write/ will cause the calling process to be interrupted, as described above in \emph{Closing Permanence}.
 
-When a channel is closed, we first interrupt every process that is blocked on the channel.
-Thereafter, any attempted read or write operations will cause the initiating process to be interrupted.
-When a channel is interrupted, we must not only perform any cleanup actions such as closing files or writing to error logs, but also call \verb/remove_reader/ and \verb/remove_writer/ on any channels the process has registered - thereby potentially cascading the interruptions to other processes.
+In order to reduce unnecessary use of Ruby threads, we also find it is simpler to, instead of registering \emph{processes} to the channels, to register \emph{frames}. In this way, we can register all inputs and outputs on frame entry, and use standard Ruby exception handling to ensure we properly unregister all inputs and outputs on frame exit. This means that different frames in the same process can be redirected to different channels, which makes the \verb/>/ and \verb/</ redirection syntax straightforward to implement---we simply push a new frame with different channels attached.
 
+Cascading of interruptions then happens naturally---when a channel closes, a process is interrupted, causing it to unwind its stack and deregister channels, thereby potentially causing other channels to close.
 
-\section{Magritte}
+\paragraph{Spawning Order Dependency.}
 
-We have implemented \verb/magritte/(TODO: cite), a Ruby DSL that allows communication between native Ruby threads, and automatically cleans up dangling threads with the above semantics.
-The API revolves around a \verb/Magritte::Code/ object, which can also be created with the builtin \verb/s/ primitive.
+It is necessary to take some care with the implementation of the \verb/spawn/ primitive, that we wait until the spawned process has finished registering its channels before the spawning process continues. Consider the example, which outputs 10 numbers, possibly out of order:
+\begin{lstlisting}
+(drain) = (each (?x => put %x))
+count-forever | (& drain; & drain) | take 10
+\end{lstlisting}
+The middle process is responsible for spawning two processes that funnel data from their input to their output. However, since they are both spawned in the background, the spawning process will immediately return. In general this is not a problem, since the \verb/drain/ processes should be keeping the two pipes open. However, if we do not take care to wait until they have finished registering their channels, there is a risk that the spawning process will return first and close the two pipes.
 
-Within a code object, the primitive functions \verb/put/ and \verb/get/ can be used to read from the input and write to the output.
-A code object can be run in-process (\verb/.call/), in the background (\verb/.go/).
-The default output is a special kind of write-only channel called a \verb/Collector/, which never blocks, but collects every written value into an array.
+For this reason, we have special case handling for the root frame---the channels are registered in the \emph{spawning} process, before the spawned process is allowed to start.
 
-Input and output channels can be set \emph{outside} of a channel using the \verb/.from(channel)/ and \verb/.to(channel)/ methods.
-However, they are by default inherited from the enclosing context, meaning that it is straightforward to spawn multiple concurrent processes that are attached to the same channels.
+\paragraph{Collectors.}
+In order to implement the call semantics described above, we also implement a write-only channel called a \emph{collector}. Collectors cannot be created directly by users, but only appear in the interpreter when we evaluate a \verb/Subst/ node, which represents parentheses in argument position.
 
-Consider the example:
+Naively, collectors would ignore registration commands and simply append written elements to an array. However, it is still necessary to track registered writers. Consider the example:
+\begin{lstlisting}
+(range ?n) = (count-forever | take %n)
+my-list = [(range 10 | (& drain; & drain))]
+\end{lstlisting}
 
-\begin{verbatim}
-s { i = 0; loop { put i; i += 1 } }
-  .p { s { drain }.go; s { drain }.go }
-  .p { take 10 }.call
-\end{verbatim}
-In this example, we spawn four processes.
-The first line spawns an infinite loop that generates all positive integers.
-The second line spawns two processes, both reading from the same input and writing to the same output.
-Finally the third line spawns a process that reads and writes 10 values, then returns. The definition of \verb/drain/ is very simply:
+In this example, there is an open question of how long we should wait until reading the collection and continuing. If we naively wait until the base command is finished, we will continue early and miss values that may be written later. Thus substitution waits until all writers to the collector have deregistered.
 
-\begin{verbatim}
-def drain
-  loop { put(get) }
-end
-\end{verbatim}
-so that it completely drains the input channel into the output.
-But since there are two of these processes running concurrently, races are possible.
-
-According to the semantics described above, both draining processes will be cleaned up when \verb/take 10/ returns, causing the generation loop to also be closed.
-Notably, even though the second process in the pipeline, which spawns the two \verb/drain/ processes, will exit immediately after spawning, this won't result in any programs closing, since the two consumer processes are also registered as readers and writers to the standard input and standard output of the middle process.
+To implement this, we add a \verb/wait_for_close/ intrinsic to collectors, which returns immediately if closed, and otherwise adds the current thread to a waiting set and sleeps. Upon closing the channel in \verb/remove_writer/, all elements of this waiting set are awoken, and flow continues. Thus the algorithm for substiution is:
+\begin{lstlisting}
+* Create a new collector $c
+* Evaluate the contents with standard output into the collector
+* Run $c.wait_for_close
+\end{lstlisting}
 
 
-% \verb{...} inline \verbatim
-% \verb+abc_def+
-
-% example of bash race conditions based on re-opening channels
 
 \section{Related Work}
 
+\paragraph{Iterators.}
+(TODO: iterators in other languages?)
 PEP 533 Authors(TODO: cite properly) describe an automatic closing system for generators, in which an \verb/__iterclose__/ signal is sent by the consumer back to the producer as soon as a consumer exits early.
-But channel-based systems generally allow for multiple concurrent readers and writers - so automatically cleaning up a channel when a single consumer exits would cause processes that are still able to communicate to be terminated early.
-We propose a system such that processes are interrupted as soon as it is no longer possible for them to resume.
+But channel-based systems generally allow for multiple concurrent readers and writers---so automatically cleaning up a channel when a single consumer exits would cause processes that are still able to communicate to be terminated early.
 
-The Bourne Again Shell (\"bash\")
+\paragraph{Go Language.}
+
+The Go programming language contains a robust channel implementation, which can be used to implement a wide variety of concurrent algorithms. In an untyped language similar to Go (the following implementation is not possible in general in Go without generic types), we could implement something similar to our system by adding input and output channels to every function and heavily currying functions:
+\begin{lstlisting}[language=C, morekeywords={fn,channel,nil,go}]
+fn pipe(lhs, rhs, inp, out) {
+  c = channel()
+  go fn () { lhs(inp, c); };
+  rhs(c, out)
+}
+
+collect = collector()
+pipe(curry(range, 10), curry(fan, 2, fn(el, inp, out) { write(el + 1, out); }), nil, collect);
+
+return collect.values()
+\end{lstlisting}
+
+However, such a system would still require manual use of input and output channels when a simple pipeline would suffice---and the user must still translate between returning vs. outputting functions and expressions. Additionally, Go does not contain any kind of channel closing semantics or automatic process cleanup. Finally, such a system would be far too heavyweight for a REPL context, and would not make for a viable shell.
 
 Python PEP 533; Go, Erlang; Guile Scheme, TCL;
 
-The \verb/rc/ shell \cite{duff} from the Plan 9 operating system from Bell Labs introduces a list data type to shell, and cleans up some of the historical surprising quotation behavior of bash. However its list type is not nestable - nested lists are automatically flattened at creation time. Additionally, these lists cannot be passed through channels.
+\paragraph{RC Shell.}
+The \verb/rc/ shell \cite{duff} from the Plan 9 operating system from Bell Labs introduces a list data type to shell, and cleans up some of the historical surprising quotation behavior of bash. However its list type is not nestable---nested lists are automatically flattened at creation time. Additionally, these lists cannot be passed through channels.
 
+\paragraph{Es Shell.}
 The \verb/es/ shell \cite{haahr} attempts to extend the standard shell model with lambda functions with lexical scoping. These shell functions are marshalled into strings when passed through pipes (whether to shell functions or external programs), but are still written byte-by-byte and thus are subject to interleaving in concurrent cases.
 
-
-\bibliographystyle{ACM-Reference-Format}
+\bibliographystyle{ipsjsort-e}
 \bibliography{paper}
 
 \end{document}

@@ -1,0 +1,374 @@
+
+% ipsjpref.sty  (C) 2012 Information Processing Society of Japan
+% Copyright (C) 1995-2010 by Hiroshi Nakashima, Yasuki Saito and
+%                            The Editorial Board of the IPSJ Journal
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ipsj}
+%\ProvidesClass{ipsj}
+% [2011/12/10-2012/03/09 v1.00-2.00 IPSJPREF.STY]
+% [2012/06/01 v2.01 IPSJPREF.STY]
+ [2017/02/16 v3.00 IPSJ class]
+
+
+
+
+\newif\ifDS@alone \DS@alonefalse
+\DeclareOption{alone}{\DS@alonetrue}
+\ProcessOptions
+
+
+\def\SHUBETUname@DAM{\ifDS@english%
+\leavevmode %%<---
+\else \leavevmode \fi}%%
+
+
+\JEhonbunsep=5mm % default 15mm
+
+
+\def\@maketitle{%
+\newpage\null
+%%%%%%%%%%
+\ifDS@english
+%%
+\vskip-1.3mm%
+\ifx\SHUBETUname\relax%
+{\SHUBETUfontE{\SHUBETUname@DEF}}%%
+\else
+{\SHUBETUfontE{\SHUBETUname}}%%
+\fi
+%%
+\else
+\ifx\SHUBETUname\relax%
+{\SHUBETUfontJ{\SHUBETUname@DEF}}%%
+\else
+{\SHUBETUfontJ{\SHUBETUname}}%%
+\fi\fi
+%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\shubetutitlesep% 
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%\vskip 10mm%
+\begin{center}
+\authortitle %%<---
+\end{center}
+%%%%%%%%%%%%%%%%%%%
+%
+}
+
+
+
+\ifDS@english
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\authortitle{%
+{\Engtitlefont%
+{\@title}\par}
+%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Etitleauthorsep%
+%%%%%%%%%%%%%%%%%%%%%%%
+%% author %%%
+{\Engeauthorfont%
+\authoroutput{e}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Eauthorreceivesep%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\JEhonbunsep%
+%%%%%%%%%%%%%%%%%%%
+%%
+}
+%===========
+\else
+%==========
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\authortitle{%
+{\jtitlefont%
+{\@title}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Jtitlejauthorsep%
+%%%%%%%%%%%%%%%%%%%%%%%%
+%======
+{\authorfont%
+\authoroutput{}\par}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\Jauthorjreceivesep%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vskip\JEhonbunsep%
+%%%%%%%%%%%%%%%%%%%
+}
+\fi
+
+
+
+
+
+
+
+\ifDS@english
+\def\ps@IPSJTITLEheadings{%
+ \def\@oddhead{\@Ltop%
+\rlap{\small{%%
+%%
+\ifx\signame\relax%
+{\HeadfontE{\signame@DEF}}%%
+\else
+{\HeadfontE{\signame}}%%
+\fi
+%%%%%
+%vol
+%%%%%
+%===============
+\hskip12\Q{\HeadfontE{Vol.\number\c@volume}}%
+%===============
+  \ifDS@CVA\relax\else
+  \ifDS@TBIO\relax\else
+  \ifDS@SLDM\relax\else
+%  \ifDS@JIP\relax\else
+%%%%%%
+%no
+%%%%%%
+%\hskip1em{\HeadfontE{No.\number\c@number}}%
+\fi\fi\fi%\fi
+%%%%%%
+%page
+%%%%%%
+\bgroup
+%%%
+%
+\ifDS@ACS
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+\ifDS@PRO
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+\ifDS@TOD
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+\ifDS@TOM
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+\ifDS@TBIO
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+\ifDS@CVA
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+\ifDS@SLDM
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+%\ifDS@JIP
+%   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+%   \HeadfontE{(\@monthyear)}%
+%\else\relax\fi
+\ifDS@JIP
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+\ifDS@CDS
+  \ifDS@alone
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \else
+   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+   \HeadfontE{(\@monthyear)}%
+  \fi
+\else\relax\fi
+%
+%\ifDS@EEE
+%   \hskip12\Q{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+%   \HeadfontE{(\@monthyear)}%
+%\else\relax\fi
+%
+%
+%
+%%%
+\egroup
+}%
+}%
+%%%%%
+\smash{\raisebox{-6mm}{\rlap{%
+{\DOIHeadfont%
+%%%%
+\bgroup
+\ifDS@TBIO
+   [DOI: 10.2197/ipsjtbio.\number\c@volume.\pageref{ipsj@firstpage}]
+\else\fi
+%
+\ifDS@CVA
+   [DOI: 10.2197/ipsjtcva.\number\c@volume.\pageref{ipsj@firstpage}]
+\else\fi
+%
+\ifDS@SLDM
+   [DOI: 10.2197/ipsjtsldm.\number\c@volume.\pageref{ipsj@firstpage}]
+\else\fi
+%
+\ifDS@JIP
+   [DOI: 10.2197/ipsjjip.\number\c@volume.\pageref{ipsj@firstpage}]
+\else\fi
+%
+%%
+%%
+%%%%%
+\egroup
+}%
+}}}%
+\hfil\@Rtop}%
+%%%%%
+ \let\@evenhead\@oddhead
+ \def\@oddfoot{\@Lbot%
+\rlap{%\fontsize{10\Q}{0\h}%
+%\usefont{OT1}{ptm}{m}{n}%Times
+%\selectfont%
+%\normalfont%
+{\bothashira%
+\copyright \ {\@footyear} Information Processing Society of Japan%
+}}%
+\hfil
+%\fontsize{13\Q}{0\h}%
+%\usefont{OT1}{ptm}{m}{n}%Times
+%\selectfont%
+%\normalsize
+{\botnomble
+%%%%%%
+\ifDS@ACS{\thepage}\else\fi
+\ifDS@PRO{\thepage}\else\fi
+\ifDS@TOD{\thepage}\else\fi
+\ifDS@TOM{\thepage}\else\fi
+\ifDS@TBIO{\thepage}\else\fi
+\ifDS@CVA{\thepage}\else\fi
+\ifDS@SLDM{\thepage}\else\fi
+\ifDS@JIP{\thepage}\else\fi
+\ifDS@CDS{\thepage}\else\fi
+%\ifDS@EEE{\thepage}\else\fi
+%%%%%
+\@Rbot}%
+ \let\@evenfoot\@oddfoot
+ \let\@mkboth\@gobbletwo
+}}
+%%%
+%%%%%%%%%
+\else
+%%%%%%%%%
+%%%
+\def\ps@IPSJTITLEheadings{%
+ \def\@oddhead{\@Ltop%
+\rlap{\small%
+%%
+\ifx\signame\relax%
+{\HeadfontJ{\signame@DEF}}%%
+\else
+{\HeadfontJ{\signame}}%%
+\fi
+%%%%%
+{%%
+\hskip12\JQ{\HeadfontE{Vol.\number\c@volume}}%
+%\hskip12\JQ{\HeadfontE{No.\number\c@number}}%
+%
+\ifDS@alone
+\hskip12\JQ{\HeadfontE{\pageref{ipsj@firstpage}}}\ %
+\HeadfontE{(\@monthyear)}%
+\else
+%
+\hskip12\JQ{\HeadfontE{\pageref{ipsj@firstpage}--\pageref{ipsj@lastpage}}}\ %
+\HeadfontE{(\@monthyear)}
+\fi
+}}%
+%%%%
+\smash{\raisebox{-6mm}{\rlap{%
+{\DOIHeadfont%%
+}%
+}}}%
+\hfil\@Rtop}%
+%%
+ \let\@evenhead\@oddhead
+ \def\@oddfoot{\@Lbot%
+\rlap{%
+%\fontsize{10\Q}{0\h}\usefont{OT1}{ptm}{m}{n}%Times
+%\selectfont%
+{\bothashira%
+{\textcopyrighttx} \ {\@footyear} Information Processing Society of Japan%
+}}%
+\hfil%
+%\fontsize{13\Q}{0\h}%
+%\usefont{OT1}{ptm}{m}{n}%Times
+%\selectfont%
+{\botnomble%
+{\thepage}}%
+\@Rbot}%
+ \let\@evenfoot\@oddfoot
+ \let\@mkboth\@gobbletwo
+}
+\fi
+
+
+
+
+%% <<<< v1.02
+\def\SHUBETUname@Data{\leavevmode\phantom{Database/Software Paper}}
+\def\SHUBETUname@Survey{\leavevmode\phantom{Survey Paper}}
+\def\SHUBETUname@TBIOM{\leavevmode\phantom{Original Paper}}
+\def\SHUBETUname@Short{\leavevmode\phantom{Short Paper}}
+
+
+
+
+
+\endinput
+
+
