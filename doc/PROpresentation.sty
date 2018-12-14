@@ -1,0 +1,39 @@
+%% LaTeX additional style for PRO presentation
+%% Author: Kiminori MATSUZAKI (matsuzaki.kiminori@kochi-tech.ac.jp)
+%% Date: Aug 24th, 2012
+%% Note: for ipsj.cls 2012/06/01 v1.03
+
+\def\PROheadtitle#1{\gdef\@PROheadtitle{#1}}
+
+%% Comes from ipsj.cls
+\def\ps@PROheadings{
+ \def\@oddhead{\@Ltop
+\rlap{\small
+\ifDS@english
+{\HeadfontE \@PROheadtitle}
+\else
+{\HeadfontJ \@PROheadtitle}
+\fi
+}
+\hfil\@Rtop}
+\let\@evenhead\@oddhead
+\def\@oddfoot{\@Lbot
+\hfil
+{\botnomble
+{\thepage}}
+\@Rbot}
+\let\@evenfoot\@oddfoot
+\let\@mkboth\@gobbletwo
+}
+\let\ps@IPSJTITLEheadings=\ps@PROheadings
+\let\ps@headings=\ps@PROheadings
+\pagestyle{headings}
+
+%% Received/Accepted dates are not included
+\def\@uketsuke{}
+\def\@euketsuke{}
+
+%% To remove ``Regular Paper'' from the head of english title
+%% Option DAM is included as default....
+\def\SHUBETUname@DAM{\ifDS@english%
+\else \leavevmode \fi}%%

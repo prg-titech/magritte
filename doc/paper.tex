@@ -1,5 +1,7 @@
 ﻿% notes
-\documentclass[english,preprint,JIP,uplatex]{ipsj}
+\documentclass[english,PRO]{ipsj}
+\usepackage{PROpresentation}
+\PROheadtitle{y-n-(x): Manuscript for presentation at IPSJ-SIGPRO, d m Y.}
 
 % \usepackage[utf8]{inputenc}
 
@@ -72,8 +74,8 @@ KTH Royal Institute of Technology, Stockholm, Sweden, 10044}
 
 
 \author{Jeanine Miller Adkisson}{TITech}[jneen@jneen.net]
-\author{Hidehiko Masuhara}{TITech}[masuhara@acm.org]
 \author{Johannes Westlund}{TITech,KTH}[jwestlun@kth.se]
+\author{Hidehiko Masuhara}{TITech}[masuhara@acm.org]
 
 % thought experiment---parallel fetching
 % find an example of named pipes
@@ -81,7 +83,6 @@ KTH Royal Institute of Technology, Stockholm, Sweden, 10044}
 % TODO LIST
 % x Find an example of named pipes reopening
 % * Find an example of a non-linear pipe arrangement (prob. from flow-based programming)
-% * Bibliography
 % * Pretty Syntax
 
 \begin{abstract}
@@ -96,40 +97,41 @@ By way of a new programming language, \emph{Magritte}, we propose a general-purp
 
 \section{Motivation}\label{motivation}
 
-The UNIX shell programming model has been shown to be a successful model for composing programs---spawning unrelated programs in parallel to communicate over operating-system pipes. Beyond the most simple tasks, however, \verb/bash/ and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no support for transactional writes.
+\noindent
+The UNIX shell programming model has been shown to be a successful model for composing programs---spawning unrelated programs in parallel to communicate over operating-system pipes. Beyond the most simple tasks, however, \verb/bash/ and similar tools break down, due to the byte-based nature of the system: variables can only hold byte arrays, and pipes can only manage raw byte streams, with no boundaries between values.
 
-In this paper, we use the term \emph{pipe-based language} to mean a programming language intended to be used on a command line, with the ability to spawn many processes in which communicate through synchronous channels or pipes in an ad-hoc manner --- and in which this facility is the primary method of composing different functions or units.
+In this paper, we use the term \emph{pipe-based language} to mean a programming language intended to be used on a command line, with the ability to spawn many processes which communicate through synchronous channels or pipes in an ad-hoc manner --- and in which this facility is the primary method of composing different functions or units.
 
 Our overarching goal is to create a language and a programming system that retains the pipe-based programming and interaction model of bash, but allows for large programs in a way that existing shell languages do not.
 
-\subsubsection*{Outline}\noindent
+\subsection*{Outline}\noindent
 In this work, we present a new shell language \emph{Magritte}. Section 2 describes design requirements for a language in this space. Section 3 and 4 describe Magritte's design and implementation. Section 5 describes our future goals with this project, and in Section 6 we review various related works and alternative approaches.
 
-\section{Design Considerations}\label{design-considerations}
+\section{Design Considerations}\label{design-considerations}\noindent
 In this section we discuss several feature requirements and design considerations for a pipe-based language to be viable for large programs.
 
 \subsection{Programming With Values}
 \subsubsection{Not Everything Is a String}\noindent
-The first core issue that prevents most shells from being viable for large programs is that only strings can be first-class values.
+The first core issue that prevents most shells from being viable for large programs is that only strings are allowed as first-class values.
 
-Several projects\cite{haahr,duff}, including bash itself, have attempted to add lists and hash maps as standard objects. Unfortunately, while they allow these values to be stored in variables, most projects do not allow these data structures to be passed into or returned from functions, or importantly, passed through pipes.
-Since values in these languages cannot be passed through pipes, they are relegated to a second class of value, one for which pipe-based composition is not available.
+Several projects\cite{haahr,duff}, including bash itself, have attempted to add lists and hash maps as standard objects. Unfortunately, while they allow these values to be stored in variables, most systems do not allow these data structures to be passed into or returned from functions, or importantly, passed through pipes.
+Since values in these languages cannot be passed through pipes, they are relegated to a second class of value, one for which pipe-based composition is not possible.
 
-Thus we are to allow for pipe-based composition to be the core composition method for large programs, we must allow rich values to be passed through channels.
+Thus if we are to allow for pipe-based composition to be the core composition method for large programs, we must allow rich values to be passed through channels.
 
 \subsubsection{Consistent Channels}\noindent
-Since UNIX pipes can only manage bytes, usually channels with a fixed buffer are used for performance reasons. However, in the languages we consider, we assume we can transactionally write a single complex value to a channel, which allows for sending data in batch without resorting to a queue that may interleave writes.
+Since UNIX pipes can only manage bytes, usually channels with a fixed buffer are used for performance reasons. However, it is important if a pipe is to be used for composition that reads correspond exactly to writes, and that data does not become corrupted by interleaving.
 
-Consider the fairly common architecture of producer/consumer: A \emph{producer} process produces values that are processed in parallel by multiple \emph{consumer} processes, and the values are collected in a single output. This might be expressed in bash as:
-\noindent\begin{lstlisting}
-# consume the stream, labeling every line
+For example, consider the fairly common architecture of producer/consumer: A \emph{producer} process produces values that are processed in parallel by multiple \emph{consumer} processes, and the values are collected in a single output. This might be expressed in bash as:
+\noindent\begin{lstlisting}[morekeywords={do,done}]
+# <@\underline{\color{gray} consume}@> the stream, labeling every line
 label() { while read x; do echo "$1$x"; done ;}
 
 # process the stream in the background
 # with two threads
 split() { label a & label b & ;}
 
-# process the numbers 1-100,
+# <@\underline{\color{gray} produce}@> and process the numbers 1-100,
 # limiting output to the first 3 lines
 seq 100 | split | head -3
 \end{lstlisting}
@@ -185,7 +187,7 @@ a34
 \end{minipage}
 
 \noindent
-This behaves in accordance with the Linux User's Manual \cite{linux-pipe},
+This behavior is in accordance with the Linux User's Manual \cite{linux-pipe}:
 \begin{lstlisting}
 The communication channel provided by a pipe is
 a <@\emph{byte stream}@>: there is no concept of message
@@ -198,27 +200,27 @@ In order to provide a channel implementation that is usable for large programs, 
 \subsubsection{Return Semantics}\label{return-semantics}\noindent
 Pipeline elements such as these do not generally return values---instead, they output data to their output stream. However, for serious programs it is desirable to capture some kind of return value from functions. Es Shell\cite{haahr} accomplishes this by introducing a \emph{return value} which is separate from stream output and can be accessed via special-purpose call syntax.
 
-If we allow values to be written to output streams, however, this approach is redundant---a function author must decide whether to return a value or write it to standard output. Thus it is desirable to have an interpolation syntax which \emph{collects} the output of a command synchronously.
+If we allow values to be written to output streams, however, this approach is redundant---a function author must decide whether to return a value or write it to the standard output. Thus it is desirable to have an interpolation syntax which \emph{collects} the output of a command synchronously.
 
-A priori, such a collection mechanism would have to return an array, as any function call may output zero or more values. However, that approach would require the callers of functions to manually unwrap arrays on every function call.
+A priori, such a collection mechanism would have to return an list, as any function call may output zero or more values. However, that approach would require the callers of functions to manually unwrap lists on every function call.
 
 \subsection{Language Features}
 \subsubsection{Variable Scope}\noindent
-Like the Es shell, we also wish to provide lambda functions with lexically scoped variables. However, Es has an ambiguity with respect to its variables---since both lexically scoped variables and dynamically scoped variables share the same syntax, the scope of a variable depends on which variables are bound in the function's definition environment. Therefore a simple typo of a variable name will result not in an error, but in the variable silently becoming dynamically bound.
+Like the Es shell, we also wish to provide lambda functions with lexically scoped variables. However, Es has an ambiguity with respect to its variables---since both lexically scoped variables and dynamically scoped variables share the same syntax, the scope of a variable depends on which variables happen to be bound in the function's definition environment. Therefore a simple mistype of a variable name will result not in an error, but in the variable silently becoming dynamically bound.
 
 \subsubsection{Objects}\noindent
-For large programs, an object system is desirable as a way to provide user-defined types and abstractions. The existing foundations of shell languages already make use of the UNIX \emph{environments} API, which consists of a map of strings to strings, together with a parent pointer. If we allow environments as first-class objects, they can be used in a straightforward manner as prototype-based objects.
+For large programs, an object system is desirable as a way to provide user-defined types and abstractions. The existing foundations of shell languages already make use of the UNIX \emph{environments} API, which consists of a map of strings to strings, together with a parent pointer. Therefore, if we allow environments as first-class values, they can be used in a straightforward manner as prototype-based objects.
 
 \subsubsection{Trees and Pattern Matching}\noindent
-For programs that deal with syntax or other kinds of trees, it is convenient to have a compact tree representation, which can be made possible with nestable vectors. It is also desirable to have some mechanism for pattern matching against these kinds of values. These kinds of structures are impossible in systems such as RC Shell\cite{duff} and Es Shell, which implicitly flatten all lists.
+For programs that deal with syntax or other kinds of trees, it is convenient to have a compact tree representation, which can be made possible with nestable vectors. It is also desirable to have some mechanism for pattern matching against these kinds of values. These kinds of structures are impossible using the list features in systems such as RC Shell\cite{duff} and Es Shell, which implicitly flatten all lists.
 
 \subsection{Automatic Process Cleanup}
 \subsubsection{Interruption}\noindent
 A core requirement of pipe-based languages is a semantic of process \emph{interruption}: automatic clean-up of processes that will no longer be used. Consider the following Magritte code:
 \begin{lstlisting}
-  read-lines tmp/large-file
-    | take 10
-    | each (?line => do-expensive-work <@\$@>line)
+  read-lines tmp/large-file                        <@\color{gray}\hfill $(1)$@>
+    | take 10                                      <@\color{gray}\hfill $(2)$@>
+    | each (?line => do-expensive-work <@\$@>line) <@\color{gray}\hfill $(3)$@>
 \end{lstlisting}
 
 \noindent
@@ -226,7 +228,7 @@ In this example, three processes are spawned: (1) a process with an open file th
 A user's intent when typing such code may be to read 10 lines from a file and synchronously perform an action on each line.
 
 In a pipe-based language, we expect all three to be running concurrently, communicating through anonymous pipes or channels.
-A user will also expect that, after the first 10 lines are processed, the file is closed, and that all three processes exit.
+A user will also expect that, after the first 10 lines are processed and the \verb/take/ function returns, the file will be closed, and all three processes exit.
 This expectation is despite the fact that process (1) is specified to read the entire file, and process (3) is a theoretically infinite loop.
 
 In a naive implementation using synchronous channels, process (1) will never be able to write more than 10 lines, and will remain blocked on its output with the file open forever.
@@ -248,24 +250,24 @@ Consider the following example, with the assumption that \\ \verb/do-other-opera
 \noindent
 The first process will write three times, and then continue to do other processing in-thread that does not write to the standard output.
 The final \verb/take 3/ operation will return after 3 inputs are read.
-It is important to decide, then, whether the middle process should be \emph{interrupted} in the middle of \verb/do-other-operation/ (\emph{eager interruption}), or should it be left alone until it attempts to write a value (\emph{lazy interruption})?
+It is important to decide, then, whether the first process should be \emph{interrupted} in the middle of \verb/do-other-operation/ (\emph{eager interruption}), or whether it should be left alone until it attempts to write a value (\emph{lazy interruption}).
 
 An advantage of lazy interruption is that a user can identify precisely which points in the code have the potential to be interrupted---those points which run a \verb/put/ or a \verb/get/. Whereas with eager-interruption semantics any point in the code may be interrupted, introducing the need for users to either mark critical uninterruptible sections or be very careful about setting correct compensations in the case of mutative algorithms.
 
 On the other hand, lazy interruption has the disadvantage that a producing process must do enough work to produce one more value than will be consumed. If each value is relatively cheap to produce, this is not a problem, but in the case that the values are expensive to produce, this would result in doing a large amount of unnecessary work.
 
-\subsubsection{Non-closing of Channels}\noindent
+\subsubsection{Non-closing of Channels}\label{non-closing}\noindent
 Given that multiple processes may be reading from and writing to a channel, it is often the case that a communicating process will end when there are other processes still communicating over the channel. It would not be appropriate in this case to interrupt other processes attached to the channel, as they are still able to communicate.
 
 We define our guiding principle for the appropriate time to interrupt a process as: \emph{A process is interrupted exactly when it can no longer be woken up}.
 When a process is blocked on a synchronous channel, it will be woken up as soon as another process communicates on the other end.
-Therefore the appropriate time for it to be interrupted is if it is blocked on a channel that will never receive any more operations.
+Therefore the appropriate time for it to be interrupted is when it is blocked on a channel that will never receive any more operations.
 In traditional channel-based systems, this is difficult to detect, because a reference to a channel could be passed anywhere in the program as a standard value, and be interacted with in any way at any time.
 
 Luckily, in pipe-based languages, the arrangement of pipes is usually specified at process spawn time. This enables us to maintain a process register inside of each channel, so that we can decide when all readers or all writers have detached from a channel, at which time the channel closes and interrupts all blocked processes.
 
 \subsubsection{Closing Permanence}\label{closing-permanence}\noindent
-Though we close a channel when all processes on the read or write sides close, there is always the possibility of new processes spawning and attempting to connect to a channel. In such a case, some systems leave open the possibility of \emph{reopening} a channel for further use. In UNIX, for example, the named-pipes API allows for persistent channels \cite{linux-pipe} that, being merely files, can be reopened at any time.
+Even when we close a channel when all processes on the read or write sides close, there is always the possibility of new processes spawning and attempting to connect to a channel. In such a case, some systems leave open the possibility of \emph{reopening} a channel for further use. In UNIX, for example, the named-pipes API allows for persistent channels \cite{linux-pipe} that, being merely files, can be reopened at any time.
 
 However, this can lead to some unexpected races between a channel closing and a new process spawning. Consider the example:
 \begin{lstlisting}
@@ -287,8 +289,9 @@ A user will often wish to continue after a particular output channel has closed,
   i = 1
   each (?v =>
     $i = (inc $i)
-    # mutate the $hold variable with probability 1/$i
-    prob $i 1 && ($hold = %v)
+    # mutate the $hold variable
+    # with probability 1/$i
+    prob (reciprocal $i) 1 && ($hold = %v)
   )
 
   put $hold
@@ -300,11 +303,42 @@ In this example, the function \verb/each/ will consume the entire input stream a
 
 However, with the semantics described above, the \verb/each/ function will loop until it receives an interrupt signal from the input channel closing, which will interrupt the entire process and not continue to the following line. In order to avoid this situation, the \verb/each/ function must somehow indicate that it intends to consume the entire stream, and handle the interrupt signal.
 
-\section{Description of Magritte}\label{description}
-
+\section{Description of Magritte}\label{description}\noindent
 We propose a language that meets the above requirements.
 
-\subsubsection{Nestable Vectors}
+\subsection{Values and Variables}
+
+\subsubsection{Lexical vs. Dynamic Variables}\noindent
+In order to support both lexical and dynamic variables, we introduce a separate syntax for lexically scoped variables at the variable reference point, using a \verb/%/ instead of \verb/$/ (for example, \verb/%x/). Let-binding will bind a variable both lexically and dynamically, and uses an unadorned variable name (e.g. \verb/x = 1/), so that we can maintain compatibility with standard environment files. Variable binders in lambda arguments are similarly both lexical and dynamic, and use \verb/?/ (e.g. \verb/?x/) to allow for a planned extension for pattern matching.
+
+For mutation, we use assignment syntax, but with the location (dynamic or lexical) specified on the left-hand side, e.g. \verb/%x = 1/ or \verb/$x = 1/. In this way we avoid the need to declare variables, and allow ourselves to throw an exception when trying to mutate a non-existent variable, rather than silently creating a new local binding.
+
+\subsubsection{Lambda Functions}\noindent
+Lambda functions are specified with parenthesized expressions containing the arrow symbol \verb/=>/, which separates the bindings from the body. Multiple matching clauses are possible, and will be extended in the future with more general pattern matching. Clauses are separated at the beginning of lines that contain \verb/=>/, which avoids the need for any indentation-based parsing. For example:
+\begin{lstlisting}
+my-function = (
+  ?x =>
+    put one-argument %x
+  ?y ?z =>
+    put two-arguments
+    put %y %z
+  ... => ...
+)
+\end{lstlisting}
+
+\noindent
+Named functions can also be defined using a parenthesized expression as the left hand side of an assignment:
+\begin{lstlisting}
+(my-function ?x ?y) = ...
+
+# equivalent to
+my-function = (?x ?y => ...)
+\end{lstlisting}
+
+\noindent
+Functions are scanned statically for free lexical variables, which are captured at function definition time, and merged into the environment at call time.
+
+\subsubsection{Nestable Vectors}\noindent
 We extend the concept of an \verb/argv/ vector such that it is nestable, using the compact syntax \verb/[ ]/. Combined with bareword strings, we can represent trees in a straightforward manner:
 \begin{lstlisting}
 a-tree = [node [node [leaf 1] [leaf 2]] [leaf 3]]
@@ -317,19 +351,28 @@ The builtin function \verb/for/ takes a vector as an argument and outputs each e
 for [1 2 3 4 5] | each (?el => ...)
 \end{lstlisting}
 
-\subsubsection{Environments as Objects}
-We support environment capture with the straightforward \verb/{ }/ syntax. The semantics of curly braces are to run the code as normal, then detach the running environment from its parent and return it. Therefore all assignment syntaxes are available, including function definition.
-
-Environment lookup uses the \verb/!/ symbol, as in \verb/$env!key/. We use this symbol because it is already reserved by bash, unlike both \verb\/\ or \verb/./ which need to be available in bareword syntax to integrate with external programs. Environments can also be mutated using the same access syntax.
-
-\subsubsection{Synchronous Channels}\noindent
-Channels in Magritte are \emph{synchronous}---readers and writers cannot continue until a communication is completed successfully. Given the decision to allow rich values to be passed through channels, we have decided that a buffer is not as necessary for performance purposes, since a single write may contain an arbitrarily large amount of data---or for that matter a process handle or object reference. Additionally, synchronous channels have simpler semantics both for implementation and for users, and we leave open the possibility of user-implemented queues, such as:
+\subsubsection{Environments as Objects}\noindent
+We support environment capture with the straightforward \verb/{ }/ syntax. The semantics of curly braces are to run the code as normal, then detach the running environment from its parent and return it. Therefore all assignment syntaxes are available, including function definition. For example:
 \begin{lstlisting}
-producer | buffer 10 | consumer
+(make-account ?balance) = {
+  balance = $balance
+  (deposit ?amt) =
+    (%balance = (add %amt %balance))
+  (withdraw ?amt) = (
+    (%balance = (sub %amt %balance))
+}
 \end{lstlisting}
 
-\subsubsection{Reading, Writing, and Spawning}\noindent
-Reading and writing from the standard input and output are performed with the \verb/get/ and \verb/put/ functions, respectively. Spawning uses a syntax similar to bash, with a \verb/&/ at the beginning of a command indicating that it should be spawned in a new thread.
+\noindent
+Environment lookup uses the \verb/!/ symbol, as in \verb/$env!key/. We use this symbol because it is already reserved by bash, unlike both \verb\/\ or \verb/./ which need to be available in bareword syntax to integrate with external programs. Environments can also be mutated using the same access syntax. For example:
+\begin{lstlisting}
+account = (make-account 10)
+$account!withdraw 4
+put $account!balance # => 6
+\end{lstlisting}
+
+\subsubsection{Reading and Writing}\noindent
+Reading and writing from the standard input and output are performed with the \verb/get/ and \verb/put/ functions, respectively. These block until they complete a communication.
 
 \subsubsection{Collection and Substitution}\noindent
 In order to use output values seamlessly as return values without unwrapping arrays at every function call as described in Section \ref{return-semantics}, Magritte uses normal parentheses to collect and \emph{expand} the resulting values into the current command vector---increasing the argument number by the number of values output from the function. For example:
@@ -337,7 +380,6 @@ In order to use output values seamlessly as return values without unwrapping arr
 # A function defintion: output three values
 (count-three) = (put 1; put 2; put 3)
 
-# A function call, using the above function.
 # Parentheses collect the three writes and expand
 # 1 2 3 in-place
 other-fn 0 (count-three) 4
@@ -354,18 +396,38 @@ This mechanism is also available in vector literals, allowing us to collect outp
 outputs = [(some-command)]
 \end{lstlisting}
 \noindent
-And the \verb/for/ function mentioned above can be used to splat vector arguments into function calls:
+The \verb/list/ built-in function, which simply returns its argument vector, is also available for this purpose.
+The \verb/for/ function mentioned above can be used to splat vector arguments into function calls:
 \begin{lstlisting}
 some-fn $arg1 $arg2 (for [$arg3 $arg4])
 \end{lstlisting}
 
-\subsubsection{Lexical vs. Dynamic Variables}\noindent
-In order to support both lexical and dynamic variables, we introduce a separate syntax for lexically scoped variables at the variable reference point, using a \verb/%/ instead of \verb/$/ (for example, \verb/%x/). Let-binding will bind a variable both lexically and dynamically, and uses an unadorned variable name (e.g. \verb/x = 1/), so that we can maintain compatibility with standard environment files. Variable binders in lambda arguments are similarly both lexical and dynamic, and use \verb/?/ (e.g. \verb/?x/) to allow for a planned extension for pattern matching.
+\subsubsection{Blocks}\noindent
+A parenthesized grouping that is \emph{not} in argument position is a \emph{block}. Blocks do not collect or modify the environment's channels in any way, but instead simply run the code contained within them, and output values normally. These are mostly used to group commands within a pipeline, and in the body of function definitions:
+\begin{lstlisting}
+produce | (process; process; process)
+\end{lstlisting}
+\noindent
+In the case that a user might want to use a substitution at the root level---i.e. to generate a function and immediately call it, we provide the \verb/exec/ builtin function which executes its arguments as a normal command.
 
-For mutation, we use assignment syntax, but with the location (dynamic or lexical) specified on the left-hand side, e.g. \verb/%x = 1/ or \verb/$x = 1/. In this way we avoid the need to declare variables, and allow ourselves to throw an exception when trying to mutate a non-existent variable, rather than silently creating a new local binding.
+\subsection{Channels and Processes}
+\subsubsection{Synchronous Channels}\noindent
+Channels in Magritte are \emph{synchronous}---readers and writers cannot continue until a communication is completed successfully. Given the decision to allow rich values to be passed through channels, we have decided that a buffer is not as necessary for performance purposes, since a single write may contain an arbitrarily large amount of data---or for that matter a process handle or object reference. Additionally, synchronous channels have simpler semantics both for implementation and for users, and we leave open the possibility of user-implemented queues, such as:
+\begin{lstlisting}
+producer | buffer 10 | consumer
+\end{lstlisting}
+
+\subsubsection{Spawning and Redirecting}\noindent
+Spawning uses a syntax similar to bash, with an ampersand (\verb/&/) at the beginning of a command indicating that it should be spawned in a new thread.
+
+Standard input and output may be redirected into and from channels using the \verb/>/ and \verb/</ symbols, or chained together with the pipe (\verb/|/) symbol, much like \verb/bash/. Commands in pipelines will all be spawned in their own threads, with the exception of the final command, which will be run in the current process.
+
+\subsection{Interruption and Compensation}
+\subsubsection{Lazy Interruption}\noindent
+Overall, we have decided that the predictability of lazy interruption is worth the tradeoff for the extra-values problem discussed in Section \ref{lazy-interruption}, and we discuss some features that may mitigate this problem in \emph{Future Work}.
 
 \subsubsection{Compensation and Unconditional Compensation}\noindent
-We implement compensation directly using the \verb/%%/ operator to indicate a compensation action, which is cleared at the end of the current stack frame.
+We implement compensation directly using the \verb/%%/ operator to indicate a compensation action, which is cleared at the end of the current function body:
 \begin{lstlisting}
 (my-function) = (
   # ...
@@ -385,13 +447,10 @@ For example, the function \verb/read-lines/ above could be implemented as:
 \end{lstlisting}
 
 \noindent
-In this way, we can ensure that the file is closed when the process exits, whether by a normal return or by interruption.
-
-\subsubsection{Lazy Interruption}\noindent
-Overall, we have decided that the predictability of lazy interruption is worth the tradeoff for the extra-values problem discussed in Section \ref{lazy-interruption}, and we discuss some features that may mitigate this problem in \emph{Future Work}.
+In this way, we can ensure that the file is closed when the function exits, whether by a normal return or by interruption.
 
 \subsubsection{Interrupt Handling}\noindent
-While we plan to explore more general mechanisms for exception handling, we find that it suffices for most applications to provide two builtins, \verb/produce/ and \verb/consume/, to indicate the intent to consume the entirety of the output or input streams, respectively. Each of these builtins takes a single zero-argument function which will loop forever until the standard output or standard input respectively is closed, whereby control flow continues after the invocation. Using these functions, we might define \verb/each/ as:
+While we plan to explore more general mechanisms for exception handling, we find that it suffices for most applications to provide two builtin functions, \verb/produce/ and \verb/consume/, to indicate the intent to fill or consume the entirety of the output or input streams, respectively. Each of these functions takes a single zero-argument function which will loop forever until the standard output or standard input respectively is closed, whereby control flow continues after the invocation. Using these functions, we might define \verb/each/ as:
 \begin{lstlisting}
 (each ?fn) = (consume (=> %fn (get)))
 \end{lstlisting}
@@ -401,19 +460,20 @@ With this definition, the call to \verb/consume/ will mask the interruption from
 
 \section{Implementation of Magritte}\label{implementation}
 
+\noindent
 The current version of Magritte is implemented as a straightforward interpreter written in Ruby, using Ruby's builtin threads, exceptions, and mutexes to implement processes and channels.
 
-\subsubsection{Channel Registry}\noindent
-Our channel implementation is a standard implementation of synchronous channels, with the addition of four intrinsic methods, used only internally by the interpreter: \verb/add_reader/, \verb/remove_reader/, \verb/add_writer/, and \verb/remove_writer/, which register and deregister processes as described above. When \verb/remove_reader/ or \verb/remove_writer/ result in an empty registered set, they additionally close the channel and raise an internal \verb/Interrupt/ exception in every blocked thread.
+\subsection{Channel Registry}\noindent
+Our channel implementation is a standard implementation of synchronous channels, with the addition of four intrinsic methods, used only internally by the interpreter: \verb/add_reader/, \verb/remove_reader/, \verb/add_writer/, and \verb/remove_writer/, which register and deregister processes as described in Section \ref{non-closing}. When \verb/remove_reader/ or \verb/remove_writer/ result in an empty registered set, they additionally close the channel and raise an internal \verb/Interrupt/ exception in every blocked thread.
 
 Once the channel is closed, every call to \verb/read/ and \verb/write/ will cause the calling process to be interrupted, as described above in Section \ref{closing-permanence}.
 
-In order to reduce unnecessary use of Ruby threads, we also find it is simpler to, instead of registering \emph{processes} to the channels, to register \emph{frames}. In this way, we can register all inputs and outputs on frame entry, and use standard Ruby exception handling to ensure we properly unregister all inputs and outputs on frame exit. This means that different frames in the same process can be redirected to different channels, which makes the \verb/>/ and \verb/</ redirection syntax straightforward to implement---we simply push a new frame with different channels attached.
+In order to reduce unnecessary use of Ruby threads, we also find it is simpler, instead of registering \emph{processes} to the channels, to register \emph{stack frames}. In this way, we can register all inputs and outputs on frame entry, and use standard Ruby exception handling to ensure we properly run compensations and deregister inputs and outputs on frame exit. This means that different frames in the same process can be connected to different channels, which makes the \verb/>/ and \verb/</ redirection syntax straightforward to implement---we simply push a new frame with different channels attached.
 
 Cascading of interruptions then happens naturally---when a channel closes, a process is interrupted, causing it to unwind its stack and deregister channels, thereby potentially causing other channels to close.
 
-\subsubsection{Spawning Order Dependency}\noindent
-It is necessary to take some care with the implementation of the \verb/spawn/ primitive (\verb/&/), that we wait until the spawned process has finished registering its channels before the spawning process continues. Consider the example, which outputs 10 numbers, possibly out of order:
+\subsection{Spawning Order Dependency}\noindent
+It is necessary to take some care with the implementation of the spawning primitive (\verb/&/), that we wait until the spawned process has finished registering its channels before the spawning process continues. Consider the following example, which outputs 10 numbers, possibly out of order:
 \begin{lstlisting}
 (drain) = (each (?x => put %x))
 count-forever | (& drain; & drain) | take 10
@@ -421,10 +481,10 @@ count-forever | (& drain; & drain) | take 10
 \noindent
 The middle process is responsible for spawning two processes that funnel data from their input to their output. However, since they are both spawned in the background, the spawning process will immediately return. In general this is not a problem, since the \verb/drain/ processes should be keeping the two pipes open. However, if we do not take care to wait until they have finished registering their channels, there is a risk that the spawning process will return first and close the two pipes.
 
-For this reason, we have special case handling for the root frame---the channels are registered in the \emph{spawning} process, before the spawned process is allowed to start.
+For this reason, we have special case handling for the root frame of a process---the channels are registered in the \emph{spawning} process, before the spawned process is allowed to start.
 
-\subsubsection{Collectors}\noindent
-In order to implement the return semantics described above, we also implement a write-only channel called a \emph{collector}. Collectors cannot be created directly by users, but only appear in the interpreter when we evaluate a \verb/Subst/ node, which represents parentheses in argument position.
+\subsection{Collectors}\noindent
+In order to implement the return semantics described in Section \ref{return-semantics}, we also implement a write-only channel called a \emph{collector}. Collectors cannot be created directly by users, but only appear in the interpreter when we evaluate a \verb/Subst/ node, which represents parentheses in argument position.
 
 Naively, collectors would ignore registration commands and simply append written elements to an array. However, it is still necessary to track registered writers. Consider the example:
 \begin{lstlisting}
@@ -442,37 +502,43 @@ To implement this, we add a \verb/wait_for_close/ intrinsic to collectors, which
 * Run $c.wait_for_close
 \end{lstlisting}
 
+\noindent
+In the most common case, there will only be a single thread writing to the collector, so that the channel will be closed by the time the evaluation is finished, making \verb/wait_for_close/ a null operation.
+
 \section{Future Work}\label{future-work}
 
-\subsubsection{Open Checking}\noindent
-Because our system implements \emph{lazy interruption}, we must somehow mitigate the problem of producers creating one extra element than is needed, in the case that elements are expensive to produce. One possibility is to introduce the concept of \emph{open checking}, so that producing processes can periodically run a command that will interrupt in the case that a channel is closed, without actually writing any data to the channel.
+\subsection{Open Checking}\noindent
+Because our system implements \emph{lazy interruption}, we must somehow mitigate the problem of producers creating one extra element than is needed, in the case that elements are expensive to produce. One possibility is to introduce the concept of \emph{open checking}, so that producer processes can periodically run a command that will interrupt in the case that the output is closed, without actually writing any data to the channel.
 
-\subsubsection{Pattern Matching}\noindent
+\subsection{Pattern Matching}\noindent
 Though the syntax design is not yet complete, we plan to allow pattern matching in all lambda bindings. In order to potentially support glob and regular expression matching, we must be careful which symbols we reserve in this context.
 
-\subsubsection{Prototypical Inheritance}\noindent
-One missing feature to support prototypical inheritance is the dynamic assignment of a \verb/self/ variable. We plan to implement a system similar to JavaScript, in that this variable is assigned dynamically based on the calling syntax, or overrideable with special-purpose functions.
+\subsection{Prototypical Inheritance}\noindent
+One missing feature to support prototypical inheritance is the dynamic assignment of a special \verb/$self/ variable. We plan to implement a system similar to JavaScript, in that the \verb/$self/ variable is assigned dynamically based on the calling syntax, or overrideable with special-purpose functions.
 
-Additionally, we intend to support multiple inheritance by allowing for an environment to point to a list of parents, and resolve names in a depth-first manner.
+Additionally, we plan to support multiple inheritance by allowing for an environment to point to a list of parents, and resolve names in a depth-first manner.
 
-\subsubsection{UNIX Integration}\noindent
+\subsection{UNIX Integration}\noindent
 In order to be viable as a shell, we must integrate seamlessly with a UNIX environment. This involves marshalling values to strings and byte streams in order to communicate with external processes, and allowing external processes to interact with Magritte values. We plan to use a suite of parsing and unparsing functions for linewise and table data, along with a custom JSON streaming format to allow integration with most languages. We also plan to use a socket and a static executable to allow external programs to call back into Magritte lambda functions.
 
-\subsubsection{Performance}\noindent
+\subsection{Macros}\noindent
+While we do not currently have a use case for macros, it is likely that there is a use case for syntactic abstraction. Our parsing technique involves an intermediate \emph{skeleton tree} representation adapted from Bachrach and Playford\cite{skeleton-trees} that makes macro systems simpler to implement in non-lisp syntaxes.
+
+\subsection{Performance}\noindent
 The current implementation, being a Ruby interpreter, is slow. We plan to bootstrap using a JIT-compiled virtual machine implemented in RPython.
 
 \section{Related Work}\label{related-work}
 
-\subsubsection{Iterators}
+\subsection{Iterators}
 \noindent
 Many general purpose languages such as Python implement an iterator API, for code that is intended to produce values in a streamlike fashion. For example, in a Python Enhancement Proposal (PEP), Smith\cite{pep533} describes an automatic closing system for generators, in which an \verb/__iterclose__/ signal is sent by the consumer back to the producer as soon as a consumer exits early.
 
 But channel-based systems generally allow for multiple concurrent readers and writers---so automatically cleaning up a channel when a single consumer exits would cause processes that are still able to communicate to be terminated early.
 
-\subsubsection{General-Purpose Languages}
+\subsection{General-Purpose Languages}
 
 \noindent
-Many general purpose languages, including \verb/Go/ and \verb/Clojure/ contain robust channel implementations, which could be used to implement a wide variety of concurrent algorithms. For example, in an untyped language similar to Go (the following implementation is not possible in general in Go without generic types), we could implement something similar to our system by adding input and output channels to every function and heavily currying functions:
+Many general purpose languages, including Go\cite{golang} and Clojure\cite{clojure}, contain robust channel implementations, which could be used to implement a wide variety of concurrent algorithms. For example, in an untyped language similar to Go (the following implementation is not possible in general in Go without generic types), we could implement something similar to our system by adding input and output channels to every function and heavily currying functions:
 \begin{lstlisting}[language=C, morekeywords={fn,channel,nil,go}]
 fn pipe(lhs, rhs, inp, out) {
   c = channel()
@@ -486,34 +552,34 @@ pipe(curry(range, 10), curry(fan, 2, fn(el, inp, out) { write(el + 1, out); }), 
 return collect.values()
 \end{lstlisting}
 \noindent
-However, such a system would still require manual use of input and output channels when a simple pipeline would suffice---and the user must still translate between returning vs. outputting functions and expressions. Additionally, Go does not contain any kind of channel closing semantics or automatic process cleanup. Finally, such a system would be far too heavyweight for a REPL context, and would not make for a viable shell.
+However, such a system would still require manual use of input and output channels when a simple pipeline would suffice---and the user must still translate between returning vs. outputting functions and expressions. Additionally, Go does not contain any kind of channel closing semantics or automatic process cleanup. Finally, such a system would be far too heavyweight for a REPL context, and would not make for a viable interactive shell.
 
-\subsubsection{General-Purpose Language Extensions}
+\subsection{General-Purpose Language Extensions}
 \noindent
-Projects such as \verb/xonsh/\cite{xonsh} and \verb/scheme-shell/(TODO: cite) attempt to extend the syntax of an existing general purpose language to include shell capabilities. Unfortunately, this approach creates a schism between shell concepts and host language concepts---in particular, host language objects cannot be passed through pipes.
+Projects such as \verb/xonsh/\cite{xonsh} and \verb/scheme-shell/\cite{scheme-shell} attempt to extend the syntax of an existing general purpose language to include shell capabilities. Unfortunately, this approach creates a schism between shell concepts and host language concepts---in particular, host language objects cannot be passed through pipes.
 
-\subsubsection{Object Shells}
-\noindent
-Projects such as \verb/powershell/ and \verb/mash/ allow objects (.NET objects and Scala objects, respectively) to be passed through pipelines. However, this approach still ties the language to one specific platform and makes it difficult to integrate with programs written for other platforms.
+\subsection{Object Shells}\noindent
+Projects such as \verb/powershell/\cite{powershell} and \verb/mash/\cite{mash} allow objects (.NET objects and Scala objects, respectively) to be passed through pipelines. However, this approach still ties the language to one specific platform and makes it difficult to integrate with programs written for other platforms.
 
-\subsubsection{Desktop Scripting Languages}
-Projects such as \verb/Guile Scheme/\cite{guile} and \verb/TCL/(TODO: cite) attempt to create a separate API for integrating desktop programs, eliminating the need for shell entirely. However since this approach would require an unreasonably large integration effort on the part of application developers, their adoption has been limited in practice. Our goal is to create a system that can interact with programs in their current forms.
+\subsection{Desktop Scripting Languages}\noindent
+Projects such as \verb/Guile Scheme/\cite{guile} and \verb/TCL/\cite{tcl} attempt to create a separate API for integrating desktop programs, eliminating the need for shell entirely. However since this approach would require an unreasonably large integration effort on the part of application developers, their adoption has been limited in practice. Our goal is to create a system that can interact with programs in their current forms.
 
-\subsubsection{RC Shell}
-\noindent
+\subsection{RC Shell}\noindent
 The \verb/rc/ shell \cite{duff} from the Plan 9 operating system from Bell Labs introduces a list data type to shell, and cleans up some of the historical surprising quotation behavior of bash. However its list type is not nestable---nested lists are automatically flattened at creation time. Additionally, these lists cannot be passed through channels.
 
-\subsubsection{Es Shell}
+\subsection{Es Shell}
 \noindent
 The \verb/es/ shell \cite{haahr} attempts to extend the standard shell model with lambda functions with lexical scoping. These shell functions are marshalled into strings when passed through pipes (whether to shell functions or external programs), but are still written byte-by-byte and thus are subject to interleaving in concurrent cases.
 
-\subsubsection{PUSH Shell}
-\noindent
-The PUSH shell\cite{push} extends traditional shells with \emph{fan-out} and \emph{fan-in} operators which separate data into discrete records. This enables it to be used safely to orchestrate distributed computing tasks. However, the underlying pipe implementation remains byte-based, so that features like Magritte's collection and expansion remain impossible in general.
+\subsection{PUSH Shell}\noindent
+The PUSH shell\cite{push} extends a traditional shell with \emph{fan-out} and \emph{fan-in} operators which separate data into discrete records. This enables it to be used safely to orchestrate distributed computing tasks. However, the underlying pipe implementation remains byte-based, so that features like Magritte's collection and expansion remain impossible in general.
 
 \section{Conclusion}\label{conclusion}
 
-We believe that Magritte is a promising platform for shell scripting, and that it is also viable for large programs. Our channel implementation allows for robust composition of concurrent algorithms, and can also serve as the fundamental unit of composition for a general-purpose language.
+\noindent
+We believe that it should be possible to script, orchestrate, and interact with an OS environment in a language that is also capable of high-level abstraction. We believe that Magritte is a promising platform for shell scripting and for interaction, and that it is also viable for large programs.
+
+Our channel implementation allows for robust composition of concurrent algorithms, and can also serve as the fundamental unit of composition for a general-purpose language.
 
 \begin{acknowledgment}
 Johannes Westlund's contribution to this research was made possible by funding from The Sweden-Japan Foundation and Stockholms Grosshandelssocietet.
