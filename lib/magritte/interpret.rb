@@ -94,6 +94,9 @@ module Magritte
       def visit_lambda(node)
         free_vars = @free_vars[node]
         yield Value::Function.new(node.name, Proc.current.env.slice(free_vars), node.patterns, node.bodies)
+        Status.normal
+      rescue Env::MissingVariable => e
+        error!(e.to_s)
       end
 
       def visit_assignment(node)

@@ -6,10 +6,13 @@ describe Magritte::Interpret do
   let(:ast) { Magritte::Parser.parse_root(skel) }
   let(:env) { Magritte::Builtins.load(Magritte::Env.empty) }
   let(:results) { ast;
-    Magritte::Spawn.s_ env do
+    collection, @status = Magritte::Spawn.s_ env do
       Magritte::Interpret.interpret(ast)
-    end.collect.map(&:repr)
+    end.collect_with_status
+
+    collection.map(&:repr)
   }
+  let(:status) { results; @status }
   let(:result) { results.join("\n") }
 
   describe "simple input" do
@@ -245,6 +248,20 @@ describe Magritte::Interpret do
 
         it do
           assert { result == "103" }
+        end
+      end
+
+      describe "missing closured variables" do
+        let(:input) {
+          """
+          f = (=> put (=> put %x))
+          put should-have-crashed
+          """
+        }
+
+        it do
+          assert { status.crash? }
+          assert { results.empty? }
         end
       end
 

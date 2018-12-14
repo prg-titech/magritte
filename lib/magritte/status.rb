@@ -74,6 +74,10 @@ module Magritte
       property?(:fail) || property?(:crash)
     end
 
+    def crash?
+      property?(:crash)
+    end
+
     def repr
       out = ""
       out << "!" if fail?

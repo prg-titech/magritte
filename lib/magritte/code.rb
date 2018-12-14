@@ -76,9 +76,14 @@ module Magritte
     end
 
     def collect
+      collection, status = collect_with_status
+      collection
+    end
+
+    def collect_with_status
       c = Collector.new
-      into(c).call
-      c.collection
+      status = into(c).call
+      [c.collection, status]
     ensure
       # make sure not to wait for close until at least the main thread
       # has returned, otherwise we sleep the root thread. in a case with
