@@ -95,11 +95,15 @@ module Magritte
     end
 
     class Block < Tree::Node
+      defrec :group
+    end
+
+    class Group < Tree::Node
       deflistrec :elems
     end
 
     class Subst < Tree::Node
-      deflistrec :elems
+      defrec :group
     end
 
     class Vector < Tree::Node

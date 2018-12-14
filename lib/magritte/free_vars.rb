@@ -25,11 +25,7 @@ module Magritte
         out
       end
 
-      def visit_subst(node, bound_vars)
-        visit_block(node, bound_vars)
-      end
-
-      def visit_block(node, bound_vars)
+      def visit_group(node, bound_vars)
         out = Set.new
         so_far = Set.new
         node.elems.each do |elem|

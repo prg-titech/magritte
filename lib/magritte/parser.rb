@@ -29,7 +29,7 @@ module Magritte
       elems = skel.sub_items.map do |item|
         parse_line(item)
       end
-      AST::Block[elems]
+      AST::Group[elems]
     end
 
     def parse_line(item)
@@ -149,7 +149,7 @@ module Magritte
       bare_command = Skeleton::Item[vec]
 
       bare_command.match(singleton(nested(:lparen,~_))) do |i|
-        return with(redirects, parse_root(i))
+        return with(redirects, AST::Block[parse_root(i)])
       end
 
       vec = parse_terms(bare_command)
@@ -229,10 +229,10 @@ module Magritte
           end
 
           patterns = bindings.map { |i| AST::VectorPattern[i.elems.map { |e| AST::Binder[e.value] }, nil]}
-          return AST::Lambda[name, patterns, bodies.map { |body| AST::Block[body.map { |line| parse_line(line) }]}]
+          return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]
         end
 
-        return AST::Subst[item.sub_items.map { |e| parse_line(e) }]
+        return AST::Subst[AST::Group[item.sub_items.map { |e| parse_line(e) }]]
       end
 
       term.match(nested(:lbrack,~_)) do |item|

@@ -60,16 +60,22 @@ module Magritte
         Status.normal
       end
 
-      def visit_block(node)
+      def visit_group(node)
         out = Status.normal
         node.elems.each { |elem| out = visit_exec(elem) }
         out
       end
 
+      def visit_block(node)
+        Proc.enter_frame(Proc.current.env.extend) do
+          visit_exec(node.group)
+        end
+      end
+
       def visit_subst(node)
-        out = Status.normal
+        out = nil
         s_ do
-          node.elems.each { |elem| out = visit_exec(elem) }
+          out = visit_exec(node.group)
         end.collect.each { |x| yield x }
         out
       end
