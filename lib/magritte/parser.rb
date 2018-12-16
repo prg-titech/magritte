@@ -91,7 +91,7 @@ module Magritte
           var = Skeleton::Item[[var, bindings.elems.shift, bindings.elems.shift]]
           lambda_name = var.elems[2].value
         else
-          # Note: we are only encapulating var inside an Item in this case
+          # Note: we are only encapsulating var inside an Item in this case
           # so we can call parse_terms no matter which situation we are in
           var = Skeleton::Item[[var]]
           lambda_name = var.elems[0].value
