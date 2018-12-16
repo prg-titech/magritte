@@ -185,7 +185,6 @@ module Magritte
       PRINTER.p :interrupt => @stack
       raise
     else
-      binding.pry if stack_size+1 != @stack.size
       checkpoint
       PRINTER.p :checkpoint => @stack
       out
