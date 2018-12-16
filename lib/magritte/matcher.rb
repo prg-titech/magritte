@@ -163,6 +163,7 @@ module Magritte
         skel.elems.each do |elem|
           fail! if self.matcher.matches?(elem, &b)
         end
+        fail! if self.matcher.matches?(skel, &b)
       end
     end
 
