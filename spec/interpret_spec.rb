@@ -620,4 +620,27 @@ describe Magritte::Interpret do
       end
     end
   end
+
+  describe "equality" do
+    let(:input) {
+      """
+      eq 10 10 || put fail1
+      eq 10 11 && put fail2
+      eq foo foo || put fail3
+      eq foo bar && put fail4
+      eq [1 2] [1 (add 1 1)] || put fail5
+      eq [1 2] [1 3] && put fail6
+      eq [1 2] [1 2 3] && put fail7
+      eq [1 2 3] [1 2] && put fail8
+      eq [1 [2 3]] [1 [2 3]] || put fail9
+      c = (make-channel)
+      eq $c $c || put fail10
+      eq $c (make-channel) && put fail11
+      """
+    }
+
+    it do
+      assert { results.empty? }
+    end
+  end
 end
