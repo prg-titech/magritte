@@ -221,7 +221,9 @@ module Magritte
               bodies << []
               tmp = body
             end
-            bodies.last << tmp
+            tmp.match(nay(empty)) do
+              bodies.last << tmp
+            end
           end
 
           unless bindings.all? { |i| i.elems.all? { |e| e.token?(:bind) }}

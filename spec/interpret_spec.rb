@@ -511,7 +511,10 @@ describe Magritte::Interpret do
     describe "unconditional checkpoint" do
       let(:input) {
         """
-        exec (=> (put 1 %%! put 2; put 3))
+        exec (=>
+          put 1 %%! put 2
+          put 3
+        )
         """
       }
 
