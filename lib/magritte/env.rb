@@ -33,12 +33,16 @@ module Magritte
       end
     end
 
-    attr_reader :own_inputs, :own_outputs
+    attr_reader :keys, :own_inputs, :own_outputs
     def initialize(parent=nil, keys={}, inputs=[], outputs=[])
       @parent = parent
       @keys = keys
       @own_inputs = inputs
       @own_outputs = outputs
+    end
+
+    def get_parent
+      @parent
     end
 
     def input(n)
@@ -121,7 +125,37 @@ module Magritte
     end
 
     def repr
-      recursive_repr([])
+      visited_envs = []
+      out = ""
+      curr_env = self
+      nest_counter = 1
+      while !curr_env.nil?
+        if visited_envs.include? curr_env
+          out << "<circular>"
+          break
+        end
+        visited_envs << curr_env
+
+        out << "{"
+
+        env_content = []
+        env_content.concat (curr_env.keys.map { |key| " #{key.first} = #{key[1].value.repr}" })
+        env_content.concat (curr_env.own_inputs.map { |input| " < #{input.inspect}" })
+        env_content.concat (curr_env.own_outputs.map { |output| " > #{output.inspect}" })
+
+        out << env_content.join(";")
+
+        if !curr_env.get_parent.nil?
+          out << " + "
+          nest_counter += 1
+        end
+        curr_env = curr_env.get_parent
+      end
+      while nest_counter > 0
+        out << " }"
+        nest_counter -= 1
+      end
+      out
     end
 
     def inspect
@@ -160,27 +194,6 @@ module Magritte
   private
     def parent(method, *a, &b)
       @parent && @parent.__send__(method, *a, &b)
-    end
-
-    def recursive_repr(visited_envs)
-      if visited_envs.include? self
-        return "<circular>"
-      end
-      visited_envs << self
-
-      out = "{"
-
-      env_content = []
-      env_content.concat (@keys.map { |key| " #{key.first} = #{key[1].value.repr}" })
-      env_content.concat (@own_inputs.map { |input| " < #{input.inspect}" })
-      env_content.concat (@own_outputs.map { |output| " > #{output.inspect}" })
-
-      out << env_content.join(";")
-
-      if !@parent.nil?
-        out << " + #{@parent.repr}"
-      end
-      out << " }"
     end
   end
 end
