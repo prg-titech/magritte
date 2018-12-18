@@ -105,6 +105,9 @@ module Magritte
       Status.normal
     end
 
+    builtin :eq, [:any, :any] do
+    end
+
     builtin :add, [], :Number do |*nums|
       put Value::Number.new(nums.map { |x| x.value.to_f }.inject(0, &:+))
       Status.normal
