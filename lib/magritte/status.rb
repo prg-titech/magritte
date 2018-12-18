@@ -78,6 +78,10 @@ module Magritte
       property?(:crash)
     end
 
+    def inspect
+      "#<Status #{repr}>"
+    end
+
     def repr
       out = ""
       out << "!" if fail?

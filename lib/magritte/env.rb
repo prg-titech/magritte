@@ -124,6 +124,10 @@ module Magritte
       recursive_repr([])
     end
 
+    def inspect
+      "#<Env #{repr}>"
+    end
+
   protected
     def own_key?(key)
       @keys.key?(key.to_s)
