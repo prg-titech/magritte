@@ -105,9 +105,6 @@ module Magritte
       Status.normal
     end
 
-    builtin :eq, [:any, :any] do
-    end
-
     builtin :add, [], :Number do |*nums|
       put Value::Number.new(nums.map { |x| x.value.to_f }.inject(0, &:+))
       Status.normal
@@ -165,6 +162,29 @@ module Magritte
 
     builtin :rand, [] do
       put Value::Number.new(rand)
+    end
+
+    builtin :eq, [:any, :any] do |lhs, rhs|
+      (rec_func = lambda { |lhs, rhs|
+        return bool(false) if lhs.class != rhs.class
+
+        case lhs
+        when Value::Number
+          return bool(lhs.value == rhs.value)
+        when Value::String
+          return bool(lhs.value == rhs.value)
+        when Value::Vector
+          return bool(false) if lhs.elems.size != rhs.elems.size
+          lhs.elems.zip(rhs.elems).each do |le, re|
+            return bool(false) if rec_func.call(le, re).fail?
+          end
+          return bool(true)
+        when Value::Channel
+          bool(lhs.channel == rhs.channel)
+        else
+          raise "TODO: Implement equality for #{lhs.inspect}"
+        end
+      }).call(lhs, rhs)
     end
 
     builtin :gt, [:Number, :Number] do |than, is|

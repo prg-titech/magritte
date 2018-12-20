@@ -43,7 +43,7 @@ module Magritte
       attr_reader :value
 
       def initialize(value)
-        @value = value
+        @value = value.to_f
       end
 
       def repr
