@@ -30,6 +30,15 @@ module Magritte
         @env.let(node.name, val)
       end
 
+      def visit_string_pattern(node, val)
+        fail! unless val.is_a?(Value::String)
+        fail! unless node.value == val.value
+      end
+
+      def visit_default_pattern(node, val)
+        #pass
+      end
+
       def visit_vector_pattern(node, val)
         fail! unless val.is_a?(Value::Vector)
 

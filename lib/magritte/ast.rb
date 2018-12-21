@@ -21,9 +21,16 @@ module Magritte
       defdata :value
     end
 
+    class StringPattern < Tree::Node
+      defdata :value
+    end
+
     class VectorPattern < Tree::Node
       deflistrec :patterns
       defopt :rest
+    end
+
+    class DefaultPattern < Tree::Node
     end
 
     class Lambda < Tree::Node

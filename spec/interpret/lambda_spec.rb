@@ -120,6 +120,32 @@ interpret_spec "lambda functionality" do
     results %w(10 1 10 2 10 3)
   end
 
+  interpret "vector patterns" do
+    source <<-EOF
+      f = (
+        [one ?x] => put [first %x]
+        [two ?y ?z] => put [second %y %z]
+        [three] => put [third]
+        [four ?q to ?w] => put [fourth %q %w]
+        _ => put default
+      )
+
+      f [one 1]
+      f [two 2 3]
+      f [three]
+      f [four 4 to 5]
+
+      # default cases
+      f [one 1 2]
+      f [two]
+      f [three 4]
+      f [four 5 6]
+    EOF
+
+    results ["[first 1]", "[second 2 3]", "[third]", "[fourth 4 5]",
+             "default", "default", "default", "default"]
+  end
+
   interpret "variable arguments" do
     source <<-EOF
       (?x (?rest) => put %x; put hello; put %rest) 1 2 3

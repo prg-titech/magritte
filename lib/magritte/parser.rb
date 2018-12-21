@@ -178,6 +178,30 @@ module Magritte
       return out
     end
 
+    def parse_pattern(pattern)
+      pattern.match(~token(:string)) do |s|
+        return AST::StringPattern[s.value]
+      end
+
+      pattern.match(~token(:bare)) do |b|
+        if b.value == "_"
+          return AST::DefaultPattern[]
+        else
+          return AST::StringPattern[b.value]
+        end
+      end
+
+      pattern.match(~token(:bind)) do |b|
+        return AST::Binder[b.value]
+      end
+
+      pattern.match(nested(:lbrack,~_)) do |vec|
+        return AST::VectorPattern[vec.elems.map { |e| parse_pattern(e) }, nil]
+      end
+
+      error!(term, "unrecognized pattern")
+    end
+
     def parse_term(term)
       term.match(~token(:var)) do |var|
         return AST::Variable[var.value]
@@ -226,11 +250,7 @@ module Magritte
             end
           end
 
-          unless bindings.all? { |i| i.elems.all? { |e| e.token?(:bind) }}
-            error!(term, "TODO: Support patterns")
-          end
-
-          patterns = bindings.map { |i| AST::VectorPattern[i.elems.map { |e| AST::Binder[e.value] }, nil]}
+          patterns = bindings.map { |i| AST::VectorPattern[i.elems.map { |e| parse_pattern(e) }, nil] }
           return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]
         end
 
