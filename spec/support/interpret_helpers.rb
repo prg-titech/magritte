@@ -30,8 +30,8 @@ module InterpretHelpers
         let(:input) { spec.source }
 
         it do
-          spec.result_expectations.each { |b| instance_eval(&b) }
           spec.status_expectations.each { |b| instance_eval(&b) }
+          spec.result_expectations.each { |b| instance_eval(&b) }
         end
       end
     end
