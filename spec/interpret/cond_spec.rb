@@ -49,4 +49,13 @@ interpret_spec "conditionals" do
 
     results []
   end
+
+  interpret "returning booleans" do
+    source <<-EOF
+      (f ?x) = (true)
+      f 10 && put success
+    EOF
+
+    result 'success'
+  end
 end
