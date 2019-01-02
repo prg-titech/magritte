@@ -6,7 +6,7 @@ module InterpretHelpers
     base.class_eval do
       abstract(:input)
 
-      let(:lex) { Magritte::Lexer.new("test",input) }
+      let(:lex) { Magritte::Lexer.new(input_name, input) }
       let(:skel) { Magritte::Skeleton::Parser.parse(lex) }
       let(:ast) { Magritte::Parser.parse_root(skel) }
       let(:env) { Magritte::Builtins.load(Magritte::Env.empty) }
@@ -24,10 +24,14 @@ module InterpretHelpers
 
   module ClassMethods
     def interpret(description, &b)
+      caller[0] =~ /\A(.*?:\d+):/
+      filename, line = $1.split(':')
+
       dsl = DSL.new
       spec = dsl.evaluate(&b)
       describe description do
         let(:input) { spec.source }
+        let(:input_name) { "test@#{filename}:#{line}: #{self.class.to_s}" }
 
         it do
           spec.status_expectations.each { |b| instance_eval(&b) }
