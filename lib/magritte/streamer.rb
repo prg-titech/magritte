@@ -80,7 +80,7 @@ module Magritte
         return @queue.shift
       end
 
-      Proc.current.interrupt!
+      interrupt_process!(Proc.current)
     end
 
     def reset!
