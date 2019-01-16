@@ -72,16 +72,17 @@ module Magritte
     def wait
       PRINTER.p waiting: self
       start
+      join
+      @thread[:status]
+    end
+
+    def join
       @thread.join
 
       if Proc.current?
         Proc.current.interrupt!(@thread[:status]) if @thread[:status].property?(:crash)
       end
 
-      @thread[:status]
-    end
-
-    def join
       alive? && @thread.join
     end
 

@@ -15,7 +15,7 @@ module InterpretHelpers
           Magritte::Interpret.interpret(ast)
         end.collect_with_status
 
-        collection.map(&:repr)
+        collection.map(&:to_s)
       }
       let(:status) { results; @status }
       let(:result) { results.join("\n") }

@@ -15,7 +15,7 @@ module Magritte
       end
 
       def s(e=nil, &b)
-        s_(e) { DSL.instance_eval(&b) }
+        s_(e) { DSL.instance_eval(&b); Status.normal }
       end
 
       def s_(env=nil, &b)
@@ -72,7 +72,7 @@ module Magritte
     end
 
     def p(&block)
-      p_ { Code::DSL.instance_eval(&block) }
+      p_ { Code::DSL.instance_eval(&block); Status.normal }
     end
 
     def collect

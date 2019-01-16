@@ -71,6 +71,10 @@ module Magritte
       def repr
         "[#{elems.map(&:repr).join(" ")}]"
       end
+
+      def to_s
+        repr
+      end
     end
 
     class Environment < Base
@@ -83,6 +87,10 @@ module Magritte
       def repr
         env.repr
       end
+
+      def to_s
+        repr
+      end
     end
 
     class Channel < Base
@@ -94,6 +102,10 @@ module Magritte
 
       def repr
         "<channel:#{channel}>"
+      end
+
+      def to_s
+        repr
       end
     end
 
@@ -132,6 +144,10 @@ module Magritte
       def repr
         "<func:#{name}>"
       end
+
+      def to_s
+        repr
+      end
     end
 
     class BuiltinFunction < Base
@@ -151,6 +167,10 @@ module Magritte
 
       def repr
         "<builtin:#{name}>"
+      end
+
+      def to_s
+        repr
       end
     end
 
