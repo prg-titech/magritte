@@ -29,7 +29,7 @@ end
 CLEAN.include('*.gem')
 task :build => [:clean, :spec] do
   puts
-  sh "gem build rouge.gemspec"
+  sh "gem build magritte.gemspec"
 end
 
 task :default => :spec
