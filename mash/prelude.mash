@@ -27,5 +27,8 @@
 (iter ?fn ?a) = (produce (=> (put %a; %a = (%fn %a))))
 (each ?fn) = (consume (=> %fn (get)))
 
+(even ?x) = (eq 0 (mod 2 ?x))
+(odd ?x) = (eq 1 (mod 2 ?x))
+
 LOG = (stdout)
 (log ?msg) = (put ["log:" %msg] > $LOG)

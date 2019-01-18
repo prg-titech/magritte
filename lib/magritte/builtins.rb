@@ -115,6 +115,11 @@ module Magritte
       Status.normal
     end
 
+    builtin :mod, [:Number, :Number] do |base, n|
+      put Value::Number.new(n.value % base.value)
+      Status.normal
+    end
+
     builtin :exec, [], :any do |*a|
       Value::Vector.new([]).call(a)
       Status.normal
