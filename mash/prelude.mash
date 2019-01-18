@@ -26,3 +26,6 @@
 
 (iter ?fn ?a) = (produce (=> (put %a; %a = (%fn %a))))
 (each ?fn) = (consume (=> %fn (get)))
+
+LOG = (stdout)
+(log ?msg) = (put ["log:" %msg] > $LOG)

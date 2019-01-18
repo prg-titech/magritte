@@ -29,6 +29,7 @@ module Magritte
       end
 
       @env = Env.base.extend([@input], [@streamer])
+      @env.let('LOG', Value::Channel.new(@streamer))
     end
 
     def self.run(argv)
