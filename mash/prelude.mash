@@ -5,6 +5,7 @@
 (repeat ?n ?val) = (repeat-forever %val | take %n)
 (inc ?val) = (add %val 1)
 (dec ?val) = (add %val -1)
+(label ?l) = (each (?x => put [%l %x]))
 
 
 (prob ?total ?amt) = (lt %amt (mul %total (rand)))
