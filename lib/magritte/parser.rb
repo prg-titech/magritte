@@ -199,7 +199,7 @@ module Magritte
         return AST::VectorPattern[vec.elems.map { |e| parse_pattern(e) }, nil]
       end
 
-      error!(term, "unrecognized pattern")
+      error!(pattern, "unrecognized pattern")
     end
 
     def parse_term(term)

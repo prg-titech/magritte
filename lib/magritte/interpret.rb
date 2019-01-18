@@ -18,7 +18,7 @@ module Magritte
       end
 
       def visit_default(node)
-        raise "TODO #{node.inspect}"
+        error! "Cannot interpret as an expression: #{node.inspect}"
       end
 
       def visit_variable(node)
