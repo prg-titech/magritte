@@ -1,11 +1,16 @@
-﻿LATEX_OPTS += -shell-escape
-LATEX_OPTS += -kanji=utf8
-
-# use the correct latex and bibtex
-LATEXMK_OPTS += -pdfdvi -latex='uplatex $(LATEX_OPTS)'
-LATEXMK_OPTS += -e '$$bibtex="pbibtex"' #; $$dvipdf="dvipdfmx %O %S"'
+﻿# use the correct latex and bibtex
+UPLATEXMK_OPTS += -pdfdvi
+UPLATEXMK_OPTS += -latex=uplatex
+UPLATEXMK_OPTS += -latexoption='-shell-escape'
+UPLATEXMK_OPTS += -latexoption='-kanji=utf8'
+UPLATEXMK_OPTS += -e '$$bibtex="pbibtex"' #; $$dvipdf="dvipdfmx %O %S"'
 # don't open a viewer
-LATEXMK_OPTS += -view=none
+UPLATEXMK_OPTS += -view=none
+
+PDFLATEXMK_OPTS += -pdf
+PDFLATEXMK_OPTS += -latexoption='-shell-escape'
+PDFLATEXMK_OPTS += -usepretex='\def\sigplan{1}'
+PDFLATEXMK_OPTS += -view=none
 
 CLEAN = doc/paper.pdf doc/paper.log doc/paper.aux doc/paper.out doc/paper-autopp* doc/paper.bbl doc/paper.dvi
 
@@ -19,10 +24,13 @@ doc: doc/paper.pdf
 %.pdf: %.tex %.bib
 	latexmk $(LATEXMK_OPTS) -output-directory=$(dir $<) $<
 
-.PHONY: paper-watch
-paper-watch:
-	latexmk -pvc $(LATEXMK_OPTS) -output-directory=doc doc/paper.tex
+.PHONY: sigpro-watch
+sigpro-watch:
+	latexmk -pvc $(UPLATEXMK_OPTS) -output-directory=doc doc/paper.tex
 
+.PHONY: sigplan-watch
+sigplan-watch:
+	latexmk -pvc $(PDFLATEXMK_OPTS) -output-directory=doc doc/paper.tex
 
 .PHONY: clean
 clean:
