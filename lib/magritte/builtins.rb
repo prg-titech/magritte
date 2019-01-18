@@ -236,6 +236,11 @@ module Magritte
       end
     end
 
+    # the null channel
+    builtin :null, [] do
+      put Value::Channel.new(Null.new)
+    end
+
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
       # Transform the lib string into an ast
