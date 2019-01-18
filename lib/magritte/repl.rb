@@ -60,7 +60,7 @@ module Magritte
     def process_line
       string = @mutex.synchronize { Readline.readline("; ", true) }
       raise IOError if string.nil?
-      return false if string =~ /\A\s*\z/m
+      (Readline::HISTORY.pop; return false) if string =~ /\A\s*\z/m
       status = evaluate(string)
       @mutex.synchronize { puts "% #{status.repr}" }
       !status.fail?
