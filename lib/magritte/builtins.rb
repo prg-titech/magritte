@@ -165,26 +165,8 @@ module Magritte
     end
 
     builtin :eq, [:any, :any] do |lhs, rhs|
-      (rec_func = lambda { |lhs, rhs|
-        return bool(false) if lhs.class != rhs.class
-
-        case lhs
-        when Value::Number
-          return bool(lhs.value == rhs.value)
-        when Value::String
-          return bool(lhs.value == rhs.value)
-        when Value::Vector
-          return bool(false) if lhs.elems.size != rhs.elems.size
-          lhs.elems.zip(rhs.elems).each do |le, re|
-            return bool(false) if rec_func.call(le, re).fail?
-          end
-          return bool(true)
-        when Value::Channel
-          bool(lhs.channel == rhs.channel)
-        else
-          raise "TODO: Implement equality for #{lhs.inspect}"
-        end
-      }).call(lhs, rhs)
+      return bool(false) if lhs.class != rhs.class
+      bool(lhs == rhs)
     end
 
     builtin :gt, [:Number, :Number] do |than, is|

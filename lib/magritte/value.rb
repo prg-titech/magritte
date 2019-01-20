@@ -19,7 +19,7 @@ module Magritte
       end
 
       def ==(other)
-        other.is_a?(self.class) && other.value = @value
+        other.is_a?(self.class) && other.value == @value
       end
 
       def call(args)
@@ -53,6 +53,10 @@ module Magritte
       def to_s
         repr
       end
+
+      def ==(other)
+        other.is_a?(self.class) && other.value == @value
+      end
     end
 
     class Vector < Base
@@ -74,6 +78,11 @@ module Magritte
 
       def to_s
         repr
+      end
+
+      def ==(other)
+        other.is_a?(self.class) && other.elems.size == @elems.size &&
+          other.elems.zip(@elems).map { |le, re| le == re }.all?
       end
     end
 
@@ -106,6 +115,10 @@ module Magritte
 
       def to_s
         repr
+      end
+
+      def ==(other)
+        other.is_a?(self.class) && other.channel == @channel
       end
     end
 
