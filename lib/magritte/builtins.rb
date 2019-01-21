@@ -1,3 +1,4 @@
+require "open3"
 module Magritte
   module Builtins
 
@@ -162,6 +163,49 @@ module Magritte
 
     builtin :rand, [] do
       put Value::Number.new(rand)
+    end
+
+    BYTE_SIZE = 128
+
+    builtin :shell, [:String], :String do |head, *rest|
+      input = Proc.current.stdin
+      output = Proc.current.stdout
+      Open3.popen2([head.value, *rest.map(&:value)].join(" ")) do |i, o, t|
+        finished = false
+        #sub_proc = Spawn.s_ do
+          while !finished
+            ready_o, ready_i = IO.select([o], [i])
+            PRINTER.p(ready_o: ready_o)
+            PRINTER.p(ready_i: ready_i)
+            binding.pry
+            ready_i.each do |io|
+              PRINTER.p(writing_to_shell_program: head.value)
+              #io.write(get.as_bytes)
+            end
+
+            ready_o.each do |io|
+              PRINTER.p(reading_from_shell_program: head.value)
+              put Value::String.new(io.read(BYTE_SIZE))
+            end
+          end
+        #end.go
+
+        p_status = t.value
+        exited = true
+        PRINTER.p("indicate termination of shell thread")
+
+        #input_pipe = Spawn.s_ { loop { io.write(get.as_bytes) }; Status.normal}.go
+        #output_pipe = Spawn.s_ do
+        #  while chunk = io.read(BYTE_SIZE)
+        #    put(Value::String.new(chunk))
+        #  end
+        #  Status.normal
+        #end.go
+        #input_pipe.join
+        #output_pipe.join
+      end
+
+      Status.normal
     end
 
     builtin :eq, [:any, :any] do |lhs, rhs|
