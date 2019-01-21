@@ -151,6 +151,6 @@ interpret_spec "lambda functionality" do
       (?x (?rest) => put %x; put hello; put %rest) 1 2 3
     EOF
 
-    results %w(1 hello 2 3)
+    results ["1", "hello", "[2 3]"]
   end
 end

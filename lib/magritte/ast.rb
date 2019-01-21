@@ -33,6 +33,10 @@ module Magritte
     class DefaultPattern < Tree::Node
     end
 
+    class RestPattern < Tree::Node
+      defrec :binder
+    end
+
     class Lambda < Tree::Node
       defdata :name
       deflistrec :patterns

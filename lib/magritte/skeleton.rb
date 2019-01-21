@@ -12,7 +12,7 @@ module Magritte
       def match(matcher, &b)
         vars = matcher.match_vars(self)
         return false if vars.nil?
-        yield(*vars)
+        yield(*vars) if block_given?
         true
       end
 

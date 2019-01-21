@@ -199,7 +199,20 @@ module Magritte
         return AST::VectorPattern[vec.elems.map { |e| parse_pattern(e) }, nil]
       end
 
+      pattern.match(nested(:lparen,~_)) do |rest|
+        error!(pattern, "ill-formed rest pattern") unless rest.match(singleton(token(:bind)))
+        return AST::RestPattern[AST::Binder[rest.elems[0].value]]
+      end
+
       error!(pattern, "unrecognized pattern")
+    end
+
+    def parse_bindings(bindings)
+      bindings.map do |b|
+        pats = b.elems.map { |p| parse_pattern(p) }
+        rest = pats.pop if pats.last.is_a?(AST::RestPattern)
+        AST::VectorPattern[pats, rest]
+      end
     end
 
     def parse_term(term)
@@ -250,7 +263,7 @@ module Magritte
             end
           end
 
-          patterns = bindings.map { |i| AST::VectorPattern[i.elems.map { |e| parse_pattern(e) }, nil] }
+          patterns = parse_bindings(bindings)
           return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]
         end
 

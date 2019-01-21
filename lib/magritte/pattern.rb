@@ -51,7 +51,7 @@ module Magritte
         end
 
         if node.rest
-          @env.let(node.rest.name, Value::Vector.new(values[patterns.size..-1]))
+          @env.let(node.rest.binder.name, Value::Vector.new(values[patterns.size..-1]))
         end
       end
 
