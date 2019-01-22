@@ -7,6 +7,8 @@
 (dec ?val) = (add %val -1)
 (label ?l) = (each (?x => put [%l %x]))
 
+(into ?f (?a)) = (%f (for %a) (drain))
+
 
 (prob ?total ?amt) = (lt %amt (mul %total (rand)))
 
