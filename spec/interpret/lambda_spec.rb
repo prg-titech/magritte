@@ -154,7 +154,16 @@ interpret_spec "lambda functionality" do
     results %w(1)
   end
 
-  interpret "variable arguments" do
+  interpret "variable arguments in func assignment" do
+    source <<-EOF
+      (f ?x (?rest)) = (put %x; put hello; put %rest)
+      f 1 2 3
+    EOF
+
+    results ["1", "hello", "[2 3]"]
+  end
+
+  interpret "variable arguments in anon assignment" do
     source <<-EOF
       (?x (?rest) => put %x; put hello; put %rest) 1 2 3
     EOF

@@ -97,12 +97,7 @@ module Magritte
           lambda_name = var.elems[0].value
         end
 
-        # Check all remainding bindings are actually bindings
-        unless bindings.elems.all? { |elem| elem.token?(:bind) }
-          error!(bindings,"Invalid pattern")
-        end
-
-        return AST::Assignment[parse_terms(var), [parse_lambda(lambda_name, bindings, rhs)]]
+        return AST::Assignment[parse_terms(var), [parse_lambda(lambda_name, [bindings], [[rhs]])]]
       end
 
       # Normal assignment
@@ -114,11 +109,14 @@ module Magritte
     end
 
     def parse_lambda(name, bindings, bodies)
-      unless bindings.elems.all? { |e| e.token?(:bind) }
-        error!(term, "TODO: Support patterns")
-      end
-      patterns = bindings.elems.map { |e| AST::Binder[e.value] }
-      return AST::Lambda[name, [AST::VectorPattern[patterns, nil]], [parse_root(bodies)]]
+      patterns = parse_bindings(bindings)
+      return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]
+
+      #unless bindings.elems.all? { |e| e.token?(:bind) }
+      #  error!(term, "TODO: Support patterns")
+      #end
+      #patterns = bindings.elems.map { |e| AST::Binder[e.value] }
+      #return AST::Lambda[name, [AST::VectorPattern[patterns, nil]], [parse_root(bodies)]]
     end
 
     def parse_command(command)
@@ -243,7 +241,7 @@ module Magritte
       term.match(nested(:lparen,~_)) do |item|
         # Anon lambda spanning one line
         item.match(lsplit(~_, token(:arrow), ~_)) do |before, after|
-          return parse_lambda("anon@#{term.range.repr}", before, after)
+          return parse_lambda("anon@#{term.range.repr}", [before], [[after]])
         end
 
         # Anon lambda spanning multiple lines
@@ -263,8 +261,10 @@ module Magritte
             end
           end
 
-          patterns = parse_bindings(bindings)
-          return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]
+          return parse_lambda(name, bindings, bodies)
+
+         # patterns = parse_bindings(bindings)
+         # return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]
         end
 
         return AST::Subst[AST::Group[item.sub_items.map { |e| parse_line(e) }]]
