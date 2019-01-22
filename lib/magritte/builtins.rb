@@ -8,7 +8,7 @@ module Magritte
       @builtins.each do |(name, func)|
         env.let(name, func)
       end
-      load_file("#{ROOT_DIR}/mash/prelude.mash", env)
+      load_file("#{ROOT_DIR}/mag/prelude.mag", env)
     end
 
     @builtins = []
