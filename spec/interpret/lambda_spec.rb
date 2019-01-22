@@ -146,6 +146,14 @@ interpret_spec "lambda functionality" do
              "default", "default", "default", "default"]
   end
 
+  interpret "one-line vector patterns" do
+    source <<-EOF
+      ([x ?y] => put %y) [x 1]
+    EOF
+
+    results %w(1)
+  end
+
   interpret "variable arguments" do
     source <<-EOF
       (?x (?rest) => put %x; put hello; put %rest) 1 2 3
