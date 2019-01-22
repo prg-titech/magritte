@@ -93,7 +93,7 @@ describe Magritte::Skeleton do
 
     it "throws an error" do
       err = assert_raises { tree }
-      assert { err.message == "Unmatched nesting at test@1:7~2:1" }
+      assert { err.message == "Unmatched nesting at test@2:7~3:1" }
     end
   end
 end
