@@ -38,5 +38,9 @@ module Magritte
   load "#{LIB_DIR}/magritte/env.rb"
   load "#{LIB_DIR}/magritte/builtins.rb"
   load "#{LIB_DIR}/magritte/interpret.rb"
+
+  # tools
+  load "#{LIB_DIR}/magritte/runner.rb"
   load "#{LIB_DIR}/magritte/repl.rb"
+  load "#{LIB_DIR}/magritte/cli.rb"
 end
