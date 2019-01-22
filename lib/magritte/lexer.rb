@@ -95,7 +95,7 @@ module Magritte
     def initialize(source_name, string)
       @source_name = source_name
       @scanner = StringScanner.new(string)
-      @line = 0
+      @line = 1
       @col = 0
       skip_lines
     end
