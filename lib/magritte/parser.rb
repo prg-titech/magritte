@@ -64,11 +64,11 @@ module Magritte
       end
       # Parse double %%
       item.match(lsplit(~_, token(:d_per), ~_)) do |lhs, rhs|
-        return AST::Compensation[parse_command(lhs), parse_command(rhs), :conditional]
+        return AST::Compensation[parse_command(lhs), parse_command(rhs), item.range, :conditional]
       end
       # Parse double %%!
       item.match(lsplit(~_, token(:d_per_bang), ~_)) do |lhs, rhs|
-        return AST::Compensation[parse_command(lhs), parse_command(rhs), :unconditional]
+        return AST::Compensation[parse_command(lhs), parse_command(rhs), item.range, :unconditional]
       end
 
       # Default
@@ -97,7 +97,9 @@ module Magritte
           lambda_name = var.elems[0].value
         end
 
-        return AST::Assignment[parse_terms(var), [parse_lambda(lambda_name, [bindings], [[rhs]])]]
+        range = Lexer::Range.between(lhs, rhs)
+        lam = parse_lambda(lambda_name, [bindings], [[rhs]], range)
+        return AST::Assignment[parse_terms(var), [lam]]
       end
 
       # Normal assignment
@@ -108,18 +110,15 @@ module Magritte
       return AST::Assignment[parse_terms(lhs), parse_terms(rhs)]
     end
 
-    def parse_lambda(name, bindings, bodies)
+    def parse_lambda(name, bindings, bodies, range)
       patterns = parse_bindings(bindings)
-      return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]
-
-      #unless bindings.elems.all? { |e| e.token?(:bind) }
-      #  error!(term, "TODO: Support patterns")
-      #end
-      #patterns = bindings.elems.map { |e| AST::Binder[e.value] }
-      #return AST::Lambda[name, [AST::VectorPattern[patterns, nil]], [parse_root(bodies)]]
+      groups = bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}
+      return AST::Lambda[name, patterns, groups, range]
     end
 
     def parse_command(command)
+      range = command.range
+
       redirects = []
       vec = []
       while true do
@@ -151,7 +150,7 @@ module Magritte
       end
 
       vec = parse_terms(bare_command)
-      with(redirects, AST::Command[vec])
+      with(redirects, AST::Command[vec, range])
     end
 
     def with(redirects, expr)
@@ -241,7 +240,7 @@ module Magritte
       term.match(nested(:lparen,~_)) do |item|
         # Anon lambda spanning one line
         item.match(lsplit(~_, token(:arrow), ~_)) do |before, after|
-          return parse_lambda("anon@#{term.range.repr}", [before], [[after]])
+          return parse_lambda("anon@#{term.range.repr}", [before], [[after]], term.range)
         end
 
         # Anon lambda spanning multiple lines
@@ -261,7 +260,7 @@ module Magritte
             end
           end
 
-          return parse_lambda(name, bindings, bodies)
+          return parse_lambda(name, bindings, bodies, term.range)
 
          # patterns = parse_bindings(bindings)
          # return AST::Lambda[name, patterns, bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}]

@@ -51,7 +51,7 @@ module Magritte
 
         error!("Empty command") unless command
 
-        command.call(args)
+        command.call(args, node.range)
       end
 
       def visit_vector(node)
@@ -159,7 +159,7 @@ module Magritte
         visit_exec(node.expr)
         name = "compensation@"
         func = Value::Function.new(name, Env.empty, [AST::VectorPattern[[], nil]], [node.compensation])
-        Proc.current.add_compensation(Value::Compensation.new(func, node.unconditional))
+        Proc.current.add_compensation(Value::Compensation.new(func, node.range, node.unconditional))
       end
 
       def visit_and(node)

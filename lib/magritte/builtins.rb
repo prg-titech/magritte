@@ -121,7 +121,7 @@ module Magritte
     end
 
     builtin :exec, [], :any do |*a|
-      Value::Vector.new([]).call(a)
+      Value::Vector.new([]).call(a, Proc.current.trace.last.range)
       Status.normal
     end
 
@@ -226,6 +226,15 @@ module Magritte
     # the null channel
     builtin :null, [] do
       put Value::Channel.new(Null.new)
+    end
+
+    builtin :trace, [] do
+      Proc.current.trace.reverse_each.drop(1).each do |tracepoint|
+        location = Value::String.new(tracepoint.range.repr)
+        put Value::Vector.new([tracepoint.callable, location])
+      end
+
+      Status.normal
     end
 
     # Initialize environment with functions that can be defined in the language itself

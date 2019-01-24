@@ -2,7 +2,7 @@ module Magritte
   module Value
 
     class Base
-      def call(*args)
+      def call(args, range)
         Proc.current.crash!("Can't call this! (#{self.repr})")
       end
     end
@@ -22,10 +22,10 @@ module Magritte
         other.is_a?(self.class) && other.value == @value
       end
 
-      def call(args)
+      def call(args, range)
         # Semantics: Look up the thing in current env and call it
         # Proc.current.env
-        Proc.current.env.get(@value).call(args)
+        Proc.current.env.get(@value).call(args, range)
       rescue Env::MissingVariable => e
         Proc.current.crash!(e.to_s)
       end
@@ -66,10 +66,10 @@ module Magritte
         @elems = elems.freeze
       end
 
-      def call(args)
+      def call(args, range)
         head, *rest = (@elems + args)
         Proc.current.crash!("Empty call") if head.nil?
-        head.call(rest)
+        head.call(rest, range)
       end
 
       def repr
@@ -139,10 +139,12 @@ module Magritte
         end
       end
 
-      def call(args)
+      def call(args, range)
         env = @env.splice(Proc.current.env)
         bound, match_index = match(args, env)
-        Proc.enter_frame(bound) { Interpret.interpret(@expr[match_index]) }
+        Proc.current.with_trace(self, range) do
+          Proc.enter_frame(bound) { Interpret.interpret(@expr[match_index]) }
+        end
       end
 
       def match(args, env)
@@ -172,8 +174,10 @@ module Magritte
         @block = block
       end
 
-      def call(args)
-        Std.instance_exec(*args, &@block) || Status.normal
+      def call(args, range)
+        Proc.current.with_trace(self, range) do
+          Std.instance_exec(*args, &@block) || Status.normal
+        end
       rescue Builtins::ArgError => e
         Proc.current.crash!(e.to_s)
       end
@@ -189,15 +193,17 @@ module Magritte
 
     class Compensation < Base
       attr_reader :action
+      attr_reader :range
       attr_reader :uncond
 
-      def initialize(action, uncond)
+      def initialize(action, range, uncond)
         @action = action
+        @range = range
         @uncond = uncond
       end
 
       def run
-        @action.call([])
+        @action.call([], @range)
       end
 
       def run_checkpoint

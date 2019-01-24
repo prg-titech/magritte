@@ -41,6 +41,7 @@ module Magritte
       defdata :name
       deflistrec :patterns
       deflistrec :bodies
+      defdata :range
 
       def initialize(*)
         super
@@ -79,6 +80,7 @@ module Magritte
     class Compensation < Tree::Node
       defrec :expr
       defrec :compensation
+      defdata :range
       defdata :unconditional
     end
 
@@ -98,6 +100,7 @@ module Magritte
 
     class Command < Tree::Node
       deflistrec :vec
+      defdata :range
 
       def initialize(*)
         super

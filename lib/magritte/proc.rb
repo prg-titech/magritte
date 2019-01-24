@@ -88,6 +88,7 @@ module Magritte
 
     attr_reader :thread
     def initialize(thread, code, env)
+      @trace = []
       @alive = false
       @thread = thread
       @code = code
@@ -167,6 +168,25 @@ module Magritte
     def checkpoint_all
       checkpoint until @stack.empty?
     end
+
+    class Tracepoint
+      attr_reader :callable
+      attr_reader :range
+
+      def initialize(callable, range)
+        @callable = callable
+        @range = range
+      end
+    end
+
+    def with_trace(callable, range, &b)
+      @trace << Tracepoint.new(callable, range)
+      yield
+    ensure
+      @trace.pop
+    end
+
+    attr_reader :trace
 
   protected
     def enter_frame(*args, &b)
