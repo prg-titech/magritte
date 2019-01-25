@@ -25,7 +25,8 @@ module Magritte
     def run_files
       runner = Runner.new
       @files.each do |f|
-        runner.evaluate(f, File.read(f))
+        status = runner.evaluate(f, File.read(f))
+        runner.synchronize { puts "% #{status.repr}" } if status.fail?
       end
     end
 
