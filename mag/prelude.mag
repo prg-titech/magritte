@@ -32,6 +32,8 @@
 
 (even ?x) = (eq 0 (mod 2 ?x))
 (odd ?x) = (eq 1 (mod 2 ?x))
+(not (?args)) = (exec (for %args) && false !! true)
+(all ?pred) = (not any [not %pred])
 
 LOG = (stdout)
 (log ?msg) = (put ["log:" %msg] > $LOG)
