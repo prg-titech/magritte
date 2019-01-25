@@ -11,6 +11,11 @@ module Magritte
       out
     end
 
+    def call(h, a, range=nil)
+      range ||= Proc.current.trace.last.range
+      h.call(a, range)
+    end
+
     def loop_channel(c, &b)
       loop { b.call }
     rescue Proc::Interrupt => e

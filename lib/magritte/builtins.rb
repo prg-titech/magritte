@@ -30,7 +30,7 @@ module Magritte
             raise ArgError.new("Rest arg type raise") unless arg.is_a?(Value.const_get(rest_type))
           end
         end
-        impl.call(*a)
+        call(impl, *a)
       end
       @builtins << [name, Value::BuiltinFunction.new(name, impl)]
     end
@@ -87,7 +87,7 @@ module Magritte
     builtin :'loop-channel', [:Channel, :any], :any do |c, h, *a|
       channel = c.channel
 
-      loop_channel(c.channel) { h.call(a) }
+      loop_channel(c.channel) { call(h, a) }
     end
 
     builtin :stdin, [] do
@@ -100,7 +100,7 @@ module Magritte
 
     builtin :fan, [:Number, :any], :any do |times, fn, *a|
       times.value.to_i.times do
-        Spawn.s_ { consume { fn.call(a + [get]) } }.go
+        Spawn.s_ { consume { call(fn, a + [get]) } }.go
       end
       Status.normal
     end
@@ -121,7 +121,7 @@ module Magritte
     end
 
     builtin :exec, [], :any do |*a|
-      Value::Vector.new([]).call(a, Proc.current.trace.last.range)
+      call Value::Vector.new([]), a
       Status.normal
     end
 
@@ -151,7 +151,7 @@ module Magritte
 
     builtin :try, [:any], :any do |h, *a|
       begin
-        h.call(a)
+        call h, a
       rescue Proc::Interrupt => e
         e.status
       end
@@ -189,7 +189,7 @@ module Magritte
     builtin :filter, [:any], :any do |h, *a|
       consume do
         val = get
-        put val unless h.call(a + [val]).fail?
+        put val unless call(h, a + [val]).fail?
       end
     end
 
