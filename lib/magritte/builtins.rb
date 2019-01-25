@@ -110,6 +110,11 @@ module Magritte
       Status.normal
     end
 
+    builtin :sub, [:Number, :Number] do |decremand, num|
+      put Value::Number.new(num.value.to_f - decremand.value.to_f)
+      Status.normal
+    end
+
     builtin :mul, [], :Number do |*nums|
       put Value::Number.new(nums.map { |x| x.value.to_f }.inject(1, &:*))
       Status.normal
