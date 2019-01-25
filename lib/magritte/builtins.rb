@@ -120,6 +120,14 @@ module Magritte
       Status.normal
     end
 
+    builtin :pow, [:Number, :Number] do |exponent, base|
+      put Value::Number.new(base.value**exponent.value)
+    end
+
+    builtin :round, [:Number, :Number] do |decimal_precision, n|
+      put Value::Number.new(n.value.round(decimal_precision.value))
+    end
+
     builtin :exec, [], :any do |*a|
       call Value::Vector.new([]), a
       Status.normal
