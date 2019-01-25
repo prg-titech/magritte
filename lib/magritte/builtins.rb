@@ -189,6 +189,16 @@ module Magritte
       bool(lhs == rhs)
     end
 
+    builtin :any, [:any] do |predicate|
+      result = false
+      consume do
+        elem = get
+        status = call(predicate, [elem])
+        (result = true; break) unless status.fail?
+      end
+      bool(result)
+    end
+
     builtin :gt, [:Number, :Number] do |than, is|
       bool(is.value.to_f > than.value.to_f)
     end
