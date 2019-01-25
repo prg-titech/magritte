@@ -220,6 +220,14 @@ module Magritte
       put Value::String.new(a.map(&:to_s).join)
     end
 
+    builtin :append, [:String, :String] do |string_to_append, string|
+      put Value::String.new(string.value + string_to_append.value)
+    end
+
+    builtin :'string-to-number', [:String], :Number do |string, base = Value::Number.new(10)|
+      put Value::Number.new(string.value.to_i(base.value))
+    end
+
     builtin :contains, [:any, :any] do |e, container|
       case container
       when Value::Vector
