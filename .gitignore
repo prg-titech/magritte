@@ -12,3 +12,6 @@
 *.blg
 *.fdb_latexmk
 *.fls
+
+# vim
+.init.vim
