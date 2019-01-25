@@ -1,0 +1,42 @@
+# Random generator that only outputs either 0 or 1
+(binary-rand) = (round 0 (rand))
+
+# Generate a sequence of n random bits
+(gen-bits ?n) = (produce binary-rand | take %n)
+
+# Generate a random number having n bits. Note that the function
+# breaks when n < 3 because we want to ensure that the leading and
+# trailing bit is set to 1. Of course, nobody should actually call the
+# function with n < 3 because that defeats the purpose of the function.
+(gen-number ?n) = ((put 1; (gen-bits (add %n -2)); put 1) | (into str; put 2) | into string-to-number)
+
+put (gen-number 20)
+
+(miller-rabin-factoring ?num ?r) = (
+  eq 0 (mod 2 %num) || (put %r %num; return)
+  miller-rabin-factoring (mod 2 %num) (inc %r)
+)
+
+(miller-rabin-loop ?iter ?x ?n) = (
+  gt 0 %iter || fail
+  %x = pow 2 %x
+  eq %x (dec %n) && return
+  miller-rabin-loop (dec %iter) %x %n
+)
+
+(miller-rabin-test ?iter ?num ?r ?d) = (
+  gt 0 %iter || return
+  rand_num = (mul (add %num -4) (rand) | into round 0 | into add 2)
+  x = (pow %d %rand_num | into mod %num)
+  (eq %x 1 || eq %x (dec %num)) && (miller-rabin-test (dec %iter) %num %r %d)
+  (miller-rabin-loop (dec %r) %x %num) && (miller-rabin-test (dec %iter) %num %r %d)
+)
+
+
+(miller-rabin ?iter ?num) = (
+  eq 1 (mod 2 %num) || false
+  r d = (miller-rabin-factoring (dec %num) 0)
+  miller-rabin-test %iter %num %r %d
+)
+
+(miller-rabin 2 4)
