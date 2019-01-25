@@ -30,10 +30,11 @@ module Magritte
         :pipe,
         :write_to,
         :read_from,
-        :amp_amp,
-        :bar_bar,
-        :per_per,
-        :per_per_excl,
+        :d_amp,
+        :d_bar,
+        :d_per,
+        :d_bang,
+        :d_per_bang,
         :arrow,
       ])
 
