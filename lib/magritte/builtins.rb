@@ -126,11 +126,13 @@ module Magritte
     end
 
     builtin :pow, [:Number, :Number] do |exponent, base|
-      put Value::Number.new(base.value**exponent.value)
+      put Value::Number.new(base.value.to_f ** exponent.value.to_f)
+      Status.normal
     end
 
     builtin :round, [:Number, :Number] do |decimal_precision, n|
       put Value::Number.new(n.value.round(decimal_precision.value))
+      Status.normal
     end
 
     builtin :exec, [], :any do |*a|
