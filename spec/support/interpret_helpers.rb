@@ -24,14 +24,11 @@ module InterpretHelpers
 
   module ClassMethods
     def interpret(description, &b)
-      caller[0] =~ /\A(.*?:\d+):/
-      filename, line = $1.split(':')
-
       dsl = DSL.new
       spec = dsl.evaluate(&b)
       describe description do
         let(:input) { spec.source }
-        let(:input_name) { "test@#{filename}:#{line}: #{self.class.to_s}" }
+        let(:input_name) { "#{spec.source_name}: #{self.class.to_s}" }
 
         it do
           spec.status_expectations.each { |b| instance_eval(&b) }
@@ -44,11 +41,13 @@ module InterpretHelpers
   class DSL
     def initialize
       @source = 'crash "source undefined"'
+      @source_loc = nil
       @status_expectations = []
       @result_expectations = []
     end
 
     def source(source)
+      @source_loc = caller[0]
       @source = source
     end
 
@@ -87,8 +86,17 @@ module InterpretHelpers
         source: @source,
         result_expectations: @result_expectations,
         status_expectations: @status_expectations,
+        source_name: self.source_name,
       )
     end
+
+    def source_name
+      return '(anon)' if @source_loc.nil?
+      @source_loc =~ /\A(.*?:\d+):/
+      filename, line = $1.split(':')
+      "test@#{filename}:#{line}"
+    end
+
   end
 end
 
