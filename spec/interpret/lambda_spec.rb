@@ -170,4 +170,15 @@ interpret_spec "lambda functionality" do
 
     results ["1", "hello", "[2 3]"]
   end
+
+  interpret 'thing' do
+    source <<-EOF
+      range 3 | each (?x =>
+        r = %x
+        put %r
+      )
+    EOF
+
+    results %w(0 1 2)
+  end
 end

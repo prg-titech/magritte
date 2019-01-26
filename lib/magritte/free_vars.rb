@@ -21,7 +21,6 @@ module Magritte
           binders = BinderScanner.new.collect_one(pat)
           out.merge(shadow(body, bound_vars, binders))
         end
-        #p :lambda_free => [node.name, out]
         out
       end
 
@@ -34,16 +33,16 @@ module Magritte
             recursive = so_far.dup
             elem.lhs.each do |binder|
               recursive << binder.value if binder.is_a?(AST::String)
-              out.merge(shadow([binder], bound_vars, so_far))
+              out.merge(shadow(binder, bound_vars, so_far))
             end
 
             elem.rhs.each do |el|
-              out.merge(shadow([el], bound_vars, el.is_a?(AST::Lambda) ? recursive : so_far))
+              out.merge(shadow(el, bound_vars, el.is_a?(AST::Lambda) ? recursive : so_far))
             end
 
             so_far = recursive
           else
-            out.merge(shadow([elem], bound_vars, so_far))
+            out.merge(shadow(elem, bound_vars, so_far))
           end
         end
 
@@ -51,7 +50,7 @@ module Magritte
       end
 
       def shadow(node, bound_vars, shadow_vars)
-        collect_from(node, bound_vars + shadow_vars) - shadow_vars
+        visit(node, bound_vars + shadow_vars) - shadow_vars
       end
     end
   end
