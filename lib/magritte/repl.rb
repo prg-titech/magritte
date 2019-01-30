@@ -24,6 +24,7 @@ module Magritte
       raise IOError if string.nil?
       (Readline::HISTORY.pop; return false) if string =~ /\A\s*\z/m
       status = @runner.evaluate(source_name, string)
+      @runner.synchronize { puts "% #{status.repr}" }
       !status.fail?
     rescue ::Interrupt => e
       puts "^C"
