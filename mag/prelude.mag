@@ -47,3 +47,9 @@ exec = []
 
 LOG = (stdout)
 (log ?msg) = (put ["log:" %msg] > $LOG)
+
+null = (make-null)
+(through ?o) = (
+  & %o!from < %null
+  & %o!into > %null
+)

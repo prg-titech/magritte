@@ -258,7 +258,7 @@ module Magritte
     end
 
     # the null channel
-    builtin :null, [] do
+    builtin :'make-null', [] do
       put Value::Channel.new(Null.new)
     end
 
