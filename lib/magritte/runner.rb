@@ -28,7 +28,6 @@ module Magritte
       end
 
       @env = Env.base.extend([@input], [@output])
-      @env.let('LOG', Value::Channel.new(@output))
     end
 
     def input_name
