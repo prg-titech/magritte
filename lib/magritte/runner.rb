@@ -3,9 +3,7 @@ module Magritte
     attr_reader :input, :output
     def initialize
       @mutex = Mutex.new
-      @output = Streamer.new do |val|
-        @mutex.synchronize { puts val.repr }
-      end
+      @output = Channel.new
       @input_num = 1
 
       @input = InputStreamer.new do
@@ -44,8 +42,9 @@ module Magritte
 
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
       p = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env)
+      o = Proc.spawn(Code.new { loop { puts @output.read.repr } }, Env.empty).start
       status = p.wait
-      @output.wait_for_close
+      o.join
     rescue CompileError => e
       Status[:fail, reason: Reason::Compile.new(e)]
     else
