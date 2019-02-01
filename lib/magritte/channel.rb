@@ -71,16 +71,25 @@ module Magritte
     @@max_id = 0
 
     def initialize
-      @readers = Set.new
-      @writers = Set.new
-
       @mutex = Mutex.new
+      setup
       @id = IDS_MUTEX.synchronize { @@max_id += 1 }
 
+    end
+
+    def setup
+      @readers = Set.new
+      @writers = Set.new
       @block_type = :none
       @block_set = []
 
       @open = true
+    end
+
+    def reset!
+      @mutex.synchronize { @open = false }
+      interrupt_blocked!
+      @mutex.synchronize { setup }
     end
 
     def open?
@@ -112,7 +121,7 @@ module Magritte
       end
 
       PRINTER.p(closing_channel: @id) if action == :close
-      @block_set.each { |b| interrupt_process!(b) } if action == :close
+      interrupt_blocked! if action == :close
     end
 
     def remove_writer(p)
@@ -129,7 +138,11 @@ module Magritte
       end
 
       PRINTER.p(closing_channel: @id) if action == :close
-      @block_set.each { |b| interrupt_process!(b) } if action == :close
+      interrupt_blocked! if action == :close
+    end
+
+    def interrupt_blocked!
+      @block_set.each { |b| interrupt_process!(b) }
     end
 
     def read
