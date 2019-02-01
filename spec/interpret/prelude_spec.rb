@@ -32,4 +32,12 @@ interpret_spec "standard library" do
 
     results ["0", "4"]
   end
+
+  interpret "all" do
+    source <<-EOF
+      range 2 | all (?x => lt 10 %x)
+    EOF
+
+    results []
+  end
 end

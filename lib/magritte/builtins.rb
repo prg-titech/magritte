@@ -137,7 +137,6 @@ module Magritte
 
     builtin :exec, [], :any do |*a|
       call Value::Vector.new([]), a
-      Status.normal
     end
 
     builtin :'file-lines', [:String] do |fname|
