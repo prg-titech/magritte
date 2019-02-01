@@ -58,5 +58,10 @@
   (miller-rabin-test %i %num %r %d))
 )
 
-num = (gen-number 20)
-(miller-rabin 10 22) && put %num " is prime" !! put %num " is not prime!"
+(gen-prime ?b) = (
+  num = (gen-number %b)
+  iter (?n => gen-number %n) %num | each (?i => iter (?n => inc %n) %i | take %b) |
+    filter [miller-rabin 10] | take 1
+)
+
+(gen-prime 3)
