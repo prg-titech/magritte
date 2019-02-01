@@ -3,7 +3,7 @@ module Magritte
 
     class Base
       def call(args, range)
-        Proc.current.crash!("Can't call this! (#{self.repr})")
+        Proc.current.crash!("Can't call this! (#{self.repr}) (at #{range.repr})")
       end
 
       def typename
