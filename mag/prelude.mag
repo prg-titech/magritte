@@ -35,5 +35,7 @@
 (not (?args)) = (exec (for %args) && false !! true)
 (all ?pred) = (not any [not %pred])
 
+(take-until ?pred) = (each (?e => %pred %e && put %e !! false))
+
 LOG = (stdout)
 (log ?msg) = (put ["log:" %msg] > $LOG)
