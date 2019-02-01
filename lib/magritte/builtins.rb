@@ -112,13 +112,6 @@ module Magritte
       put Value::Channel.new(Proc.current.stdout)
     end
 
-    builtin :fan, [:Number, :any], :any do |times, fn, *a|
-      times.value.to_i.times do
-        Spawn.s_ { consume { call(fn, a + [get]) } }.go
-      end
-      Status.normal
-    end
-
     builtin :add, [], :Number do |*nums|
       put Value::Number.new(nums.map { |x| x.value.to_f }.inject(0, &:+))
       Status.normal
@@ -147,10 +140,6 @@ module Magritte
     builtin :round, [:Number, :Number] do |decimal_precision, n|
       put Value::Number.new(n.value.round(decimal_precision.value))
       Status.normal
-    end
-
-    builtin :exec, [], :any do |*a|
-      call Value::Vector.new([]), a
     end
 
     builtin :'file-lines', [:String] do |fname|
