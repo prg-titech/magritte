@@ -6,6 +6,7 @@ module Magritte
       @output = Streamer.new do |val|
         @mutex.synchronize { puts val.repr }
       end
+      @input_num = 1
 
       @input = InputStreamer.new do
         begin
@@ -30,11 +31,18 @@ module Magritte
       @env.let('LOG', Value::Channel.new(@output))
     end
 
+    def input_name
+      "#{@source_name}<#{@input_num-1}"
+    end
+
     def synchronize(&b)
       @mutex.synchronize(&b)
     end
 
     def evaluate(source_name, source)
+      # TODO: code smell ><
+      @source_name = source_name
+
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
       p = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env)
       status = p.wait

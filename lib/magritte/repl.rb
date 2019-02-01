@@ -3,7 +3,6 @@ module Magritte
   class REPL
     def initialize
       @line_num = 0
-      @input_num = 0
       @runner = Runner.new
     end
 
@@ -13,10 +12,6 @@ module Magritte
 
     def source_name
       "repl~#{@line_num}"
-    end
-
-    def input_name
-      "#{source_name}<#{@input_num-1}"
     end
 
     def process_line
