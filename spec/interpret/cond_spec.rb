@@ -44,6 +44,7 @@ interpret_spec "conditionals" do
       c = (make-channel)
       eq $c $c || put fail10
       eq $c (make-channel) && put fail11
+      eq [1] 1 && put fail12
       true
     EOF
 

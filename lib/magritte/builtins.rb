@@ -184,8 +184,7 @@ module Magritte
     end
 
     builtin :eq, [:any, :any] do |lhs, rhs|
-      return bool(false) if lhs.class != rhs.class
-      bool(lhs == rhs)
+      bool(lhs.class == rhs.class && lhs == rhs)
     end
 
     builtin :any, [:any] do |predicate|
