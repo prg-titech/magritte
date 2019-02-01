@@ -5,6 +5,10 @@ module Magritte
       def call(args, range)
         Proc.current.crash!("Can't call this! (#{self.repr})")
       end
+
+      def typename
+        raise 'abstract'
+      end
     end
 
     class String < Base
@@ -12,6 +16,10 @@ module Magritte
 
       def to_s
         @value
+      end
+
+      def typename
+        'string'
       end
 
       def initialize(value)
@@ -46,6 +54,10 @@ module Magritte
         @value = value.to_f
       end
 
+      def typename
+        'number'
+      end
+
       def repr
         value.to_s.gsub(/\.0$/, '')
       end
@@ -64,6 +76,10 @@ module Magritte
 
       def initialize(elems)
         @elems = elems.freeze
+      end
+
+      def typename
+        'vector'
       end
 
       def call(args, range)
@@ -89,6 +105,10 @@ module Magritte
     class Environment < Base
       attr_reader :env
 
+      def typename
+        'env'
+      end
+
       def initialize(env)
         @env = env
       end
@@ -107,6 +127,10 @@ module Magritte
 
       def initialize(channel)
         @channel = channel
+      end
+
+      def typename
+        'channel'
       end
 
       def repr
@@ -137,6 +161,10 @@ module Magritte
         if @patterns.size != @expr.size
           raise "malformed function (#{@patterns.size} patterns, #{@expr.size} bodies"
         end
+      end
+
+      def typename
+        'function'
       end
 
       def call(args, range)
@@ -174,6 +202,10 @@ module Magritte
         @block = block
       end
 
+      def typename
+        'builtin'
+      end
+
       def call(args, range)
         Proc.current.with_trace(self, range) do
           Std.instance_exec(*args, &@block) || Status.normal
@@ -200,6 +232,10 @@ module Magritte
         @action = action
         @range = range
         @uncond = uncond
+      end
+
+      def typename
+        'compensation'
       end
 
       def run

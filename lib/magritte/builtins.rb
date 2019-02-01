@@ -45,6 +45,20 @@ module Magritte
       Status.normal
     end
 
+    builtin :type, [:any] do |val|
+      put Value::String.new(val.typename)
+    end
+
+    builtin :vtype, [:String] do |val|
+      typename = begin
+         Proc.current.env.get(val.value).typename
+      rescue Env::MissingVariable
+        'undef'
+      end
+
+      put Value::String.new(typename)
+    end
+
     builtin :'make-channel', [] do
       put Value::Channel.new(Channel.new)
       Status.normal
