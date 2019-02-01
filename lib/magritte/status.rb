@@ -45,6 +45,12 @@ module Magritte
       end
     end
 
+    class UserInterrupt < Bug
+      def to_s
+        "user interrupt (^C)"
+      end
+    end
+
   end
 
   class Status

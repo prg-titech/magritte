@@ -47,6 +47,8 @@ module Magritte
       o.join
     rescue CompileError => e
       Status[:fail, reason: Reason::Compile.new(e)]
+    rescue Exception => e
+      Status[:fail, reason: Reason::UserInterrupt.new(e)]
     else
       status
     ensure
