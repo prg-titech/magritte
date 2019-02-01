@@ -4,6 +4,7 @@
 # Generate a sequence of n random bits
 (gen-bits ?n) = (produce binary-rand | take %n)
 
+# Convert a number in base b to base 10
 (from-base ?b) = (
   num = 0
   each (?d =>
@@ -18,46 +19,44 @@
 # function with n < 3 because that defeats the purpose of the function.
 (gen-number ?n) = ((put 1; (gen-bits (add %n -2)); put 1) | from-base 2)
 
-put (gen-number 20)
-
+# In Miller-rabin we want to factor a number num = (2^r)*d
+# and learn what r and d is. This function returns r and d
 (miller-rabin-factoring ?num ?r) = (
   eq 0 (mod 2 %num) && miller-rabin-factoring (div 2 %num) (inc %r)
     !! put %r %num
 )
 
-put "hey 3"
-
+# Check if any of the first r elements in the sequence x{i+1} = x{i}^2 mod n
+# is equal to n-1
 (miller-rabin-loop ?r ?x ?n) = (
-  iter (?x => mod 2 (pow 2 %x) | take (dec %r) | any [eq (dec %n)])
-  #gt 0 %iter || fail
-  #%x = pow 2 %x
-  #eq %x (dec %n) && return
-  #miller-rabin-loop (dec %iter) %x %n
+  iter (?x => mod %n (pow 2 %x)) %x | take %r | any [eq (dec %n)]
 )
 
-put "hey 2"
-
+# Generate a random number in the range [begin, end]
 (random-number-in-range ?begin ?end) = (
   mul (sub %begin %end) (rand) | into round 0 | into add %begin
 )
 
-(miller-rabin-test ?iter ?num ?r ?d) = (
-  range %iter | all (_ =>
-    rand_num = (random-number-in-range 2 (sub 2 %num))
-    x = (pow %d %rand_num | into mod %num)
-    eq %x 1 || eq %x (dec %num)
-      || miller-rabin-loop (dec %r) %x %num
+# Helper method for the Miller-rabin primality test
+# Checks if num is prime using i random numbers
+# r and d are found from (n-1) = 2^r * d
+(miller-rabin-test ?i ?num ?r ?d) = (
+  range %i | all (_ =>
+    rnum = (random-number-in-range 2 (sub 2 %num))
+    x = (pow %d %rnum | into mod %num)
+    eq 1 %x || eq %x (dec %num) || (miller-rabin-loop %r %x %num)
   )
 )
 
-put "hey 1"
-
-(miller-rabin ?iter ?num) = (
+# The Miller-rabin primality test
+# Succeeds if num is probably prime.
+# You can increase i to increase the certainty.
+# Fails if num is not prime
+(miller-rabin ?i ?num) = (
   eq 1 (mod 2 %num) &&
   (r d = (miller-rabin-factoring (dec %num) 0)
-  miller-rabin-test %iter %num %r %d)
+  (miller-rabin-test %i %num %r %d))
 )
 
-put "hey 0"
-
-(miller-rabin 4 13) && put "Is prime" !! put "Is not prime!"
+num = (gen-number 20)
+(miller-rabin 10 22) && put %num " is prime" !! put %num " is not prime!"
