@@ -48,4 +48,14 @@ interpret_spec "standard library" do
 
     results ["0", "1", "2", "100", "101", "102"]
   end
+
+  interpret "flaky test on composition" do
+    source <<-EOF
+      (repeat-func ?fn) = (exec %fn; repeat-func %fn)
+      repeat-func [range 5] | each (?n => iter (?x => inc %x) %n | take 2) |
+        filter [even] | take 1
+    EOF
+
+    results ["0"]
+  end
 end
