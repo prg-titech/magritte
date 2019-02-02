@@ -58,10 +58,11 @@
   (miller-rabin-test %i %num %r %d))
 )
 
+(repeat-func ?fn) = (put (exec %fn); repeat-func %fn)
+
 (gen-prime ?b) = (
-  num = (gen-number %b)
-  iter (?n => gen-number %n) %num | each (?i => iter (?n => inc %n) %i | take %b) |
+  repeat-func [gen-number %b] | each (?n => iter (?x => inc %x) %n | take %b) |
     filter [miller-rabin 10] | take 1
 )
 
-(gen-prime 3)
+put (gen-prime 5)
