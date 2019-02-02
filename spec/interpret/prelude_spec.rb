@@ -40,4 +40,12 @@ interpret_spec "standard library" do
 
     results []
   end
+
+  interpret "combining functions" do
+    source <<-EOF
+      put 0 100 | each (?v => iter (?n => inc %n) %v | take 3)
+    EOF
+
+    results ["0", "1", "2", "100", "101", "102"]
+  end
 end
