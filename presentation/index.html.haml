@@ -1,0 +1,1204 @@
+%section#intro
+  %h1 Magritte
+  -# %p A UNIX Shell Suitable For Large Programs / A pipe-oriented language
+  %p Building a ruby interpreter for the language
+  .tagline
+    %p Jeanine Adkisson, Johannes Westlund
+    %p Programming Research Group, Tokyo Institute of Technology
+    %p
+      %code
+        advisor: Hidehiko Masuhara
+
+%section<
+  %h1 Basic theory
+  %h3 Interpreter:
+  %ul
+    %li Given a set of source language instructions, directly execute them.
+    %li Different from compilers which does a transformation from a source language to a target language.
+    %li However, many things similar to compilers, only back end essentially different.
+
+%section(data-transition="fade-in slide-out")
+  %h1 Basic theory
+  .vs>
+    .box
+      %h3 Notations
+      .block
+        %ul
+          %li Intermediate representation (IR)
+          %li Abstract syntax tree (AST)
+          %li Front end
+          %li Back end
+  .vs>
+    .box
+      %img(src="./images/Typical_Pipeline.png")
+    .box
+      %img(src="./images/AST_example.png")
+
+
+%section
+  %h1 Pipeline
+  .vs4>
+    %h3 Lexer
+    %p ↓
+  .vs4>
+    %h3 Parser
+    %p ↓
+  .vs4>
+    %h3 AST generation
+    %p ↓
+  .vs4>
+    %h3 Intepretation
+
+%section
+  %h2 Example I am gonna use
+  .vs>
+    = code 'qsh' do
+      :plain
+        x = 5
+        a = add $x 2
+
+%section
+  %h1 Lexer
+  .vs>
+    .box
+      %ul
+        %li Implemented in ruby
+        %li No usage of a lexer generator
+        %li Simple regex parsing of input string to tokens
+        %li Token stores type, value and location
+  .vs>
+    = code 'ruby' do
+      :plain
+        if @scanner.eos?
+          return token(:eof)
+        elsif scan /[\n;]|(#[^\n]*)/
+          skip_lines
+          return token(:nl)
+          .
+          .
+          .
+
+%section(data-transition="fade-in slide-out")
+  %h2 Looking at the example
+  = code 'ruby' do
+    :plain
+      token(:bare) token(:eq) token(:num) token(:nl) ...
+
+%section
+  %h1 Skeleton tree
+  .vs>
+    .box
+      %h3 Reason
+      %ul
+        %li Used to explicitly describe nesting
+        %li Builds up a tree structure
+        %li Makes the transition to AST easier
+  .vs>
+    = code 'ruby' do
+      :plain
+
+
+%section
+  %h2 Why?
+  .vs3>
+    .box
+      %h3 Ubiquity:
+      .block
+        Available on any UNIX platform!
+  .vs3>
+    .box
+      %h3 OS Fluency:
+      .block
+        &ldquo;Feels&rdquo; directly connected to the OS
+
+  .vs3>
+    .box
+      %h3 REPL Feel
+      .block
+        Designed for heavy REPL use
+
+%section
+  %h2 Design Philosophy
+
+  %h3 Goals:
+
+  %h4 OS Fluency
+  %h4 Optimize for REPL interaction
+
+  .block
+  %code -- BUT ALSO --
+
+  %h4 Allow for large programs
+
+// %section
+//   %h2 Design Philosophy
+// 
+//   %h3 Strategies:
+//   %ul
+//     %li
+//       Derive all language concepts from UNIX APIs<br>
+//       (as opposed to embedding another language's semantics,<br>
+//       like <code>xonsh</code> or <code>scheme-shell</code>)
+//     %li Minimal marshalling, no quotes for <code>exec</code> or string literals
+//     %li Left-to-right pipe-based composition
+//     %li
+//       Provide real value-based semantics and abstraction tools<br>
+//       (as opposed to everything-is-a-string, like <code>es</code> or <code>fish</code>)
+
+%section(data-transition="slide-in fade-out")
+  %h2
+    What Makes a Shell Feel <span class="dune">&ldquo;Fluent&rdquo;</span>?
+  .bigger
+    %strong.sandy Core language concepts directly map to OS APIs
+  .block
+    .vs3>
+      .box environments
+    .vs3>
+      .box argv
+    .vs3>
+      .box processes
+    .vs3>
+      .box pipes, files, stdio
+    .vs3>
+      .box commands
+    .vs3>
+      .box return codes
+
+  concepts every <span class="dune">&ldquo;general-purpose&rdquo;</span> programming language understands.
+
+
+%section(data-transition="fade-in slide-out")
+  %h2 Main Idea
+  %h3 A language that expands UNIX concepts to language abstractions
+
+  .block
+    .vs3>
+      .box environments:<br>prototype objects!
+    .vs3>
+      .box argv:<br>vectors (nestable!)
+    .vs3>
+      .box processes:<br>threads!
+    .vs3>
+      .box pipes, files, stdio:<br>channels!
+    .vs3>
+      .box commands:<br>functions (w/closure!)
+    .vs3>
+      .box return codes:<br>error handling!
+
+  .block
+    %p
+      This is in contrast to projects like <code>xonsh</code>
+      or <code>scheme-shell</code>, which apply an existing
+      language's semantics to a shell context.
+
+%section
+  %h2 Syntax Design:<br> Pipe-Based Composition
+  %h3 Compose complex pipelines linearly
+
+  %h4 Why not use lisp-like syntax?
+
+  .block.replacement
+    .fragment.current-visible
+      = code 'cursorscheme' do
+        :plain
+          ; user types (▮ = cursor)
+          (fan 4 fetch-webpage (file-lines "url-list.txt"))▮
+
+    .fragment.current-visible
+      = code 'cursorscheme' do
+        :plain
+          ; user backtracks to the front
+          ▮(fan 4 fetch-webpage (file-lines "url-list.txt"))
+
+    .fragment.current-visible
+      = code 'cursorscheme' do
+        :plain
+          ; user types
+          (sort (map downcase (map '(html-select ".title") ▮(fan 4 fetch-webpage
+                          (file-lines "url-list.txt"))
+
+    .fragment.last
+      = code 'cursorscheme' do
+        :plain
+          ; user scans to the end and completes parentheses
+          (sort (map downcase (map '(html-select ".title") (fan 4 fetch-webpage
+                          (file-lines "url-list.txt")))))▮
+
+  %h4.fragment Lisp-like syntax is not ideal for REPL composition
+
+%section
+  %h2 Syntax Design:<br> Pipe-Based Composition
+  %h3 Compose complex pipelines linearly
+
+  .replacement
+    .fragment.current-visible
+      = code 'qsh' do
+        :plain
+          # user types
+          file-lines url-list.txt | fan 4 fetch-webpage▮
+    .fragment
+      = code 'qsh' do
+        :plain
+          # user continues typing
+          file-lines url-list.txt | fan 4 fetch-webpage | each [html-select .title]
+            | each downcase | sort▮
+
+  .space
+  %h4.fragment Goal: the user can always continue typing directly to the right to use previous results
+
+%section
+  %h2 Language Design
+  %h3 Allowing for large programs
+
+
+%section
+  %h2 Language Design: Values
+
+  .vs>
+    %h3 Problem:<br> Everything Is A String
+
+    .box
+      %ul
+        %li Data structures are impossible/inconvenient
+        %li Anonymous functions are impossible/inconvenient
+        %li Makes large programs an unreasonable goal
+
+  .vs>
+    %h3 Solution:<br> Not everything is a string!
+    .box
+      %ul
+        %li
+          Variables can hold <strong>values</strong>: string, number,
+          vector, environment, channel, process, function
+        %li
+          Channels can handle values, not just bytes
+        %li
+          Functions take values as arguments
+
+  .block
+    %p
+      This is in contrast with projects like <code>es</code> or
+      <code>fish</code>
+
+%section
+  %h2 Language Design: Call Semantics
+  .block
+    %h4 Problem: Shell functions don't have return values
+    %h4 Solution: Multiple return values using stdout.
+
+  .block
+    .vs>
+      %h3 Functions <code>put</code> values
+      = code 'qsh' do
+        :plain
+          (count-three) = (
+            put 1
+            put 2
+            put 3
+          )
+    .vs>
+      %h3 ...which are expanded
+      = code 'console?lang=qsh' do
+        :plain
+          ; put 0 (count-three) 4
+
+          -- expands to --
+          ; put 0 1 2 3 4
+
+          => 0; => 1; => 2; => 3; => 4
+
+  Equivalent to shell <code>$(command arg arg)</code>, but without the whitespace issues
+
+
+%section(data-transition="slide-in fade-out")
+  %h2 Language Design: Variable Scope
+  .block
+    .space
+    %h4 Problem: UNIX programs expect dynamic variables
+    %h4 Solution: Support both lexical and dynamic variables
+
+  .block
+    .vs>
+      %h3 Dynamic with <code>$</code>
+      = code 'console?lang=qsh' do
+        :plain
+          ; x = 1
+          ; (f) = (put $x)
+          ; (g) = (x = 2; f)
+          ; g
+          2
+
+    .vs>
+      %h3 Lexical with <code>%</code>
+      = code 'console?lang=qsh' do
+        :plain
+          ; x = 1
+          ; (f) = (put %x)
+          ; (g) = (x = 2; f)
+          ; g
+          1
+
+  Dynamic variables = UNIX environment variables
+
+%section(data-transition="fade-in slide-out")
+  %h2 Language Design: Variable Scope
+  .block
+    .space
+    %h4 Problem: UNIX programs expect dynamic variables
+    %h4 Solution: Support both lexical and dynamic variables
+
+  .block
+    .vs>
+      %h3 Dynamic with <code>$</code>
+      = code 'console?lang=qsh' do
+        :plain
+          ; x = 1
+          ; (f) = ($x = 3)
+          ; (g) = (x = 2; f; put $x)
+          ; g; put $x
+          3 1
+
+    .vs>
+      %h3 Lexical with <code>%</code>
+      = code 'console?lang=qsh' do
+        :plain
+          ; x = 1
+          ; (f) = (%x = 3)
+          ; (g) = (x = 2; f; put $x)
+          ; g; put $x
+          2 3
+
+  Dynamic variables = UNIX environment variables
+
+%section
+  %h2 Language Design: Objects
+
+  .block
+    .vs>
+      %h3 Instantiation
+      = code 'qsh' do
+        :plain
+          my-env = {
+            # regular members
+            x = 1
+
+            # functions
+            (set-x ?value) = (
+              # $self set dynamically
+              # as in javascript
+              $self!x = %value
+            )
+          }
+
+    .vs>
+      %h3 Usage
+      = code 'qsh' do
+        :plain
+          # regular members
+          $my-env!x
+
+          # functions
+          $my-env!my-function 23
+
+          +$my-env (
+            my-function $x
+          )
+
+
+
+
+/%section
+/  %h2 Language Design: Compatibility
+/
+/  .vs>
+/    %ul
+/      %li Idea: pass lambdas to external programs
+/      %li <code>/usr/bin/qush-external-<emph>N</emph></code>
+/      %li Standard <code>exec</code> interface
+/      %li <code>$__QUSH_SERVER</code> and <code>$__QUSH_FUNCTION_<emph>N</emph></code>
+/
+/  .vs>
+/    = code 'qsh' do
+/      :plain
+/
+/        # calls into $my-fn in the
+/        # current runtime once
+/        # every 3 seconds
+/
+/        ; /usr/bin/watch -d 3 $my-fn
+/
+/  Bash cannot currently do this.
+
+
+/%section
+/  %h2 Language Design: Error Handling
+/  %h3 Default Behavior
+/
+/  An &ldquo;error&rdquo; includes:
+/
+/  .block
+/    %ul
+/      %li Assertion error (type error or explicit crash)
+/      %li External crash signal (SIGINT, etc)
+/      %li A child process exits with nonzero code
+/      %li A blocked channel closes
+
+
+/%section
+/  %h2 Language Design: Error Handling
+/  %h3 Default Behavior
+/  When an error happens:
+/  .block
+/    %ul
+/      %li All child processes are sent SIGINT (or echo signal)
+/      %li Compensations are run in reverse order (more later)
+/      %li All channels are closed
+/      %li Exit with an error code (default 1)
+
+/ %section
+/   %h2 Language Design: Error Handling
+/   %h3 Plain Recovery (Continuing)
+/ 
+/   .block
+/     = code 'qsh' do
+/       :plain
+/         command || command-if-error
+/         command && command-if-no-error
+/         command && command-if-no-error !! command-if-error
+/ 
+/   .block Internal errors (non-zero exits) in the original command are &ldquo;rescued&rdquo; (ignored)
+/ 
+/   .block <code class="scarletred2">TODO:</code> Syntax for targetting error types
+/ 
+/ 
+/ %section
+/   %h2 Language Design: Error Handling
+/   %h3 Compensation
+/ 
+/   = code 'qsh' do
+/     :plain
+/       touch /tmp/lock %% rm -f /tmp/lock # compensate an error
+/ 
+/       %x = command %% reset # sets $COMP_REF and $COMP_PREV
+/ 
+/       checkpoint # clears the current compensation stack
+/ 
+/   .space
+/   = code 'qsh' do
+/     :plain
+/       touch /tmp/lock %%! rm -f /tmp/lock # run on error or at checkpoint
+/   %br
+/ 
+/   .block <code class="scarletred2">TODO:</code> Compensation boundaries
+/   /Options being considered for compensation boundaries:
+/   /.block
+/   /  %ul
+/   /    %li Only at the procedure level
+/   /    %li Controlled by a special environment variable
+
+
+
+/%section
+/  %h2 Language Design: Concurrency
+/  Many things TBD, but the principle is:
+/  %h3 Behave as closely to UNIX processes as possible.
+/  .vs>
+/    = code 'qsh' do
+/      :plain
+/        # spawn
+/        & command $arg $arg > $out < $in
+/
+/        # send
+/        put message > $in
+/
+/        # receive
+/        get message < $out
+/    // vim syntax highlighting gets confused here
+/    // >
+/  .vs>
+/    .block
+/      %ul
+/        %li local environment contains file handles 0~127
+/        %li 0 = stdin, 1 = stdout, 2 = stderr, etc
+/    = code 'qsh' do
+/      :plain
+/        command | command
+/        command |[5>2] command
+/        command |[2>$ERROR_LOG] command
+
+/ %section
+/   %h2 Concurrency Model
+/ 
+/   .vs
+/     %ul
+/       %li.fragment
+/         Users can freely spawn
+/         %strong.dune processes
+/       %li.fragment
+/         Processes communicate and coordinate through
+/         %strong.dune synchronous channels
+/       %li.fragment
+/         %strong.go-get-it [new]
+/         Processes
+/         %strong.dune register
+/         their open input/output channels at startup, and
+/         %strong.dune deregister
+/         them at exit.
+/       %li.fragment
+/         %strong.go-get-it [new]
+/         A channel
+/         %strong.dune closes
+/         when either its last registered reader or registered writer exits.
+/         At closing, we
+/         %strong.dune interrupt
+/         all blocked processes, as well as any process that attempts to
+/         reopen the channel.
+/ 
+/   %h4.fragment (Will explain all this in later slides!)
+/ 
+/ 
+/ 
+/ 
+/ %section
+/   %h2 Concurrency: Concepts
+/ 
+/   .vs>
+/     %h4 Channels as values
+/     = code 'qsh' do
+/       :plain
+/         channel = (make-channel)
+/         reader < $channel
+/         writer > $channel
+/ 
+/     .space
+/ 
+/     %h4 Simple Spawning
+/     = code 'qsh' do
+/       :plain
+/         & some-function arg arg
+/         & some-function >$out <$in
+/         & foo | bar | baz
+/     -#>
+/ 
+/ 
+/   .vs>
+/     %h4 Anonymous channels (pipes)
+/     = code 'qsh' do
+/       :plain
+/         command-1 | command-2
+/ 
+/         # equivalent to
+/ 
+/         channel = (make-channel)
+/ 
+/         & command-1 > $channel
+/         command-2 < $channel
+/ 
+/ -# vimmmm
+/ -# >
+/ 
+/ %section
+/   %h2 Concurrency: Concepts
+/ 
+/   %p
+/     Channels are <strong>synchronous</strong>:
+/   %ul
+/     %li reader and writer must both be present to make a communication.
+/     %li Writes will <strong>block</strong> until the channel is read.
+/ 
+/   .vs>
+/     %h4 Block on read
+/     = code 'qsh' do
+/       :plain
+/         (sleep 10; put 1) | get
+/ 
+/ 
+/   .vs>
+/     %h4 Block on write
+/     = code 'qsh' do
+/       :plain
+/         put 1 | (sleep 10; get)
+/ 
+/   %h4.fragment This is different than bash!
+/ 
+/ %section
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 What should the behavior of this code be?
+/ 
+/   .vs>
+/     = code 'qsh' do
+/       :plain
+/         (count-forever ?n) = (
+/           put $n
+/           count-forever (incr $n)
+/         )
+/ 
+/         (take 0) = ()
+/         (take ?n) = (
+/           put (get)
+/           take (decr $n)
+/         )
+/ 
+/         count-forever 0 | take 10
+/ 
+/   .replacement.vs>
+/     .fragment.current-visible
+/       = code 'qsh' do
+/         :plain
+/           => 0; => 1; => 2; => ...; => 9
+/ 
+/           # but what happens to the process
+/           # running `count-forever`...?
+/ 
+/     .block.fragment
+/       %h4 Naive Approach: Nothing!
+/ 
+/       %ul
+/         %li
+/           %span.code count-forever
+/           tries to write 10 to the output, blocks
+/         %li
+/           %span.code take
+/           returns after 9, never reads
+/         %li
+/           %span.code count-forever
+/           gets garbage-collected later
+/ 
+/     .fragment.box
+/       %h4 This works!
+/       %p ...as long as there are no cleanup actions
+/ 
+/ %section(data-transition="slide-in fade-out")
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 But what if there are cleanup actions?
+/ 
+/   .vs>
+/     = code 'qsh' do
+/       :plain
+/         (file-lines ?fname) = (
+/           file = (open-file $fname
+/             %%! close-file $fname)
+/           ...
+/         )
+/ 
+/ 
+/         file-lines /tmp/huge-file
+/           | take 10
+/ 
+/   .vs.nfragment>
+/     %h4
+/       With the naive approach, the file will remain open until gc!
+/ 
+/     .space
+/     %p.left Processes expect to be cleaned up when the processes they're communicating with hang up.
+/ 
+/     .space
+/     %p.left They expect an <strong>interrupt</strong> signal of some kind.
+/ 
+/ %section(data-transition="fade-in slide-out")
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 Idea: channel-closing semantics
+/ 
+/   .vs>
+/     = code 'qsh' do
+/       :plain
+/         (file-lines ?fname) = (
+/           file = (open-file $fname
+/             %%! close-file $fname)
+/           ...
+/         )
+/ 
+/ 
+/         file-lines /tmp/huge-file
+/           | take 10
+/ 
+/   .vs>
+/     %ul
+/       %li.fragment
+/         When
+/         %span.code take 10
+/         returns, it
+/         %strong closes
+/         the channel.
+/ 
+/       %li.fragment
+/         The
+/         %span.code file-lines
+/         process is either blocked on the channel or tries to write later
+/ 
+/       %li.fragment
+/         Either situation results in the
+/         %span.code file-lines
+/         process being
+/         %strong< interrupted
+/         , and having its cleanup actions run.
+/ 
+/       .space
+/       %h4.fragment This is how it works in bash already!
+/ 
+/ %section
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 Multiple Readers/Writers
+/ 
+/   .block
+/     Since spawned processes inherit inputs and outputs,<br>
+/     it will be common to have <strong>multiple readers and writers</strong><br>
+/     interacting with a channel at the same time.
+/ 
+/   = code 'qsh' do
+/     :plain
+/       (drain) = (put (get); drain)
+/ 
+/       ; count-forever | (& drain; & drain; & drain) | take 10
+/ 
+/       => 1 0 3 2 5 4 7 6 9 8
+/ 
+/ %section
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 Idea: Interrupt a process when it's probably blocked forever
+/ 
+/   %h4.fragment (Remember: we bind channels at process spawn time!)
+/ 
+/   %center.fragment
+/     close a channel when:<br>
+/     %strong.bigger.fragment
+/       The last reader exits
+/     %br/
+/ 
+/     .fragment
+/       \~ or ~
+/       %br/
+/ 
+/       %strong.bigger
+/         The last writer exits
+/ 
+/ %section
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 Idea: Interrupt a process when it's probably blocked forever
+/ 
+/   %center
+/     interrupt a process when:<br>
+/     %strong.bigger.fragment
+/       a channel it is blocked on closes
+/     %br/
+/ 
+/     .fragment
+/       \~ or ~
+/       %br/
+/ 
+/       %strong.bigger
+/         it tries to interact with a closed channel
+/       .fragment (why?)
+/ 
+/ %section
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 Problem: Reopening
+/ 
+/   .vs>
+/     %h4 What should this code do?
+/ 
+/     = code 'qsh' do
+/       :plain
+/         c = (make-channel)
+/         & count-forever > $c
+/         & take 10 < $c
+/         put 10 > $c
+/     .space
+/ 
+/     %p.fragment
+/       This code contains a <strong>race condition</strong>.
+/ 
+/     -#>
+/   .vs>
+/     %div
+/       %p.left.fragment
+/         If <code>take 10</code> returns before <code>put 10</code> is executed,
+/         the channel will <strong>close</strong>. Otherwise the number 10 will be
+/         inserted into the first 10 elements.
+/       .space
+/       %p.left.fragment
+/         If we allow <code>$c</code> to be <strong>reopened</strong>, then
+/         there is a worse race condition: if the channel closes before the final
+/         <code>put</code>, we will remain blocked forever on the channel.
+/ 
+/   %h4.fragment
+/     Therefore: Channel closing is permanent - further interactions will interrupt
+
+
+/%section
+/  %h2 Concurrency: Interruption
+/
+/  %h3 Problem: Closing Semantics = No Dynamic Channels
+/
+/  %h4 We can no longer write to a channel and leave it open!
+/
+/  .block
+/    = code 'qsh' do
+/      :plain
+/        (make-broadcaster) = (
+/          outputs = []
+/
+/          put {
+/            (subscribe ?ch) = (%outputs = [...%outputs %ch])
+/            (publish ?msg) = (for %outputs | each (%ch => put %msg > %ch))
+/          }
+/        )
+/
+/  %h4.fragment We can't keep a dynamic list of channels open continuously for writing.
+
+/ %section
+/   %h2 Concurrency: Interruption
+/ 
+/   %h3 Possible Solutions
+/ 
+/   .block
+/     .vs>
+/       %h4 Multiple writers to stdout (<span class="code">&amp;1</span>)
+/       = code 'qsh' do
+/         :plain
+/           (subscribe >?c) = (
+/             %channels = [...%channels %c]
+/ 
+/             # never return!
+/             # keep stdout open!
+/             sleep-forever
+/           )
+/ 
+/           # usage
+/           $bc!subscribe > $somewhere
+/ 
+/     .vs.fragment>
+/       %h4 This is how UNIX FIFOs work!
+/       %h4 (except they have a fixed buffer)
+/       = code 'console' do
+/         :plain
+/           ~$ echo 'demo time!'
+/           demo time!
+/           ~$ 
+
+
+
+
+
+%section
+  %h2 Implementation Progress
+
+%section
+  %h2 Implementation Progress
+
+  .block
+    %ul
+      %li Completed! Ruby Interpreter (&ldquo;magritte&rdquo;)
+      %li Many more features and tests to be added
+      %li TODO: design a VM, bootstrap with RPython
+      %li.fragment (if time) DEMO
+
+/ %section
+/   %h2 Magritte
+/ 
+/   %h4 Example 1
+/ 
+/   = code 'ruby' do
+/     :plain
+/       # (put 1; put 2) | add (get) (get) | mul 2 (get)
+/       code do
+/         s { put 1; put 2 }.p { put(get + get) }.p { put(get * 2) }.call
+/ 
+/         put 10
+/       end
+/ 
+/       assert { output == [6, 10] }
+/ 
+/ %section
+/   %h2 Magritte
+/ 
+/   %h4 Example 2
+/ 
+/   = code 'ruby' do
+/     :plain
+/       code do
+/         s { for_ (0...30) }.p {
+/           s { drain }.go
+/           s { drain }.go
+/           s { drain }.go
+/         }.p { take 30 }.call
+/       end
+/ 
+/       assert { output.sort == (0...30).to_a }
+/ 
+/ %section
+/   %h2 Magritte
+/ 
+/   %h4 Example 3
+/ 
+/   .vs>
+/     = code 'ruby' do
+/       :plain
+/         def put(val)
+/           Proc.current.stdout.write(val)
+/         end
+/ 
+/         def get
+/           Proc.current.stdin.read
+/         end
+/ 
+/   .vs>
+/     = code 'ruby' do
+/       :plain
+/         def map(&f)
+/           loop do
+/             put (f.call(get))
+/           end
+/         end
+/ 
+/         def take(n)
+/           n.times { put(get) }
+/         end
+/ 
+/ %section
+/   %h2 Magritte: Channels
+/ 
+/   = code 'ruby' do
+/     :plain
+/       class Channel
+/         def initialize
+/           @mutex = Mutex.new  # mutex for changing channel state
+/ 
+/           @block_type = :none # block type
+/           @block_set = []     # blocked threads/values/refs
+/ 
+/           @readers = Set.new  # registered readers
+/           @writers = Set.new  # registered writers
+/ 
+/           @open = true        # open/close state
+/         end
+/ 
+/         # ...
+/       end
+/ 
+/ %section
+/   %h2 Magritte: Channels
+/ 
+/   %h3 Channel States (<code>@block_type</code>)
+/ 
+/   .vs3>
+/     %h4 <code>:write</code>
+/     = code 'plaintext' do
+/       :plain
+/         (t,v)
+/         ******** -> _(.w._)
+/ 
+/   .vs3>
+/     %h4 <code>:none</code>
+/     = code 'plaintext' do
+/       :plain
+/                 ~~~
+/               v(.w.)v
+/ 
+/   .vs3>
+/     %h4 <code>:read</code>
+/     = code 'plaintext' do
+/       :plain
+/                      (t,_)
+/         (_.w.)_ <- *******
+/ 
+/   -#>
+/ 
+/   .vs3>
+/     block set contains<br>
+/     %code (thread, value)
+/     pairs (<code>Sender</code>)
+/ 
+/   .vs3>
+/ 
+/   .vs3>
+/     block set contains<br>
+/     %code (thread, ref)
+/     pairs (<code>Receiver</code>)
+/ 
+/ 
+/ 
+/ 
+/ %section
+/   %h2 Magritte: Channels
+/ 
+/   %h4 Blocked Writers
+/ 
+/   .vs>
+/     = code 'ruby' do
+/       :plain
+/         def read
+/         # ...
+/         case @block_type
+/         when :none, :read
+/           # ...
+/         when :write
+/           sender = @block_set.shift
+/           @block_set.empty? &&
+/             @block_type = :none
+/ 
+/           sender.wakeup
+/           return sender.val
+/         end
+/ 
+/   .vs>
+/     = code 'ruby' do
+/       :plain
+/         def write(val)
+/         # ...
+/         case @block_type
+/         when :none, :write
+/           @block_type = :write
+/           @block_set <<
+/             Sender.new(Thread.current,
+/                        val)
+/           @mutex.sleep
+/         when :read
+/           # ...
+/         end
+/ 
+/   -# >
+/ 
+/ %section
+/   %h2 Magritte: Channels
+/ 
+/   %h4 Blocked Readers
+/ 
+/   .vs>
+/     = code 'ruby' do
+/       :plain
+/         def read
+/         # ...
+/         case @block_type
+/         when :none, :read
+/           @block_type = :read
+/           receiver =
+/             Receiver.new(Thread.current)
+/           @block_set << receiver
+/ 
+/           @mutex.sleep
+/           return receiver.val
+/         when :write
+/           # ...
+/         end
+/   -# >
+/ 
+/   .vs>
+/     = code 'ruby' do
+/       :plain
+/         def write(val)
+/         # ...
+/         case @block_type
+/         when :none, :write
+/           # ...
+/         when :read
+/           receiver = @block_set.shift
+/           @block_set.empty? &&
+/             @block_type = :none
+/ 
+/           receiver.val = val
+/           receiver.wakeup
+/           # ...
+/         end
+/ 
+/ %section
+/   %h2 Magritte: Channel Registration
+/ 
+/   .block
+/     %ul
+/       %li Register and unregister processes at launch and exit
+/       %li
+/         When the last process unregisters from either end,
+/         %ol
+/           %li Set the channel state to closed
+/           %li Interrupt all the processes in the block set
+/           %li Cause any further reads/writes to interrupt the process
+/ 
+/       %li
+/         Important: Eagerly remove our own thread from the block set
+/         so we don't interrupt ourself during shutdown!
+/ 
+/ %section
+/   %h2 Magritte: Channel Registration
+/ 
+/   = code 'ruby' do
+/     :plain
+/       class Proc
+/         # ...
+/         def start
+/           # ...
+/           @env.each_input { |c| c.add_reader(self) }
+/           @env.each_output { |c| c.add_writer(self) }
+/           @thread[:magritte_start_mutex].unlock # start running user code!
+/           # ...
+/         end
+/ 
+/         # ...
+/ 
+/         def cleanup!
+/           @env.each_input { |c| c.remove_reader(self) }
+/           @env.each_output { |c| c.remove_writer(self) }
+/         end
+/ 
+/ %section
+/   %h2 Magritte: Channel Registration
+/ 
+/   = code 'ruby' do
+/     :plain
+/       def remove_reader(process)
+/         action = @mutex.synchronize do
+/           next :nop unless @open
+/           @block_set.reject! { |b| b.thread == process } if @block_type == :read
+/ 
+/           @readers.delete(process)
+/           next :nop if @readers.size > 0
+/ 
+/           @open = false
+/           :close
+/         end
+/ 
+/         @block_set.each(&:interrupt!) if action == :close
+/       end
+/  -# >
+/%section
+/  %h2 Implementation Progress
+/  %h3 RPython + MacroPy
+/  .block
+/    = code 'python' do
+/      :plain
+/        @functor
+/        class Syntax:
+/            class list([elements]): pass
+/            class paren([statements]): pass
+/            class assign(~lhs, ~rhs): pass
+/            class bare(value/unicode): pass
+/            class dynvar(name/unicode): pass
+/            class pipe(~lhs, ~rhs): pass
+/            class call(loc/LocRange, ~func, [args]): pass
+/            ...
+/
+/%section
+/  %h2 Implementation Progress
+/  %h3 In-Progress
+/  .block
+/    %ul
+/      %li Skeleton Tree-based parser
+/      %li Bytecode Design
+/  %h3 TODO
+/  .block
+/    %ul
+/      %li Bytecode Compiler
+/      %li Bytecode Interpreter
+
+%section
+  %h2 Questions?
+
+%section
+  %h2 Thank You!
