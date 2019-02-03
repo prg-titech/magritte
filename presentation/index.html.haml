@@ -1,6 +1,5 @@
 %section#intro
   %h1 Magritte
-  -# %p A UNIX Shell Suitable For Large Programs / A pipe-oriented language
   %p Building a ruby interpreter for the language
   .tagline
     %p Jeanine Adkisson, Johannes Westlund
@@ -11,7 +10,7 @@
 
 %section<
   %h1 Basic theory
-  %h3 Interpreter:
+  %h3 Interpreter
   %ul
     %li Given a set of source language instructions, directly execute them.
     %li Different from compilers which does a transformation from a source language to a target language.
@@ -26,6 +25,7 @@
         %ul
           %li Intermediate representation (IR)
           %li Abstract syntax tree (AST)
+          %li Domain Specific Language (DSL)
           %li Front end
           %li Back end
   .vs>
@@ -50,7 +50,7 @@
     %h3 Intepretation
 
 %section
-  %h2 Example I am gonna use
+  %h2 Example
   .vs>
     = code 'qsh' do
       :plain
@@ -80,6 +80,11 @@
 
 %section(data-transition="fade-in slide-out")
   %h2 Looking at the example
+  .vs>
+    = code 'qsh' do
+      :plain
+        x = 5
+        a = add $x 2
   = code 'ruby' do
     :plain
       token(:bare) token(:eq) token(:num) token(:nl) ...
@@ -90,477 +95,129 @@
     .box
       %h3 Reason
       %ul
-        %li Used to explicitly describe nesting
+        %li Used to explicitly indicate nesting
         %li Builds up a tree structure
         %li Makes the transition to AST easier
   .vs>
+    = code 'qsh' do
+      :plain
+        (f ?x) = (
+          y = add %x 5
+          z = mul %x 7
+          ...
+        )
+
+%section(data-transition="fade-in slide-out")
+  %h1 Skeleton tree
+  .vs>
+    .box
+      %h3 How we implement skeleton trees
+      %ul
+        %li Three types of nodes exists
+        %li Item: A single instruction.
+        %li Nested: A nesting indicated by either (, [ or { character.
+        %li Token: A normal token.
+  .vs>
     = code 'ruby' do
       :plain
-
-
-%section
-  %h2 Why?
-  .vs3>
-    .box
-      %h3 Ubiquity:
-      .block
-        Available on any UNIX platform!
-  .vs3>
-    .box
-      %h3 OS Fluency:
-      .block
-        &ldquo;Feels&rdquo; directly connected to the OS
-
-  .vs3>
-    .box
-      %h3 REPL Feel
-      .block
-        Designed for heavy REPL use
-
-%section
-  %h2 Design Philosophy
-
-  %h3 Goals:
-
-  %h4 OS Fluency
-  %h4 Optimize for REPL interaction
-
-  .block
-  %code -- BUT ALSO --
-
-  %h4 Allow for large programs
-
-// %section
-//   %h2 Design Philosophy
-// 
-//   %h3 Strategies:
-//   %ul
-//     %li
-//       Derive all language concepts from UNIX APIs<br>
-//       (as opposed to embedding another language's semantics,<br>
-//       like <code>xonsh</code> or <code>scheme-shell</code>)
-//     %li Minimal marshalling, no quotes for <code>exec</code> or string literals
-//     %li Left-to-right pipe-based composition
-//     %li
-//       Provide real value-based semantics and abstraction tools<br>
-//       (as opposed to everything-is-a-string, like <code>es</code> or <code>fish</code>)
-
-%section(data-transition="slide-in fade-out")
-  %h2
-    What Makes a Shell Feel <span class="dune">&ldquo;Fluent&rdquo;</span>?
-  .bigger
-    %strong.sandy Core language concepts directly map to OS APIs
-  .block
-    .vs3>
-      .box environments
-    .vs3>
-      .box argv
-    .vs3>
-      .box processes
-    .vs3>
-      .box pipes, files, stdio
-    .vs3>
-      .box commands
-    .vs3>
-      .box return codes
-
-  concepts every <span class="dune">&ldquo;general-purpose&rdquo;</span> programming language understands.
-
+        (Item:
+          (Nested:
+            ...
+          )
+          (Token :eq)
+          (Nested:
+            (Item: ...)
+            (Item: ...)
+            ...
+          )
+        )
 
 %section(data-transition="fade-in slide-out")
-  %h2 Main Idea
-  %h3 A language that expands UNIX concepts to language abstractions
-
-  .block
-    .vs3>
-      .box environments:<br>prototype objects!
-    .vs3>
-      .box argv:<br>vectors (nestable!)
-    .vs3>
-      .box processes:<br>threads!
-    .vs3>
-      .box pipes, files, stdio:<br>channels!
-    .vs3>
-      .box commands:<br>functions (w/closure!)
-    .vs3>
-      .box return codes:<br>error handling!
-
-  .block
-    %p
-      This is in contrast to projects like <code>xonsh</code>
-      or <code>scheme-shell</code>, which apply an existing
-      language's semantics to a shell context.
-
-%section
-  %h2 Syntax Design:<br> Pipe-Based Composition
-  %h3 Compose complex pipelines linearly
-
-  %h4 Why not use lisp-like syntax?
-
-  .block.replacement
-    .fragment.current-visible
-      = code 'cursorscheme' do
-        :plain
-          ; user types (▮ = cursor)
-          (fan 4 fetch-webpage (file-lines "url-list.txt"))▮
-
-    .fragment.current-visible
-      = code 'cursorscheme' do
-        :plain
-          ; user backtracks to the front
-          ▮(fan 4 fetch-webpage (file-lines "url-list.txt"))
-
-    .fragment.current-visible
-      = code 'cursorscheme' do
-        :plain
-          ; user types
-          (sort (map downcase (map '(html-select ".title") ▮(fan 4 fetch-webpage
-                          (file-lines "url-list.txt"))
-
-    .fragment.last
-      = code 'cursorscheme' do
-        :plain
-          ; user scans to the end and completes parentheses
-          (sort (map downcase (map '(html-select ".title") (fan 4 fetch-webpage
-                          (file-lines "url-list.txt")))))▮
-
-  %h4.fragment Lisp-like syntax is not ideal for REPL composition
-
-%section
-  %h2 Syntax Design:<br> Pipe-Based Composition
-  %h3 Compose complex pipelines linearly
-
-  .replacement
-    .fragment.current-visible
-      = code 'qsh' do
-        :plain
-          # user types
-          file-lines url-list.txt | fan 4 fetch-webpage▮
-    .fragment
-      = code 'qsh' do
-        :plain
-          # user continues typing
-          file-lines url-list.txt | fan 4 fetch-webpage | each [html-select .title]
-            | each downcase | sort▮
-
-  .space
-  %h4.fragment Goal: the user can always continue typing directly to the right to use previous results
-
-%section
-  %h2 Language Design
-  %h3 Allowing for large programs
-
-
-%section
-  %h2 Language Design: Values
-
+  %h2 Looking at the example
   .vs>
-    %h3 Problem:<br> Everything Is A String
+    = code 'qsh' do
+      :plain
+        x = 5
+        a = add $x 2
+  = code 'ruby' do
+    :plain
+      (Item: token(:bare) token(:eq) token(:num)) (Item: ...
 
+%section
+  %h2 Abstract syntax tree parsing
+  .box
+    %ul
+      %li A DSL was created to help convert the skeleton tree into an AST
+      %li The DSL was used to match and extract items from the skeleton tree
+  = code 'ruby' do
+    :plain
+      item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
+          return AST::Pipe[parse_line(before), parse_command(after)]
+      end
+
+%section
+  %h2 Looking at the example
+  .vs>
+    = code 'qsh' do
+      :plain
+        x = 5
+        a = add $x 2
+  = code 'ruby' do
+    :plain
+      AST::Group[AST::Assignemnt[...], AST::Assignment[...]]
+
+%section
+  %h1 Interpreting
+  %ul
+    %li First we set up the environment by loading the builtin functions and standard library.
+    %li Then we recursively evaluate the AST and execute the instruction of each node.
+    %li In the case of our example not much will happen.
+
+%section
+  %h2 Any questions so far?
+
+%section
+  %h2 How it feels to use the language
+
+%section
+  %h2 The intention behind the language
+  .vs>
     .box
       %ul
-        %li Data structures are impossible/inconvenient
-        %li Anonymous functions are impossible/inconvenient
-        %li Makes large programs an unreasonable goal
-
+        %li It should be able to replace bash
+        %li In order for it to do that shell scripting must be possible
+        %li My opinion:
+        %ul
+          %li It easily outpreforms bash in ease of use
+          %li The only thing missing is shell integration
   .vs>
-    %h3 Solution:<br> Not everything is a string!
     .box
       %ul
-        %li
-          Variables can hold <strong>values</strong>: string, number,
-          vector, environment, channel, process, function
-        %li
-          Channels can handle values, not just bytes
-        %li
-          Functions take values as arguments
-
-  .block
-    %p
-      This is in contrast with projects like <code>es</code> or
-      <code>fish</code>
+        %li It should be easy to write large programs
+        %li A sort of validation that it's a general purpose language
+        %li My task:
+        %ul
+          %li Write a large program in the language
 
 %section
-  %h2 Language Design: Call Semantics
-  .block
-    %h4 Problem: Shell functions don't have return values
-    %h4 Solution: Multiple return values using stdout.
+  %h2 Implegenting RSA encryption
+  .vs>
+    .box
+      %h3 Basic idea
+      %ul
+        %li Find a prime number consiting of b bits
+        %li From it you can create two keys
+        %li Give one key to the world
+        %li Keep the other one secret
+  .vs>
+    .box
+      %h3 What I've currently done
+      %ul
+        %li Made program to generate prime numbers
+        %li Drawback:
+        %ul
+          %li Currently so slow that only primes with 10 bits can be generated in reasonable time
 
-  .block
-    .vs>
-      %h3 Functions <code>put</code> values
-      = code 'qsh' do
-        :plain
-          (count-three) = (
-            put 1
-            put 2
-            put 3
-          )
-    .vs>
-      %h3 ...which are expanded
-      = code 'console?lang=qsh' do
-        :plain
-          ; put 0 (count-three) 4
-
-          -- expands to --
-          ; put 0 1 2 3 4
-
-          => 0; => 1; => 2; => 3; => 4
-
-  Equivalent to shell <code>$(command arg arg)</code>, but without the whitespace issues
-
-
-%section(data-transition="slide-in fade-out")
-  %h2 Language Design: Variable Scope
-  .block
-    .space
-    %h4 Problem: UNIX programs expect dynamic variables
-    %h4 Solution: Support both lexical and dynamic variables
-
-  .block
-    .vs>
-      %h3 Dynamic with <code>$</code>
-      = code 'console?lang=qsh' do
-        :plain
-          ; x = 1
-          ; (f) = (put $x)
-          ; (g) = (x = 2; f)
-          ; g
-          2
-
-    .vs>
-      %h3 Lexical with <code>%</code>
-      = code 'console?lang=qsh' do
-        :plain
-          ; x = 1
-          ; (f) = (put %x)
-          ; (g) = (x = 2; f)
-          ; g
-          1
-
-  Dynamic variables = UNIX environment variables
-
-%section(data-transition="fade-in slide-out")
-  %h2 Language Design: Variable Scope
-  .block
-    .space
-    %h4 Problem: UNIX programs expect dynamic variables
-    %h4 Solution: Support both lexical and dynamic variables
-
-  .block
-    .vs>
-      %h3 Dynamic with <code>$</code>
-      = code 'console?lang=qsh' do
-        :plain
-          ; x = 1
-          ; (f) = ($x = 3)
-          ; (g) = (x = 2; f; put $x)
-          ; g; put $x
-          3 1
-
-    .vs>
-      %h3 Lexical with <code>%</code>
-      = code 'console?lang=qsh' do
-        :plain
-          ; x = 1
-          ; (f) = (%x = 3)
-          ; (g) = (x = 2; f; put $x)
-          ; g; put $x
-          2 3
-
-  Dynamic variables = UNIX environment variables
-
-%section
-  %h2 Language Design: Objects
-
-  .block
-    .vs>
-      %h3 Instantiation
-      = code 'qsh' do
-        :plain
-          my-env = {
-            # regular members
-            x = 1
-
-            # functions
-            (set-x ?value) = (
-              # $self set dynamically
-              # as in javascript
-              $self!x = %value
-            )
-          }
-
-    .vs>
-      %h3 Usage
-      = code 'qsh' do
-        :plain
-          # regular members
-          $my-env!x
-
-          # functions
-          $my-env!my-function 23
-
-          +$my-env (
-            my-function $x
-          )
-
-
-
-
-/%section
-/  %h2 Language Design: Compatibility
-/
-/  .vs>
-/    %ul
-/      %li Idea: pass lambdas to external programs
-/      %li <code>/usr/bin/qush-external-<emph>N</emph></code>
-/      %li Standard <code>exec</code> interface
-/      %li <code>$__QUSH_SERVER</code> and <code>$__QUSH_FUNCTION_<emph>N</emph></code>
-/
-/  .vs>
-/    = code 'qsh' do
-/      :plain
-/
-/        # calls into $my-fn in the
-/        # current runtime once
-/        # every 3 seconds
-/
-/        ; /usr/bin/watch -d 3 $my-fn
-/
-/  Bash cannot currently do this.
-
-
-/%section
-/  %h2 Language Design: Error Handling
-/  %h3 Default Behavior
-/
-/  An &ldquo;error&rdquo; includes:
-/
-/  .block
-/    %ul
-/      %li Assertion error (type error or explicit crash)
-/      %li External crash signal (SIGINT, etc)
-/      %li A child process exits with nonzero code
-/      %li A blocked channel closes
-
-
-/%section
-/  %h2 Language Design: Error Handling
-/  %h3 Default Behavior
-/  When an error happens:
-/  .block
-/    %ul
-/      %li All child processes are sent SIGINT (or echo signal)
-/      %li Compensations are run in reverse order (more later)
-/      %li All channels are closed
-/      %li Exit with an error code (default 1)
-
-/ %section
-/   %h2 Language Design: Error Handling
-/   %h3 Plain Recovery (Continuing)
-/ 
-/   .block
-/     = code 'qsh' do
-/       :plain
-/         command || command-if-error
-/         command && command-if-no-error
-/         command && command-if-no-error !! command-if-error
-/ 
-/   .block Internal errors (non-zero exits) in the original command are &ldquo;rescued&rdquo; (ignored)
-/ 
-/   .block <code class="scarletred2">TODO:</code> Syntax for targetting error types
-/ 
-/ 
-/ %section
-/   %h2 Language Design: Error Handling
-/   %h3 Compensation
-/ 
-/   = code 'qsh' do
-/     :plain
-/       touch /tmp/lock %% rm -f /tmp/lock # compensate an error
-/ 
-/       %x = command %% reset # sets $COMP_REF and $COMP_PREV
-/ 
-/       checkpoint # clears the current compensation stack
-/ 
-/   .space
-/   = code 'qsh' do
-/     :plain
-/       touch /tmp/lock %%! rm -f /tmp/lock # run on error or at checkpoint
-/   %br
-/ 
-/   .block <code class="scarletred2">TODO:</code> Compensation boundaries
-/   /Options being considered for compensation boundaries:
-/   /.block
-/   /  %ul
-/   /    %li Only at the procedure level
-/   /    %li Controlled by a special environment variable
-
-
-
-/%section
-/  %h2 Language Design: Concurrency
-/  Many things TBD, but the principle is:
-/  %h3 Behave as closely to UNIX processes as possible.
-/  .vs>
-/    = code 'qsh' do
-/      :plain
-/        # spawn
-/        & command $arg $arg > $out < $in
-/
-/        # send
-/        put message > $in
-/
-/        # receive
-/        get message < $out
-/    // vim syntax highlighting gets confused here
-/    // >
-/  .vs>
-/    .block
-/      %ul
-/        %li local environment contains file handles 0~127
-/        %li 0 = stdin, 1 = stdout, 2 = stderr, etc
-/    = code 'qsh' do
-/      :plain
-/        command | command
-/        command |[5>2] command
-/        command |[2>$ERROR_LOG] command
-
-/ %section
-/   %h2 Concurrency Model
-/ 
-/   .vs
-/     %ul
-/       %li.fragment
-/         Users can freely spawn
-/         %strong.dune processes
-/       %li.fragment
-/         Processes communicate and coordinate through
-/         %strong.dune synchronous channels
-/       %li.fragment
-/         %strong.go-get-it [new]
-/         Processes
-/         %strong.dune register
-/         their open input/output channels at startup, and
-/         %strong.dune deregister
-/         them at exit.
-/       %li.fragment
-/         %strong.go-get-it [new]
-/         A channel
-/         %strong.dune closes
-/         when either its last registered reader or registered writer exits.
-/         At closing, we
-/         %strong.dune interrupt
-/         all blocked processes, as well as any process that attempts to
-/         reopen the channel.
-/ 
-/   %h4.fragment (Will explain all this in later slides!)
-/ 
-/ 
-/ 
-/ 
-/ %section
-/   %h2 Concurrency: Concepts
 / 
 /   .vs>
 /     %h4 Channels as values
@@ -882,24 +539,6 @@
 /           ~$ echo 'demo time!'
 /           demo time!
 /           ~$ 
-
-
-
-
-
-%section
-  %h2 Implementation Progress
-
-%section
-  %h2 Implementation Progress
-
-  .block
-    %ul
-      %li Completed! Ruby Interpreter (&ldquo;magritte&rdquo;)
-      %li Many more features and tests to be added
-      %li TODO: design a VM, bootstrap with RPython
-      %li.fragment (if time) DEMO
-
 / %section
 /   %h2 Magritte
 / 
