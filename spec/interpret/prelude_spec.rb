@@ -51,8 +51,9 @@ interpret_spec "standard library" do
 
   interpret "flaky test on composition" do
     source <<-EOF
-      (repeat-func ?fn) = (exec %fn; repeat-func %fn)
-      repeat-func [range 5] | each (?n => iter (?x => inc %x) %n | take 2) |
+      (repeat-func ?fn) = (produce (=> put (exec %fn)))
+      (get-first-two-elems-in-sequence ?fn ?start) = (iter %fn %start | take 2)
+      repeat-func [range 5] | each (?n => get-first-two-elems-in-sequence [inc] %n) |
         filter [even] | take 1
     EOF
 
