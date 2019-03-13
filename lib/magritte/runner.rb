@@ -1,6 +1,6 @@
 module Magritte
   class Runner
-    attr_reader :input, :output
+    attr_reader :input, :output, :env
     def initialize
       @mutex = Mutex.new
       @output = Channel.new
@@ -42,13 +42,17 @@ module Magritte
 
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
       p = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env)
-      o = Proc.spawn(Code.new { loop { puts @output.read.repr } }, Env.empty).start
+
+      output_env = Env.empty.extend([@output], [])
+      o = Proc.spawn(Code.new { loop { puts @output.read.repr } }, output_env).start
       status = p.wait
       o.join
     rescue CompileError => e
       Status[:fail, reason: Reason::Compile.new(e)]
-    rescue Exception => e
+    rescue ::Interrupt => e
       Status[:fail, reason: Reason::UserInterrupt.new(e)]
+    rescue Exception => e
+      Status[:fail, reason: Reason::Bug.new(e)]
     else
       status
     ensure

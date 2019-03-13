@@ -26,8 +26,10 @@ module Magritte
 
     include DSL
 
-    def initialize(&block)
+    attr_reader :loc
+    def initialize(loc=nil, &block)
       @block = block
+      @loc ||= block.source_location
     end
 
     def run
@@ -43,10 +45,6 @@ module Magritte
 
     def inspect
       "#<Code #{loc}>"
-    end
-
-    def loc
-      @block.source_location.join(':')
     end
   end
 

@@ -8,7 +8,7 @@ module InterpretHelpers
 
       let(:lex) { Magritte::Lexer.new(input_name, input) }
       let(:skel) { Magritte::Skeleton::Parser.parse(lex) }
-      let(:ast) { Magritte::Parser.parse_root(skel) }
+      let(:ast) { Magritte::Parser.parse(skel) }
       let(:env) { Magritte::Builtins.load(Magritte::Env.empty) }
       let(:results) { ast;
         collection, @status = Magritte::Spawn.s_ env do
@@ -74,9 +74,9 @@ module InterpretHelpers
     end
 
     def debug
-      @result_expectations << proc do
+      @status_expectations.unshift(proc do
         binding.pry
-      end
+      end)
     end
 
     def evaluate(&b)

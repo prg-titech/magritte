@@ -6,6 +6,14 @@ module Magritte
       def initialize(status)
         @status = status
       end
+
+      def to_s
+        "!interrupt[#{@status.repr}]"
+      end
+
+      def inspect
+        "#<#{self.class.name} #{@status.repr}>"
+      end
     end
 
     def self.current
@@ -24,33 +32,39 @@ module Magritte
       current.send(:enter_frame, *args, &b)
     end
 
+    def self.interruptable
+      Thread.handle_interrupt(Interrupt => :immediate) { yield }
+    end
+
     def self.spawn(code, env)
       start_mutex = Mutex.new
       start_mutex.lock
 
       t = Thread.new do
-        begin
-          # wait for Proc#start
-          start_mutex.lock
-          Thread.current[:status] = Status[:incomplete]
-          Thread.current[:status] = begin
-            code.run
-          rescue Interrupt => e
-            Proc.current.compensate(e)
-            e.status
+        Thread.handle_interrupt(Interrupt => :never) do
+          begin
+            # wait for Proc#start
+            start_mutex.lock
+            Thread.current[:status] = Status[:incomplete]
+            Thread.current[:status] = begin
+              code.run
+            rescue Interrupt => e
+              Proc.current.compensate(e)
+              e.status
+            end
+          rescue Exception => e
+            PRINTER.p :exception
+            PRINTER.p e
+            PRINTER.puts e.backtrace
+            status = Status[:crash, :bug, reason: Reason::Bug.new(e)]
+            Proc.current.compensate_all(status)
+            Thread.current[:status] = status
+            raise
+          ensure
+            @alive = false
+            Proc.current.checkpoint_all
+            PRINTER.puts('exiting')
           end
-        rescue Exception => e
-          PRINTER.p :exception
-          PRINTER.p e
-          PRINTER.puts e.backtrace
-          status = Status[:crash, :bug, reason: Reason::Bug.new(e)]
-          Proc.current.compensate_all(status)
-          Thread.current[:status] = status
-          raise
-        ensure
-          @alive = false
-          Proc.current.checkpoint_all
-          PRINTER.puts('exiting')
         end
       end
 
@@ -95,7 +109,7 @@ module Magritte
       @env = env
       @stack = []
 
-      @interrupt_mutex = LogMutex.new :interrupt
+      # @interrupt_mutex = LogMutex.new "interrupt_#{LogPrinter.thread_name(@thread)}"
     end
 
     def env
@@ -119,10 +133,11 @@ module Magritte
     end
 
     def interrupt!(status)
-      @interrupt_mutex.synchronize do
-        return unless alive?
+      return unless alive?
 
-        # will run cleanup in the thread via the ensure block
+      if @thread == Thread.current
+        raise Interrupt.new(status)
+      else
         @thread.raise(Interrupt.new(status))
       end
     end
@@ -180,6 +195,7 @@ module Magritte
     end
 
     def with_trace(callable, range, &b)
+      PRINTER.p("trace: #{callable.name} #{range}")
       @trace << Tracepoint.new(callable, range)
       yield
     ensure
@@ -192,11 +208,9 @@ module Magritte
     def enter_frame(*args, &b)
       stack_size = @stack.size
 
-      @interrupt_mutex.synchronize do
-        frame = Frame.new(self, *args)
-        PRINTER.p :stack => @stack
-        @stack << frame
-      end
+      frame = Frame.new(self, *args)
+      PRINTER.p :stack => @stack
+      @stack << frame
 
       frame.open_channels
 

@@ -5,6 +5,13 @@ module Magritte
       Proc.current.stdout.write(val)
     end
 
+    def in_new_env(env, &b)
+      new_env = env.extend
+      Proc.enter_frame(new_env, &b)
+      new_env.unhinge!
+      new_env
+    end
+
     def get
       out = Proc.current.stdin.read
       # PRINTER.p get: [out, stdin]
@@ -17,10 +24,24 @@ module Magritte
     end
 
     def loop_channel(c, &b)
-      loop { b.call }
+      loop do
+        PRINTER.p :loop_channel => c
+        b.call
+        # Proc.interruptable { }
+        # Proc.interruptable { }
+        # Proc.interruptable { }
+        # Proc.interruptable { }
+        # Proc.interruptable { }
+      end
     rescue Proc::Interrupt => e
       reason = e.status.reason
-      raise unless reason && reason.is_a?(Reason::Close) && reason.channel == c
+
+      if reason && reason.is_a?(Reason::Close) && reason.channel == c
+        PRINTER.puts("loop_channel rescued: #{e.status.repr}")
+      else
+        PRINTER.puts("loop_channel bypassed: #{e.status.repr}")
+        raise
+      end
     end
 
     def produce(&b)

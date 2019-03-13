@@ -9,6 +9,8 @@ module Magritte
         env.let(name, func)
       end
       load_file("#{ROOT_DIR}/mag/prelude.mag", env)
+
+      env
     end
 
     @builtins = []
@@ -38,6 +40,19 @@ module Magritte
     builtin :put, [], :any  do |*vals|
       vals.each { |val| put(val) }
       Status.normal
+    end
+
+    builtin :'load-raw', [:String] do |fname|
+      Builtins.load_file(fname.value, Proc.current.env)
+    end
+
+    builtin :load, [:String] do |fname|
+      status = nil
+      env = in_new_env(Proc.current.env) do
+        status = Builtins.load_file(fname.value, Proc.current.env)
+      end
+      put Value::Environment.new(env)
+      status
     end
 
     builtin :get, [] do
@@ -273,14 +288,8 @@ module Magritte
 
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
-      # Transform the lib string into an ast
       ast = Parser.parse(Skeleton.parse(Lexer.new(lib_name, source)))
-      c = Collector.new
-      env.own_outputs[0] = c
-      # Evaluate the ast, which will add the lib functions to the env
-      Proc.spawn(Code.new { Interpret.interpret(ast) }, env).start
-      c.wait_for_close
-      env
+      Proc.spawn(Code.new { Interpret.interpret(ast) }, env).wait
     end
 
     def self.load_file(file_path, env)

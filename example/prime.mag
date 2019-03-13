@@ -2,13 +2,13 @@
 (binary-rand) = (round 0 (rand))
 
 # Generate a sequence of n random bits
-(gen-bits ?n) = (produce binary-rand | take %n)
+(gen-bits ?n) = (produce %binary-rand | take %n)
 
 # Convert a number in base b to base 10
 (from-base ?b) = (
   num = 0
   each (?d =>
-    %num = (mul %b %num | into add %d)
+    %num = (mul %b %num | into %add %d)
   )
   put %num
 )
@@ -17,7 +17,10 @@
 # breaks when n < 3 because we want to ensure that the leading and
 # trailing bit is set to 1. Of course, nobody should actually call the
 # function with n < 3 because that defeats the purpose of the function.
-(gen-number ?n) = ((put 1; (gen-bits (add %n -2)); put 1) | from-base 2)
+(gen-number ?n) = (
+  (put 1; (gen-bits (add %n -2)); put 1)
+  | from-base 2
+)
 
 # In Miller-rabin we want to factor a number num = (2^r)*d
 # and learn what r and d is. This function returns r and d
@@ -53,16 +56,33 @@
 # You can increase i to increase the certainty.
 # Fails if num is not prime
 (miller-rabin ?i ?num) = (
-  eq 1 (mod 2 %num) &&
-  (r d = (miller-rabin-factoring (dec %num) 0)
-  (miller-rabin-test %i %num %r %d))
+  eq 1 (mod 2 %num) && (
+    r d = (miller-rabin-factoring (dec %num) 0)
+    (miller-rabin-test %i %num %r %d)
+  )
 )
-
-(repeat-func ?fn) = (put (exec %fn); repeat-func %fn)
 
 (gen-prime ?b) = (
-  repeat-func [gen-number %b] | each (?n => iter (?x => inc %x) %n | take %b) |
-    filter [miller-rabin 10] | take 1
+  # produce (=> gen-number %b) | take 10
+  produce [%gen-number %b] | each (?n => iter %inc %n | take %b) | take 10 # |
+    # filter [%miller-rabin 10] | take 1
+  put done
 )
 
-put (gen-prime 5)
+(sum) = (
+  num = 0
+  each (?d =>
+    %num = (add %d %num) # | into %add %d)
+  )
+  put %num
+)
+
+(testy) = (
+  produce (=>
+    put 1 | sum
+  ) | take 10
+  put done
+)
+
+(__main__) = gen-prime 5
+# (__main__) = testy

@@ -173,10 +173,10 @@ module Magritte
      elsif scan /!/
        skip_ws
        return token(:bang)
-      elsif scan /[$](\w+)/
+      elsif scan /[$]([\w-]+)/
         skip_ws
         return token(:var, group(1))
-      elsif scan /[%](\w+)/
+      elsif scan /[%]([\w-]+)/
         skip_ws
         return token(:lex_var, group(1))
       elsif scan /[?](\w+)/
@@ -256,6 +256,10 @@ module Magritte
 
       def repr
         "#{first.source_name}@#{first.repr}~#{last.repr}"
+      end
+
+      def to_s
+        repr
       end
     end
 

@@ -22,7 +22,7 @@ module Magritte
     end
 
     def parse(skel)
-      parse_root(skel)
+      FreeVars::Grouper.group(parse_root(skel))
     end
 
     def parse_root(skel)

@@ -2,7 +2,7 @@ describe Magritte::FreeVars do
   abstract(:input)
   let(:lex) { Magritte::Lexer.new("test",input) }
   let(:skel) { Magritte::Skeleton::Parser.parse(lex) }
-  let(:ast) { Magritte::Parser.parse_root(skel) }
+  let(:ast) { Magritte::Parser.parse(skel) }
   let(:result) { Magritte::FreeVars.scan(ast) }
 
   def free_vars(node = nil)

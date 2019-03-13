@@ -51,6 +51,7 @@ module Magritte
 
         error!("Empty command") unless command
 
+        PRINTER.puts "> #{node.range}"
         command.call(args, node.range)
       end
 
@@ -130,11 +131,10 @@ module Magritte
       end
 
       def visit_environment(node)
-        env = Proc.current.env.extend
-        Proc.enter_frame(env) do
+        env = Std.in_new_env(Proc.current.env) do
           visit_exec(node.body)
         end
-        env.unhinge!
+
         yield Value::Environment.new(env)
       end
 

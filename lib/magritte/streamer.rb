@@ -34,11 +34,12 @@ module Magritte
       @output.call(val)
     end
 
+    require 'pry'
     def wait_for_close
       @mutex.synchronize do
         next unless @open
         @close_waiters << Thread.current
-        @mutex.sleep
+        Proc.interruptable { @mutex.sleep }
       end
     end
 

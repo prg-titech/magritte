@@ -1,3 +1,5 @@
+$DEBUG_MUTEX = Mutex.new
+
 module Magritte
   class Blocker
     attr_reader :thread, :val
@@ -40,18 +42,27 @@ module Magritte
     end
 
     def log(*a)
-      # PRINTER.p disp => a
+      if PRINTER.is_a?(LogPrinter)
+        File.open("tmp/log/#{$$}/#{disp}", 'a') { |f| f.puts *a }
+      end
+    end
+
+    def p(*a)
+      log(*a.map(&:inspect))
     end
 
     def synchronize(&b)
+      trace = caller[0]
+
       out = nil
-      log :lock
       @mutex.synchronize do
-        log :locked
-        out = yield
-        log :unlock
+        begin
+          log "lock  : #{trace}"
+          out = yield
+        ensure
+          log "unlock: #{trace}"
+        end
       end
-      log :unlocked
       out
     end
 
@@ -60,7 +71,7 @@ module Magritte
     end
 
     def sleep
-      log :sleep
+      log "sleep : #{caller[0]}"
       @mutex.sleep
       log :wake
     end
@@ -71,10 +82,9 @@ module Magritte
     @@max_id = 0
 
     def initialize
-      @mutex = Mutex.new
-      setup
       @id = IDS_MUTEX.synchronize { @@max_id += 1 }
-
+      @mutex = LogMutex.new("channel_#{@id}")
+      setup
     end
 
     def setup
@@ -114,14 +124,22 @@ module Magritte
         @block_set.reject! { |b| b.thread == p.thread } if @block_type == :read
 
         @readers.delete(p)
+        @mutex.p([@block_type, @block_set.size])
         next :nop unless @readers.empty?
+
+        @mutex.p("CLOSE")
 
         @open = false
         :close
       end
 
-      PRINTER.p(closing_channel: @id) if action == :close
+      if action == :close
+        PRINTER.p(close: [@id, @block_type, @block_set])
+      end
+
       interrupt_blocked! if action == :close
+    rescue ThreadError
+      binding.pry
     end
 
     def remove_writer(p)
@@ -133,6 +151,7 @@ module Magritte
         @writers.delete(p)
         next :nop unless @writers.empty?
 
+        @mutex.log "CLOSE"
         @open = false
         :close
       end
@@ -147,8 +166,9 @@ module Magritte
 
     def read
       @mutex.synchronize do
-        if closed?
+        unless @open
           PRINTER.p("closed on read")
+          @mutex.p("interrupting #{LogPrinter.thread_name(Thread.current)}")
 
           # jump to the end of the block
           next
@@ -156,22 +176,21 @@ module Magritte
 
         @block_set.shuffle!
 
-        PRINTER.p(init_read: @block_type)
+        @mutex.p(read: [@id, @block_type, open: @open])
+        PRINTER.p(read: [@id, @block_type, open: @open])
         out = case @block_type
         when :none, :read
           @block_type = :read
 
           receiver = Receiver.new(Thread.current)
           @block_set << receiver
-          @mutex.sleep
-
-          return receiver.val
+          Proc.interruptable { @mutex.sleep; return receiver.val }
         when :write
           sender = @block_set.shift
           @block_type = :none if @block_set.empty?
 
           sender.wakeup
-          return sender.val
+          Proc.interruptable { return sender.val }
         end
       end
 
@@ -180,26 +199,29 @@ module Magritte
 
     def write(val)
       @mutex.synchronize do
-        if closed?
+        unless @open
           PRINTER.p("closed on write")
+          @mutex.p("interrupting #{LogPrinter.thread_name(Thread.current)}")
           next
         end
 
         @block_set.shuffle!
 
-        PRINTER.p(init_write: @block_type)
+        @mutex.p(write: [@id, @block_type])
+        PRINTER.p(write: [@id, @block_type])
         case @block_type
         when :none, :write
           @block_type = :write
           @block_set << Sender.new(Thread.current, val)
-          @mutex.sleep
+          Proc.interruptable { @mutex.sleep }
           return
         when :read
-          receiver = @block_set.shift
+          receiver = @block_set.shift or PRINTER.p(EMPTY_BLOCK_SET: [@block_type, self])
           @block_type = :none if @block_set.empty?
 
           receiver.set(val)
           receiver.wakeup
+          Proc.interruptable { }
           return
         end
       end
