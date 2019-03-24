@@ -46,7 +46,7 @@ exec = []
 (take-until ?pred) = (each (?e => %pred %e && put %e !! false))
 
 LOG = (stdout)
-(log ?msg) = (put ["log:" %msg] > $LOG)
+(log (?msg)) = (put ["log:" (for %msg)] > $LOG)
 
 null = (make-null)
 (through ?o) = (

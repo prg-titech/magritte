@@ -47,4 +47,14 @@ interpret_spec "environment" do
 
     results %w(2 1)
   end
+
+  interpret "redirecting" do
+    source <<-EOF
+      e = { x = (make-channel) }
+      & put 3 > $e!x
+      get < $e!x
+    EOF
+
+    results %w(3)
+  end
 end

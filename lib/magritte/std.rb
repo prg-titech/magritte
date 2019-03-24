@@ -1,8 +1,14 @@
 module Magritte
   module Std
     extend self
+    require 'timeout'
+    require 'pry'
     def put(val)
-      Proc.current.stdout.write(val)
+      Timeout.timeout(2) do
+        Proc.current.stdout.write(val)
+      end
+    rescue Timeout::Error
+      binding.pry
     end
 
     def in_new_env(env, &b)
@@ -13,9 +19,13 @@ module Magritte
     end
 
     def get
-      out = Proc.current.stdin.read
-      # PRINTER.p get: [out, stdin]
-      out
+      Timeout.timeout(2) do
+        out = Proc.current.stdin.read
+        # PRINTER.p get: [out, stdin]
+        out
+      end
+    rescue Timeout::Error
+      binding.pry
     end
 
     def call(h, a, range=nil)
@@ -27,11 +37,7 @@ module Magritte
       loop do
         PRINTER.p :loop_channel => c
         b.call
-        # Proc.interruptable { }
-        # Proc.interruptable { }
-        # Proc.interruptable { }
-        # Proc.interruptable { }
-        # Proc.interruptable { }
+        Proc.check_interrupt!
       end
     rescue Proc::Interrupt => e
       reason = e.status.reason

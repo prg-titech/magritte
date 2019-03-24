@@ -53,4 +53,21 @@ interpret_spec "compensations" do
 
     results %w(1)
   end
+
+  interpret "the bug" do
+    source <<-EOF
+      c = (make-channel)
+      (f) = (
+        & put 1 > $c
+        put 2
+      )
+
+      x = (f)
+
+      get < $c
+      put $x
+    EOF
+
+    results %w(1 2)
+  end
 end

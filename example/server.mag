@@ -1,0 +1,49 @@
+(spawn (?fn)) = (
+  i = (make-channel)
+  o = (make-channel)
+  & exec (for %fn) < $i > $o
+  log after internal spawn
+  put $i $o
+  log returning from spawn
+)
+
+(server (?fn)) = (
+  log server
+  i o = (spawn (=>
+    log spawned (for %fn)
+    each ([?msg ?ch] =>
+      log received [%msg %ch]
+      exec (for %fn) %msg > %ch
+    )
+  ))
+
+  log after spawn
+
+  # keep the channel alive on the read end
+  & sleep-forever > $i
+
+  put { ch = %i }
+)
+
+(send ?server ?msg) = (
+  log send %server %msg
+  c = (make-channel)
+  o = %server!ch
+  put [%msg $c] > $o
+  log after-send
+  drain < $c
+)
+
+(__main__) = (
+  log hello
+  s = (server (
+    [greet ?x] => str "hello " %x
+    [die] => crash
+  ))
+
+  log after server
+
+  send %s [greet world]
+  log greeted
+  send %s [die]
+)

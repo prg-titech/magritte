@@ -103,6 +103,9 @@ module Magritte
     end
 
     def as_code
+      trace = Proc.current? && Proc.current.trace.last
+      loc = trace ? trace.range.first : @block.source_location
+
       Code.new(&@block)
     end
 

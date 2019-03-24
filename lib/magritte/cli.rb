@@ -33,6 +33,12 @@ module Magritte
 
         runner.synchronize { puts "% #{status.repr}" } if status.fail?
       end
+
+      # XXX hack in case some threads don't exit
+      # will investigate this more when we have a
+      # proper vm
+      PRINTER.p(alive: (Thread.list - [Thread.current]))
+      # exit! 0
     end
 
     def parse_args

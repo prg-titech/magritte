@@ -62,12 +62,13 @@
   )
 )
 
-(gen-prime ?b) = (
+(gen-primes ?b) = (
   # produce (=> gen-number %b) | take 10
-  produce [%gen-number %b] | each (?n => iter %inc %n | take %b) | take 10 # |
-    # filter [%miller-rabin 10] | take 1
-  put done
+  produce [%gen-number %b] | each (?n => iter %inc %n | take %b)
+    | filter [%miller-rabin 10]
 )
+
+(gen-prime ?b) = (gen-primes %b | take 1)
 
 (sum) = (
   num = 0
@@ -84,5 +85,6 @@
   put done
 )
 
-(__main__) = gen-prime 5
+(__main__) = gen-primes 10
 # (__main__) = testy
+# (__main__) = put 1

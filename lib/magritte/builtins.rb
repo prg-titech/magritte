@@ -103,6 +103,10 @@ module Magritte
       Status.normal
     end
 
+    builtin :'sleep-forever', [] do
+      sleep
+    end
+
     builtin :'count-forever', [] do |n|
       i = 0
       produce { put Value::Number.new(i); i += 1 }
@@ -116,15 +120,17 @@ module Magritte
     builtin :'loop-channel', [:Channel, :any], :any do |c, h, *a|
       channel = c.channel
 
-      loop_channel(c.channel) { call(h, a) }
+      loop_channel(c.channel) { PRINTER.p("XXX"); call(h, a); PRINTER.p("YYY") }
     end
 
     builtin :stdin, [] do
+      PRINTER.p :stdin => Proc.current.env.stdin
+
       put Value::Channel.new(Proc.current.stdin)
     end
 
     builtin :stdout, [] do
-      put Value::Channel.new(Proc.current.stdout)
+      put Value::Channel.new(Proc.current.env.up.stdout || Proc.current.stdout)
     end
 
     builtin :add, [], :Number do |*nums|
