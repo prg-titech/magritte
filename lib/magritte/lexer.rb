@@ -107,6 +107,8 @@ module Magritte
       @peek ||= self.next
     end
 
+    WORD = /[\w-]+/
+
     def next
       if @peek
         p = @peek
@@ -173,15 +175,21 @@ module Magritte
      elsif scan /!/
        skip_ws
        return token(:bang)
-      elsif scan /[$](\w+)/
+      elsif scan /[$](#{WORD})/
         skip_ws
         return token(:var, group(1))
-      elsif scan /[%](\w+)/
+      elsif scan /[%](#{WORD})/
         skip_ws
         return token(:lex_var, group(1))
-      elsif scan /[?](\w+)/
+      elsif scan /[?](#{WORD})/
         skip_ws
         return token(:bind, group(1))
+      elsif scan /[@]!#{WORD}/
+        skip_ws
+        return token(:intrinsic, group(1))
+      elsif scan /[@](#{WORD})/
+        skip_ws
+        return token(:keyword, group(1))
       elsif scan /([-]?[0-9]+([\.][0-9]*)?)/
         skip_ws
         return token(:num, group(1))

@@ -111,8 +111,12 @@ module Magritte
       super { |val| @mutex.synchronize { @collection << val } }
     end
 
+    def repr
+      "+[#{@collection.map(&:repr).join(' ')}]"
+    end
+
     def inspect
-      "#<Collector #{@collection.inspect}>"
+      "#<Collector #{repr}>"
     end
   end
 end

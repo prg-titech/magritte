@@ -1,4 +1,4 @@
-# __repr__ = (=> put "<root>")
+__repr__ = "{ <prelude> }"
 
 exec = []
 
@@ -6,7 +6,12 @@ exec = []
   in = (stdin)
   range %n | each (_ => exec %fn (for %args) < %in)
 )
-(fan ?nthreads ?fn (?args)) = (times %nthreads (=> & consume [%exec %fn %args]))
+
+(fan ?nthreads ?fn (?args)) = (
+  times %nthreads (=>
+    & each [%fn (for %args)]
+  )
+)
 
 (range ?n) = (count-forever | take %n)
 (repeat-forever ?val) = (put %val; repeat-forever %val)

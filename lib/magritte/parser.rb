@@ -1,7 +1,6 @@
 module Magritte
-  module Parser
+  class Parser
     include Matcher::DSL
-    extend self
 
     class ParseError < CompileError
       def initialize(skel, msg)
@@ -21,20 +20,46 @@ module Magritte
       raise ParseError.new(skel, msg)
     end
 
+    def self.parse(skel, *a)
+      new(*a).parse(skel)
+    end
+
+    def initialize
+      @allow_intrinsics = false
+    end
+
     def parse(skel)
       parse_root(skel)
     end
 
     def parse_root(skel)
-      elems = skel.sub_items.map do |item|
-        parse_line(item)
+      elems = []
+      skel.sub_items.each do |item|
+        item.match(singleton(~token(:keyword))) do |kw|
+          case kw.value
+          when 'allow-intrinsics'
+            @allow_intrinsics = true
+          when 'disallow-intrinsics'
+            @allow_intrinsics = false
+          else
+            error!(kw, 'unknown keyword')
+          end
+        end and next
+
+        elems << parse_line(item)
       end
+
       AST::Group[elems]
     end
 
     def parse_line(item)
       item.match(starts(token(:amp), ~_)) do |body|
         return AST::Spawn[parse_line(body)]
+      end
+
+      item.match(starts(~token(:intrinsic), ~_)) do |intrinsic, args|
+        error!(intrinsic, "use @allow_intrinsics") unless @allow_intrinsics
+        return AST::Intrinsic[intrinsic.value, args.elems.map(&:value)]
       end
 
       item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
@@ -278,6 +303,8 @@ module Magritte
       end
 
       error!(term, "unrecognized syntax")
+    rescue
+      binding.pry
     end
   end
 end

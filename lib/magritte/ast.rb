@@ -13,6 +13,11 @@ module Magritte
       defdata :name
     end
 
+    class Intrinsic < Tree::Node
+      defdata :name
+      defdata :args
+    end
+
     class String < Tree::Node
       defdata :value
     end

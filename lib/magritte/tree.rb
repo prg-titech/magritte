@@ -25,6 +25,15 @@ module Magritte
       def hash
         [self.class, self.value].hash
       end
+
+      def full_repr(depth)
+        inspect
+      end
+
+      def repr(depth)
+        return '...' if depth.zero?
+        full_repr(depth-1)
+      end
     end
 
     class DataAttr < Attr
@@ -39,6 +48,12 @@ module Magritte
       def inspect
         value.inspect
       end
+
+      def full_repr(depth)
+        value.repr
+      rescue
+        value.inspect
+      end
     end
 
     class RecAttr < Attr
@@ -48,6 +63,10 @@ module Magritte
 
       def map(&block)
         self.class.new(block.call(@value))
+      end
+
+      def full_repr(depth)
+        "*#{value.repr(depth)}"
       end
 
       def inspect
@@ -69,6 +88,10 @@ module Magritte
         ListRecAttr.new(@value.map(&block))
       end
 
+      def full_repr(depth)
+        "**[#{value.map { |e| e.repr(depth) }.join(' ')}]"
+      end
+
       def inspect
         "**#{value.inspect}"
       end
@@ -83,6 +106,15 @@ module Magritte
       def map(&block)
         return self if @value.nil?
         super
+      end
+
+      def full_repr(depth)
+        return '_' if @value.nil?
+        super
+      end
+
+      def inspect
+        "*#{value.inspect}"
       end
     end
 
@@ -169,6 +201,11 @@ module Magritte
         "#<#{self.class}#{attrs.inspect}>"
       end
 
+      def repr(depth=nil)
+        depth ||= 1.0/0
+        "##{self.class.short_name}(#{attrs.map { |a| a.repr(depth) }.join(' ')})"
+      end
+
       def hash
         [self.class, *self.attrs].hash
       end
@@ -232,6 +269,7 @@ module Magritte
     class Walker < Visitor
       def visit_default(node, *args, &block)
         node.each { |child| visit(child, *args, &block) }
+        nil
       end
     end
   end

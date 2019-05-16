@@ -53,6 +53,14 @@ module Magritte
       @own_outputs[n] or parent :output, n
     end
 
+    def set_input(n, ch)
+      @own_inputs[n] = ch
+    end
+
+    def set_output(n, ch)
+      @own_outputs[n] = ch
+    end
+
     def each_input
       (0..32).each do |x|
         ch = input(x) or return
@@ -133,15 +141,19 @@ module Magritte
         if visited_envs.include? curr_env
           out << "<circular>"
           break
+        elsif curr_env.own_key?('__repr__')
+          out << curr_env.get('__repr__').value
+          break
         end
+
         visited_envs << curr_env
 
         out << "{"
 
         env_content = []
         env_content.concat (curr_env.keys.map { |key| " #{key.first} = #{key[1].value.repr}" })
-        env_content.concat (curr_env.own_inputs.map { |input| " < #{input.inspect}" })
-        env_content.concat (curr_env.own_outputs.map { |output| " > #{output.inspect}" })
+        env_content.concat (curr_env.own_inputs.map { |input| " < #{input.repr}" })
+        env_content.concat (curr_env.own_outputs.map { |output| " > #{output.repr}" })
 
         out << env_content.join(";")
 

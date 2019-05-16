@@ -8,6 +8,9 @@ module Magritte
       @builtins.each do |(name, func)|
         env.let(name, func)
       end
+
+      env.let('__repr__', '<builtins>')
+
       load_file("#{ROOT_DIR}/mag/prelude.mag", env)
     end
 

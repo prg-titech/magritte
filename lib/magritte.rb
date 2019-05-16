@@ -39,6 +39,25 @@ module Magritte
   load "#{LIB_DIR}/magritte/builtins.rb"
   load "#{LIB_DIR}/magritte/interpret.rb"
 
+  # bytecode
+  # load "#{LIB_DIR}/magritte/vm/registry.rb"
+  # load "#{LIB_DIR}/magritte/vm/indexable.rb"
+  # load "#{LIB_DIR}/magritte/vm/artifact.rb"
+  # load "#{LIB_DIR}/magritte/vm/instruction.rb"
+  # load "#{LIB_DIR}/magritte/vm/builder.rb"
+  # load "#{LIB_DIR}/magritte/vm/compiler.rb"
+  # load "#{LIB_DIR}/magritte/vm/channel.rb"
+  # load "#{LIB_DIR}/magritte/vm/scheduler.rb"
+  # load "#{LIB_DIR}/magritte/vm/interp.rb"
+
+  # step
+  load "#{LIB_DIR}/magritte/runtime/channel.rb"
+  load "#{LIB_DIR}/magritte/runtime/frame.rb"
+  load "#{LIB_DIR}/magritte/runtime/layer.rb"
+  load "#{LIB_DIR}/magritte/runtime/proc.rb"
+  load "#{LIB_DIR}/magritte/runtime/scheduler.rb"
+  load "#{LIB_DIR}/magritte/runtime/builtins.rb"
+
   # tools
   load "#{LIB_DIR}/magritte/runner.rb"
   load "#{LIB_DIR}/magritte/repl.rb"

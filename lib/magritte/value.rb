@@ -6,6 +6,10 @@ module Magritte
         Proc.current.crash!("Can't call this! (#{self.repr}) (at #{range.repr})")
       end
 
+      def bytecode_call(frame, args, range)
+        frame.proc.crash("Can't call this! (#{self.repr}) (at #{range.repr})")
+      end
+
       def typename
         raise 'abstract'
       end
@@ -28,6 +32,14 @@ module Magritte
 
       def ==(other)
         other.is_a?(self.class) && other.value == @value
+      end
+
+      def eql?(other)
+        self == other
+      end
+
+      def hash
+        "#string:#{@value}".hash
       end
 
       def call(args, range)
@@ -60,6 +72,14 @@ module Magritte
 
       def repr
         value.to_s.gsub(/\.0$/, '')
+      end
+
+      def eql?(other)
+        self.class == other.class && @value == other.value
+      end
+
+      def hash
+        "#number:#{@value.to_f}".hash
       end
 
       def to_s
@@ -169,19 +189,24 @@ module Magritte
 
       def call(args, range)
         env = @env.splice(Proc.current.env)
-        bound, match_index = match(args, env)
+        bound, consequent = match!(args, env)
         Proc.current.with_trace(self, range) do
-          Proc.enter_frame(bound) { Interpret.interpret(@expr[match_index]) }
+          Proc.enter_frame(bound) { Interpret.interpret(consequent) }
         end
+      end
+
+      def match!(args, env)
+        match(args, env) or Proc.current.crash!("Pattern match failed on #{self.repr} for #{args.repr}")
       end
 
       def match(args, env)
         args = Vector.new(args)
         @patterns.each_with_index do |pat, i|
           bound = Pattern.evaluate(pat, args, env)
-          return [bound, i] if bound
+          return [bound, @expr[i]] if bound
         end
-        Proc.current.crash!("Pattern match failed on #{self.repr} for #{args.repr}")
+
+        false
       end
 
       def repr
@@ -190,6 +215,14 @@ module Magritte
 
       def to_s
         repr
+      end
+    end
+
+    class BytecodeFunction < Base
+      def bytecode_call(frame, args, range)
+        new_frame = create_env(args, frame.env.extend)
+        frame.proc.call_stack 
+        BytecodeProc.current.enter_frame(self, args)
       end
     end
 
