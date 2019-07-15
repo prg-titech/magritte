@@ -30,6 +30,7 @@ module Magritte
         :pipe,
         :write_to,
         :read_from,
+        :equal,
         :d_amp,
         :d_bar,
         :d_per,
@@ -138,10 +139,10 @@ module Magritte
         skip_ws
         return token(:rbrack)
      elsif scan /\=>/
-       skip_ws
+       skip_lines
        return token(:arrow)
      elsif scan /[=]/
-       skip_ws
+       skip_lines
        return token(:equal)
      elsif scan /</
        skip_ws
@@ -150,25 +151,25 @@ module Magritte
        skip_ws
        return token(:gt)
      elsif scan /%%!/
-       skip_ws
+       skip_lines
        return token(:d_per_bang)
      elsif scan /%%/
-       skip_ws
+       skip_lines
        return token(:d_per)
      elsif scan /!!/
-       skip_ws
+       skip_lines
        return token(:d_bang)
      elsif scan /&&/
-       skip_ws
+       skip_lines
        return token(:d_amp)
      elsif scan /\|\|/
-       skip_ws
+       skip_lines
        return token(:d_bar)
      elsif scan /&/
        skip_ws
        return token(:amp)
      elsif scan /\|/
-       skip_ws
+       skip_lines
        return token(:pipe)
      elsif scan /!/
        skip_ws
