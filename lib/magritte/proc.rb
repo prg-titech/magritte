@@ -245,6 +245,8 @@ module Magritte
 
   protected
     def re_raise?(e)
+      return true if @stack.empty?
+
       reason = e.status.reason
       return true unless reason.is_a?(Reason::Close)
 
