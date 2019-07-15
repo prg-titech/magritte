@@ -2,6 +2,9 @@
 
 exec = []
 
+(incr ?x) = add 1 $x
+(decr ?x) = sub 1 $x
+
 (times ?n ?fn (?args)) = (
   in = (stdin)
   range %n | each (_ => exec %fn (for %args) < %in)
@@ -19,6 +22,9 @@ exec = []
 
 
 (prob ?total ?amt) = (lt %amt (mul %total (rand)))
+(rand-between ?l ?h) = (add $l (round 0 (mul (sub $l $h) (rand))))
+(is-odd ?x) = (eq 1 (mod 2 $x))
+(is-even ?x) = (eq 0 (mod 2 $x))
 
 (sample) = (
   hold = (get)
