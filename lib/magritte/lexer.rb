@@ -27,6 +27,9 @@ module Magritte
         :lbrace => :rbrace,
       }
       CONTINUE = Set.new([
+        # ensures no double-nl
+        :nl,
+
         :pipe,
         :write_to,
         :read_from,
@@ -327,7 +330,16 @@ module Magritte
     end
 
     def skip_lines
-      skip /((#[^\n]*)?\n[ \t;]*)*[ \t;]*/m
+      skip %r{
+        \s*
+        (
+          ([#][^\n]*\n?)\s*
+            |
+          [\n;]\s*
+        )*
+        \s*
+      }mx
+      p :skip_lines => [@scanner.matched, @scanner.peek(5)]
     end
 
     def skip(re)
