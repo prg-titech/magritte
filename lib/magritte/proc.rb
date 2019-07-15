@@ -6,6 +6,14 @@ module Magritte
       def initialize(status)
         @status = status
       end
+
+      def to_s
+        "!interrupt[#{@status.repr}]"
+      end
+
+      def inspect
+        "#<#{self.class.name} #{@status.repr}>"
+      end
     end
 
     def self.current
@@ -24,6 +32,10 @@ module Magritte
       current.send(:enter_frame, *args, &b)
     end
 
+    def self.check_interrupt!
+      current.check_interrupt!
+    end
+
     def self.spawn(code, env)
       start_mutex = Mutex.new
       start_mutex.lock
@@ -36,6 +48,7 @@ module Magritte
           Thread.current[:status] = begin
             code.run
           rescue Interrupt => e
+            PRINTER.p("root compensation #{Proc.current.inspect}")
             Proc.current.compensate(e)
             e.status
           end
@@ -48,9 +61,10 @@ module Magritte
           Thread.current[:status] = status
           raise
         ensure
+          PRINTER.puts("shutting down, final ensure #{Proc.current.inspect}")
           @alive = false
           Proc.current.checkpoint_all
-          PRINTER.puts('exiting')
+          PRINTER.puts("exiting #{Proc.current.inspect}")
         end
       end
 
@@ -66,7 +80,7 @@ module Magritte
     end
 
     def inspect
-      "#<Proc #{@code.loc}>"
+      "#<Proc #{@code.loc} #{@interrupts.inspect} [#{@stack.map(&:inspect).join(' ')}]>"
     end
 
     def wait
@@ -94,8 +108,9 @@ module Magritte
       @code = code
       @env = env
       @stack = []
+      @interrupts = []
 
-      @interrupt_mutex = LogMutex.new :interrupt
+      @mutex = LogMutex.new "interrupt_#{LogPrinter.thread_name(@thread)}"
     end
 
     def env
@@ -103,7 +118,12 @@ module Magritte
     end
 
     def frame
+      binding.pry if @stack.empty?
       @stack.last
+    end
+
+    def own_thread!
+      raise Exception.new('cannot call on different thread') unless @thread == Thread.current
     end
 
     def start
@@ -119,16 +139,31 @@ module Magritte
     end
 
     def interrupt!(status)
-      @interrupt_mutex.synchronize do
-        return unless alive?
+      @mutex.synchronize do
+        next unless alive?
 
-        # will run cleanup in the thread via the ensure block
-        @thread.raise(Interrupt.new(status))
+        @interrupts << Interrupt.new(status)
+        @thread.run
       end
     end
 
+    def check_interrupt!
+      own_thread!
+
+      ex = @mutex.synchronize do
+        PRINTER.puts("check_interrupt! #{@interrupts.inspect}")
+        @mutex.log("check_interrupt! #{@interrupts.inspect}")
+        @interrupts.shift
+      end
+
+      raise ex if ex
+    end
+
     def crash!(msg=nil)
+      own_thread!
+
       interrupt!(Status[:crash, reason: Reason::Crash.new(msg)])
+      check_interrupt!
     end
 
     def sleep
@@ -148,25 +183,42 @@ module Magritte
     end
 
     def add_compensation(comp)
+      own_thread!
+
       frame.add_compensation(comp)
     end
 
     def compensate(status)
+      own_thread!
+      # if the stack is empty there is nothing to do
+
+      PRINTER.p("compensate popping #{@stack.size}")
+
       frame = @stack.pop
-      frame.compensate(status)
+      frame && frame.compensate(status)
+      check_interrupt!
     end
 
     def checkpoint
-      frame = @stack.pop
-      frame.checkpoint
+      own_thread!
+
+      PRINTER.p("checkpoint popping #{@stack.size}")
+      frame = @stack.last
+      frame && frame.checkpoint
+      @stack.pop
+      check_interrupt!
     end
 
     def compensate_all(e)
-      compensate(e) until @stack.empty?
+      own_thread!
+
+      (compensate(e) rescue Interrupt) until @stack.empty?
     end
 
     def checkpoint_all
-      checkpoint until @stack.empty?
+      own_thread!
+
+      (checkpoint rescue Interrupt) until @stack.empty?
     end
 
     class Tracepoint
@@ -180,6 +232,9 @@ module Magritte
     end
 
     def with_trace(callable, range, &b)
+      own_thread!
+
+      PRINTER.p("trace: #{callable.name} #{range}")
       @trace << Tracepoint.new(callable, range)
       yield
     ensure
@@ -189,25 +244,59 @@ module Magritte
     attr_reader :trace
 
   protected
-    def enter_frame(*args, &b)
-      stack_size = @stack.size
+    def re_raise?(e)
+      return true if @stack.empty?
 
-      @interrupt_mutex.synchronize do
-        frame = Frame.new(self, *args)
-        PRINTER.p :stack => @stack
-        @stack << frame
+      reason = e.status.reason
+      return true unless reason.is_a?(Reason::Close)
+
+      test = proc { |c| return true if c == reason.channel }
+
+      case reason.direction
+      when :< then env.each_input(&test)
+      when :> then env.each_output(&test)
       end
 
+      false
+    end
+
+    def enter_frame(*args, &b)
+      own_thread!
+
+      stack_size = @stack.size
+
+      frame = Frame.new(self, *args)
       frame.open_channels
+
+      if @stack.last.tail?
+        PRINTER.p("tail-popping #{@stack.size} #{@stack.last.inspect}")
+        tail = @stack.pop
+        tail.unregister_channels
+        frame.compensations.concat(tail.compensations)
+        tail.elim!
+      end
+
+      PRINTER.p :stack => @stack
+      @stack << frame
+
+
+      PRINTER.p 'channels opened'
 
       out = yield
     rescue Interrupt => e
-      compensate(e)
-      PRINTER.p :interrupt => @stack
-      raise
+      compensate(e) unless frame.elim?
+      PRINTER.p :interrupt => [e.status, @stack]
+      if re_raise?(e)
+        raise
+      else
+        e.status
+      end
     else
-      checkpoint
-      PRINTER.p :checkpoint => @stack
+      unless frame.elim?
+        checkpoint
+        PRINTER.p :checkpoint => @stack
+      end
+
       out
     end
   end

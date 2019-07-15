@@ -1,12 +1,22 @@
 module Magritte
   class Runner
-    attr_reader :input, :output
+    attr_reader :input, :output, :env
     def initialize
       @mutex = Mutex.new
-      @output = Channel.new
       @input_num = 1
 
-      @input = InputStreamer.new do
+      @env = Env.empty
+      setup_channels
+      Builtins.load(@env)
+    end
+
+    def reset_channels
+      @env.stdin.reset!
+      @env.stdout.reset!
+    end
+
+    def setup_channels
+      input = InputStreamer.new do
         begin
           source = @mutex.synchronize {
             @input_num += 1
@@ -25,7 +35,12 @@ module Magritte
         end
       end
 
-      @env = Env.base.extend([@input], [@output])
+      output = Streamer.new do |val|
+        @mutex.synchronize { puts val }
+      end
+
+      @env.set_output(0, output)
+      @env.set_input(0, input)
     end
 
     def input_name
@@ -42,19 +57,18 @@ module Magritte
 
       ast = Parser.parse(Skeleton.parse(Lexer.new(source_name, source)))
       p = Proc.spawn(Code.new { Interpret.interpret(ast) }, @env)
-      o = Proc.spawn(Code.new { loop { puts @output.read.repr } }, Env.empty).start
+
       status = p.wait
-      o.join
     rescue CompileError => e
       Status[:fail, reason: Reason::Compile.new(e)]
-    rescue Exception => e
+    rescue ::Interrupt => e
       Status[:fail, reason: Reason::UserInterrupt.new(e)]
+    rescue Exception => e
+      Status[:fail, reason: Reason::Bug.new(e)]
     else
       status
     ensure
-      # p && p.crash!("ended")
-      @output.reset!
-      @input.reset!
+      reset_channels
     end
   end
 end

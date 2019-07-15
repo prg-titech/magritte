@@ -23,11 +23,22 @@ module Magritte
     end
 
     def run_files
-      runner = Runner.new
       @files.each do |f|
+        runner = Runner.new
         status = runner.evaluate(f, File.read(f))
+
+        if runner.env.key?('__main__')
+          runner.evaluate(f, '__main__')
+        end
+
         runner.synchronize { puts "% #{status.repr}" } if status.fail?
       end
+
+      # XXX hack in case some threads don't exit
+      # will investigate this more when we have a
+      # proper vm
+      PRINTER.p(alive: (Thread.list - [Thread.current]))
+      exit! 0
     end
 
     def parse_args

@@ -166,7 +166,15 @@ module Magritte
       alias eql? ==
 
       def inspect
-        "#<#{self.class}#{attrs.inspect}>"
+        "#<#{self.class}#{parrepr}>"
+      end
+
+      def repr
+        "#{attrs.inspect}"
+      end
+
+      def parrepr
+        "(#{repr})"
       end
 
       def hash

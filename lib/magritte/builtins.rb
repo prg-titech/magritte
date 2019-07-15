@@ -9,6 +9,8 @@ module Magritte
         env.let(name, func)
       end
       load_file("#{ROOT_DIR}/mag/prelude.mag", env)
+
+      env
     end
 
     @builtins = []
@@ -38,6 +40,19 @@ module Magritte
     builtin :put, [], :any  do |*vals|
       vals.each { |val| put(val) }
       Status.normal
+    end
+
+    builtin :'load-raw', [:String] do |fname|
+      Builtins.load_file(fname.value, Proc.current.env)
+    end
+
+    builtin :load, [:String] do |fname|
+      status = nil
+      env = in_new_env(Proc.current.env) do
+        status = Builtins.load_file(fname.value, Proc.current.env)
+      end
+      put Value::Environment.new(env)
+      status
     end
 
     builtin :get, [] do
@@ -88,6 +103,10 @@ module Magritte
       Status.normal
     end
 
+    builtin :'sleep-forever', [] do
+      sleep
+    end
+
     builtin :'count-forever', [] do |n|
       i = 0
       produce { put Value::Number.new(i); i += 1 }
@@ -101,15 +120,17 @@ module Magritte
     builtin :'loop-channel', [:Channel, :any], :any do |c, h, *a|
       channel = c.channel
 
-      loop_channel(c.channel) { call(h, a) }
+      loop_channel(c.channel) { PRINTER.p("XXX"); call(h, a); PRINTER.p("YYY") }
     end
 
     builtin :stdin, [] do
+      PRINTER.p :stdin => Proc.current.env.stdin
+
       put Value::Channel.new(Proc.current.stdin)
     end
 
     builtin :stdout, [] do
-      put Value::Channel.new(Proc.current.stdout)
+      put Value::Channel.new(Proc.current.env.up.stdout || Proc.current.stdout)
     end
 
     builtin :add, [], :Number do |*nums|
@@ -273,14 +294,8 @@ module Magritte
 
     # Initialize environment with functions that can be defined in the language itself
     def self.load_lib(lib_name, source, env)
-      # Transform the lib string into an ast
       ast = Parser.parse(Skeleton.parse(Lexer.new(lib_name, source)))
-      c = Collector.new
-      env.own_outputs[0] = c
-      # Evaluate the ast, which will add the lib functions to the env
-      Proc.spawn(Code.new { Interpret.interpret(ast) }, env).start
-      c.wait_for_close
-      env
+      Proc.spawn(Code.new { Interpret.interpret(ast) }, env).wait
     end
 
     def self.load_file(file_path, env)

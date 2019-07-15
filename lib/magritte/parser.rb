@@ -22,7 +22,7 @@ module Magritte
     end
 
     def parse(skel)
-      parse_root(skel)
+      FreeVars::Grouper.group(parse_root(skel))
     end
 
     def parse_root(skel)
@@ -34,16 +34,16 @@ module Magritte
 
     def parse_line(item)
       item.match(starts(token(:amp), ~_)) do |body|
-        return AST::Spawn[parse_line(body)]
-      end
-
-      item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
-        return AST::Pipe[parse_line(before), parse_command(after)]
+        return AST::Spawn[AST::Block[AST::Group[[parse_line(body)]]]]
       end
 
       # Match any line that has an equal sign
       item.match(lsplit(~_, token(:equal), ~_)) do |lhs, rhs|
         return parse_assignment(lhs, rhs)
+      end
+
+      item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
+        return AST::Pipe[parse_line(before), parse_command(after)]
       end
 
       # Parse double &
@@ -127,11 +127,21 @@ module Magritte
         next if command.match(starts(~any(token(:gt), token(:lt)), ~_)) do |dir, rest|
           error!(command, 'redirect at end') if rest.elems.empty?
           target, *rest = rest.elems
-          direction = dir.token?(:gt) ? :> : :<
+
           if target.nested?(:lparen)
             error!(target, 'TODO: redir to paren')
+            # also consider what happens to
+            # foo > (bar baz)!zot
+            # ... probably just an error, if parens have special semantics
           else
-            redirects << AST::Redirect[direction, parse_term(target)]
+            targets = [target]
+            targets.concat(rest.shift(2)) while rest.first && rest.first.match(token(:bang))
+            targets = Skeleton::Item[targets]
+            direction = dir.token?(:gt) ? :> : :<
+            parsed_targets = parse_terms(targets)
+
+            error!(targets, 'invalid redirect') if parsed_targets.size != 1
+            redirects << AST::Redirect[direction, parsed_targets.first]
           end
 
           command = Skeleton::Item[rest]

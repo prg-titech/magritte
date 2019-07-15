@@ -171,7 +171,7 @@ interpret_spec "lambda functionality" do
     results ["1", "hello", "[2 3]"]
   end
 
-  interpret 'thing' do
+  interpret 'assigned variables within lambdas' do
     source <<-EOF
       range 3 | each (?x =>
         r = %x
@@ -180,5 +180,31 @@ interpret_spec "lambda functionality" do
     EOF
 
     results %w(0 1 2)
+  end
+
+  interpret 'isolated closures' do
+    source <<-EOF
+      e = {
+        (f1) = (drain)
+        (f2) = (put 2 | f1)
+      }
+
+      $e!f2
+    EOF
+
+    results %w(2)
+  end
+
+  interpret 'lifting' do
+    source <<-EOF
+      e = {
+        (f) = (%g 1; %g 2)
+        (g ?x) = (inc %x)
+      }
+
+      $e!f
+    EOF
+
+    results %w(2 3)
   end
 end

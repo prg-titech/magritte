@@ -2,11 +2,15 @@ module Magritte
 
   class Streamer < Channel
     def initialize(&b)
+      setup_id
       @output = b
-      @mutex = Mutex.new
       @writers = Set.new
       @close_waiters = []
       @open = true
+    end
+
+    def to_s
+      "streamer##{@id}:#{@output.source_location.join(':')}"
     end
 
     def add_reader(*); end
@@ -20,10 +24,9 @@ module Magritte
         next :nop unless @writers.empty?
 
         @open = false
-        :close
+        @close_waiters.each { |t| t.run } # if action == :close
+        @close_waiters.clear
       end
-
-      @close_waiters.each { |t| t.run } if action == :close
     end
 
     def read
@@ -34,18 +37,26 @@ module Magritte
       @output.call(val)
     end
 
+    require 'pry'
     def wait_for_close
+      PRINTER.p("waiting for close #{self} #{@writers}")
+
       @mutex.synchronize do
         next unless @open
         @close_waiters << Thread.current
         @mutex.sleep
       end
+
+      Proc.current? && Proc.check_interrupt!
     end
 
     def reset!
       @mutex.synchronize do
-        @open = true
+        @mutex.log 'reset'
+        @close_waiters.each { |t| t.run } # if action == :close
         @close_waiters.clear
+
+        @open = true
         @writers.clear
       end
     end
@@ -57,11 +68,16 @@ module Magritte
 
   class InputStreamer < Channel
     def initialize(&b)
+      setup_id
       @block = b
       @readers = Set.new
       @mutex = Mutex.new
       @open = true
       @queue = []
+    end
+
+    def to_s
+      "input-streamer##{@id}:#{@block.source_location.join(':')}"
     end
 
     def add_reader(*); end
@@ -80,7 +96,7 @@ module Magritte
         return @queue.shift
       end
 
-      interrupt_process!(Proc.current)
+      interrupt_process!(Proc.current, :<)
     end
 
     def reset!
@@ -107,12 +123,17 @@ module Magritte
     attr_reader :collection
 
     def initialize
+      setup_id
       @collection = []
       super { |val| @mutex.synchronize { @collection << val } }
     end
 
+    def to_s
+      "collector##{@id}:[#{@collection.size}]"
+    end
+
     def inspect
-      "#<Collector #{@collection.inspect}>"
+      "#<Collector #{@collection.map(&:repr).join(' ')}>"
     end
   end
 end

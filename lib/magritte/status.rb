@@ -18,9 +18,10 @@ module Magritte
     end
 
     class Close < Base
-      attr_reader :channel
-      def initialize(channel)
+      attr_reader :channel, :direction
+      def initialize(channel, direction)
         @channel = channel
+        @direction = direction
       end
 
       def to_s

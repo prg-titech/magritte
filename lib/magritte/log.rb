@@ -19,6 +19,11 @@ module Magritte
   end
 
   class LogPrinter
+    def self.thread_name(t)
+      t.inspect =~ /0x\h+/
+      $&
+    end
+
     def initialize(prefix)
       @prefix = prefix
     end
@@ -28,8 +33,7 @@ module Magritte
     end
 
     def fname
-      Thread.current.inspect =~ /0x\h+/
-      $&
+      LogPrinter.thread_name(Thread.current)
     end
 
     def with_file(&b)

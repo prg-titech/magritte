@@ -1,3 +1,5 @@
+$DEBUG_MUTEX = Mutex.new
+
 module Magritte
   class Blocker
     attr_reader :thread, :val
@@ -40,18 +42,29 @@ module Magritte
     end
 
     def log(*a)
-      # PRINTER.p disp => a
+      if PRINTER.is_a?(LogPrinter)
+        File.open("tmp/log/#{$$}/#{disp}", 'a') { |f| f.puts *a }
+      else
+        PRINTER.puts(*a)
+      end
+    end
+
+    def p(*a)
+      log(disp, *a.map(&:inspect))
     end
 
     def synchronize(&b)
+      trace = caller[0]
+
       out = nil
-      log :lock
       @mutex.synchronize do
-        log :locked
-        out = yield
-        log :unlock
+        begin
+          # log "#{disp} lock  : #{trace}"
+          out = yield
+        ensure
+          # log "#{disp} unlock: #{trace}"
+        end
       end
-      log :unlocked
       out
     end
 
@@ -60,21 +73,28 @@ module Magritte
     end
 
     def sleep
-      log :sleep
+      log "#{disp} sleep : #{caller[0]}"
       @mutex.sleep
-      log :wake
+      log "#{disp} wake"
     end
   end
 
+  ALL_CHANNELS = []
   class Channel
     IDS_MUTEX = Mutex.new
     @@max_id = 0
 
     def initialize
-      @mutex = Mutex.new
+      setup_id
       setup
-      @id = IDS_MUTEX.synchronize { @@max_id += 1 }
+    end
 
+    def setup_id
+      IDS_MUTEX.synchronize do
+        @id = @@max_id += 1
+        @mutex = LogMutex.new("#{self.class.name.downcase}_#{@id}")
+        ALL_CHANNELS << self
+      end
     end
 
     def setup
@@ -87,9 +107,9 @@ module Magritte
     end
 
     def reset!
-      @mutex.synchronize { @open = false }
-      interrupt_blocked!
-      @mutex.synchronize { setup }
+      # @mutex.synchronize { @open = false }
+      # interrupt_blocked!
+      # @mutex.synchronize { setup }
     end
 
     def open?
@@ -110,45 +130,69 @@ module Magritte
 
     def remove_reader(p)
       action = @mutex.synchronize do
+        @mutex.log "[#{@id}] remove_reader #{@readers.size} #{p.inspect}"
+
         next :nop unless @open
         @block_set.reject! { |b| b.thread == p.thread } if @block_type == :read
 
         @readers.delete(p)
+        @mutex.p([@block_type, @block_set.size])
         next :nop unless @readers.empty?
+
+        @mutex.log "[#{@id}] CLOSE: #{@block_set.map(&:inspect).join(' ')}"
 
         @open = false
         :close
       end
 
-      PRINTER.p(closing_channel: @id) if action == :close
-      interrupt_blocked! if action == :close
+      if action == :close
+        PRINTER.p(close: [@id, @block_type, @block_set])
+      end
+
+      interrupt_blocked!(:>) if action == :close
+    rescue ThreadError
+      binding.pry
     end
 
     def remove_writer(p)
       action = @mutex.synchronize do
         next :nop unless open?
+        @mutex.log "[#{@id}] remove_writer #{@writers.size} #{p.inspect}"
         @block_set.reject! { |b| b.thread == p.thread } if @block_type == :write
 
 
         @writers.delete(p)
         next :nop unless @writers.empty?
 
+        @mutex.log "[#{@id}] CLOSE: #{@block_set.map(&:inspect).join(' ')}"
         @open = false
         :close
       end
 
       PRINTER.p(closing_channel: @id) if action == :close
-      interrupt_blocked! if action == :close
+      interrupt_blocked!(:<) if action == :close
     end
 
-    def interrupt_blocked!
-      @block_set.each { |b| interrupt_process!(b) }
+    def interrupt_blocked!(d)
+      interrupt_self = false
+      @block_set.each do |b|
+        if b.thread == Thread.current
+          interrupt_self = true
+        else
+          interrupt_process!(b, d)
+        end
+      end
+
+      interrupt_process!(Proc.current, d) if interrupt_self
     end
 
     def read
-      @mutex.synchronize do
-        if closed?
-          PRINTER.p("closed on read")
+      result = @mutex.synchronize do
+        unless @open
+          PRINTER.p("#{@id} read: already closed")
+          @mutex.p("interrupting #{LogPrinter.thread_name(Thread.current)}")
+
+          interrupt_process!(Proc.current, :<)
 
           # jump to the end of the block
           next
@@ -156,7 +200,8 @@ module Magritte
 
         @block_set.shuffle!
 
-        PRINTER.p(init_read: @block_type)
+        @mutex.p(read: [@id, @block_type, open: @open])
+        PRINTER.p(read: [@id, @block_type, open: @open])
         out = case @block_type
         when :none, :read
           @block_type = :read
@@ -164,63 +209,63 @@ module Magritte
           receiver = Receiver.new(Thread.current)
           @block_set << receiver
           @mutex.sleep
-
-          return receiver.val
+          @block_set.delete(receiver)
+          receiver
         when :write
           sender = @block_set.shift
           @block_type = :none if @block_set.empty?
 
           sender.wakeup
-          return sender.val
+          sender
         end
       end
 
-      interrupt_process!(Proc.current)
+      Proc.check_interrupt!
+
+      result.val
     end
 
     def write(val)
       @mutex.synchronize do
-        if closed?
-          PRINTER.p("closed on write")
+        unless @open
+          PRINTER.p("#{@id} write: already closed")
+          @mutex.p("interrupting #{LogPrinter.thread_name(Thread.current)}")
+          interrupt_process!(Proc.current, :>)
           next
         end
 
         @block_set.shuffle!
 
-        PRINTER.p(init_write: @block_type)
+        @mutex.p(write: [@id, @block_type])
+        PRINTER.p(write: [@id, @block_type])
         case @block_type
         when :none, :write
           @block_type = :write
-          @block_set << Sender.new(Thread.current, val)
+          sender = Sender.new(Thread.current, val)
+          @block_set << sender
           @mutex.sleep
-          return
+          @block_set.delete(sender)
         when :read
-          receiver = @block_set.shift
+          receiver = @block_set.shift #  or PRINTER.p(EMPTY_BLOCK_SET: [@block_type, self])
           @block_type = :none if @block_set.empty?
 
           receiver.set(val)
           receiver.wakeup
-          return
         end
       end
 
-      interrupt_process!(Proc.current)
+      Proc.check_interrupt!
     end
 
     def inspect
+      inspect_crit
       # doesn't entirely get rid of race conditions because
       # @block_set may still be mutated, but makes it less
       # likely i think?
-      dup.inspect_crit
+      # dup.inspect_crit
     end
 
-    protected
-
-    def interrupt_process!(process)
-      process.interrupt!(Status[reason: Reason::Close.new(self)])
-    end
-
-    def inspect_crit
+    def repr
       dots = '*' * @block_set.size
       s = case @block_type
       when :none
@@ -233,7 +278,21 @@ module Magritte
 
       o = @open ? 'o' : 'x'
 
-      "#<Channel##{@id} #{o} #{s}>"
+      "[#{@id} #{o} #{s}]"
+    end
+
+    def to_s
+      repr
+    end
+
+    protected
+
+    def interrupt_process!(process, direction)
+      process.interrupt!(Status[reason: Reason::Close.new(self, direction)])
+    end
+
+    def inspect_crit
+      "#<#{self.class.name}#[#{repr}]>"
     end
 
     private

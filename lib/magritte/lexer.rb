@@ -27,15 +27,35 @@ module Magritte
         :lbrace => :rbrace,
       }
       CONTINUE = Set.new([
+        :eof,
         :pipe,
         :write_to,
         :read_from,
+        :equal,
         :d_amp,
         :d_bar,
         :d_per,
         :d_bang,
         :d_per_bang,
         :arrow,
+        :rbrace,
+        :rbrack,
+        :rparen
+      ])
+
+      SKIP = Set.new([
+        :lparen,
+        :lbrace,
+        :lbrack,
+        :arrow,
+        :equal,
+        :write_to,
+        :read_from,
+        :d_per,
+        :d_per_bang,
+        :d_amp,
+        :d_bar,
+        :pipe
       ])
 
       FREE_NL = Set.new([
@@ -50,6 +70,10 @@ module Magritte
 
       def continue?
         CONTINUE.include?(@type)
+      end
+
+      def skip?
+        SKIP.include?(@type)
       end
 
       def nest?
@@ -98,104 +122,117 @@ module Magritte
       @scanner = StringScanner.new(string)
       @line = 1
       @col = 0
-      skip_lines
+
+      # p :lex => string
+
+      skip_ws
+      advance while peek.is?(:nl)
     end
 
     attr_reader :source_name
 
     def peek
-      @peek ||= self.next
+      @peek ||= self.advance
     end
 
     def next
+      # p :next
+      tok = advance
+
+      loop do
+        # puts "loop: #{tok.repr} #{peek.repr}"
+        if tok.is?(:nl) && peek.is?(:nl)
+          # puts "CONSOLIDATE"
+          advance
+        elsif tok.skip? && peek.is?(:nl)
+          advance while peek.is?(:nl)
+          # puts "SKIP: #{tok.repr}"
+          return tok
+        elsif tok.is?(:nl) && peek.continue?
+          out = peek
+          advance
+          # puts "CONTINUE: #{out.repr}"
+          return out
+        else
+          # puts "NORMAL: #{tok.repr}"
+          return tok
+        end
+      end
+    end
+
+    def advance
+      out = advance_
+      # puts "advance: #{out.repr} --- #{@match.inspect} --- #{@scanner.peek(5).inspect}"
+      out
+    end
+
+    def advance_
       if @peek
         p = @peek
         @peek = nil
         return p
       end
 
-      if @scanner.eos?
-        return token(:eof)
-      elsif scan /[\n;]|(#[^\n]*)/
-        skip_lines
-        return token(:nl)
-      elsif scan /[(]/
-        skip_lines
-        return token(:lparen)
-      elsif scan /[)]/
+      begin
+        if @scanner.eos?
+          return token(:eof)
+        elsif scan /[\n;]|(#[^\n]*)/
+          return token(:nl)
+        elsif scan /[(]/
+          return token(:lparen)
+        elsif scan /[)]/
+          return token(:rparen)
+        elsif scan /[{]/
+          return token(:lbrace)
+        elsif scan /[}]/
+          return token(:rbrace)
+        elsif scan /\[/
+          return token(:lbrack)
+        elsif scan /\]/
+          return token(:rbrack)
+       elsif scan /\=>/
+         return token(:arrow)
+       elsif scan /[=]/
+         return token(:equal)
+       elsif scan /</
+         return token(:lt)
+       elsif scan />/
+         return token(:gt)
+       elsif scan /%%!/
+         return token(:d_per_bang)
+       elsif scan /%%/
+         return token(:d_per)
+       elsif scan /!!/
+         return token(:d_bang)
+       elsif scan /&&/
+         return token(:d_amp)
+       elsif scan /\|\|/
+         return token(:d_bar)
+       elsif scan /&/
+         return token(:amp)
+       elsif scan /\|/
+         return token(:pipe)
+       elsif scan /!/
+         return token(:bang)
+        elsif scan /[$]([\w-]+)/
+          return token(:var, group(1))
+        elsif scan /[%]([\w-]+)/
+          return token(:lex_var, group(1))
+        elsif scan /[?](\w+)/
+          return token(:bind, group(1))
+        elsif scan /([-]?[0-9]+([\.][0-9]*)?)/
+          return token(:num, group(1))
+        elsif scan /"((?:\\.|[^"])*)"/
+          return token(:string, group(1))
+        elsif scan /'(.*?)'/m
+          return token(:string, group(1))
+        elsif scan /([_.\/a-zA-Z0-9-]+)/
+          return token(:bare, group(1))
+        else
+          error!("Unknown token near #{@scanner.peek(3).inspect}")
+        end
+      ensure
         skip_ws
-        return token(:rparen)
-      elsif scan /[{]/
-        skip_lines
-        return token(:lbrace)
-      elsif scan /[}]/
-        skip_ws
-        return token(:rbrace)
-      elsif scan /\[/
-        skip_lines
-        return token(:lbrack)
-      elsif scan /\]/
-        skip_ws
-        return token(:rbrack)
-     elsif scan /\=>/
-       skip_ws
-       return token(:arrow)
-     elsif scan /[=]/
-       skip_ws
-       return token(:equal)
-     elsif scan /</
-       skip_ws
-       return token(:lt)
-     elsif scan />/
-       skip_ws
-       return token(:gt)
-     elsif scan /%%!/
-       skip_ws
-       return token(:d_per_bang)
-     elsif scan /%%/
-       skip_ws
-       return token(:d_per)
-     elsif scan /!!/
-       skip_ws
-       return token(:d_bang)
-     elsif scan /&&/
-       skip_ws
-       return token(:d_amp)
-     elsif scan /\|\|/
-       skip_ws
-       return token(:d_bar)
-     elsif scan /&/
-       skip_ws
-       return token(:amp)
-     elsif scan /\|/
-       skip_ws
-       return token(:pipe)
-     elsif scan /!/
-       skip_ws
-       return token(:bang)
-      elsif scan /[$](\w+)/
-        skip_ws
-        return token(:var, group(1))
-      elsif scan /[%](\w+)/
-        skip_ws
-        return token(:lex_var, group(1))
-      elsif scan /[?](\w+)/
-        skip_ws
-        return token(:bind, group(1))
-      elsif scan /([-]?[0-9]+([\.][0-9]*)?)/
-        skip_ws
-        return token(:num, group(1))
-      elsif scan /"((?:\\.|[^"])*)"/
-        skip_ws
-        return token(:string, group(1))
-      elsif scan /'(.*?)'/m
-        skip_ws
-        return token(:string, group(1))
-      elsif scan /([_.\/a-zA-Z0-9-]+)/
-        skip_ws
-        return token(:bare, group(1))
-      else
-        error!("Unknown token near #{@scanner.peek(3)}")
       end
     end
 
@@ -257,6 +294,10 @@ module Magritte
       def repr
         "#{first.source_name}@#{first.repr}~#{last.repr}"
       end
+
+      def to_s
+        repr
+      end
     end
 
     # This function is called when we have instantiated a lexer
@@ -278,7 +319,7 @@ module Magritte
       prev_pos = current_pos
       if @scanner.scan(re)
         @match = @scanner.matched
-        @groups = @scanner.captures
+        @groups = [@scanner[1], @scanner[2], @scanner[3]] # XXX HACK XXX
         update_line_col(@match)
         @last_range = Range.new(prev_pos, current_pos)
         true
@@ -322,7 +363,16 @@ module Magritte
     end
 
     def skip_lines
-      skip /((#[^\n]*)?\n[ \t;]*)*[ \t;]*/m
+      skip %r{
+        \s*
+        (
+          ([#][^\n]*\n?)\s*
+            |
+          [\n;]\s*
+        )*
+        \s*
+      }mx
+      p :skip_lines => [@scanner.matched, @scanner.peek(5)]
     end
 
     def skip(re)

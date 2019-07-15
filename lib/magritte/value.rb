@@ -238,6 +238,10 @@ module Magritte
         'compensation'
       end
 
+      def repr
+        "<compensation#{@uncond ? '!' : ''}:#{@range.repr}>"
+      end
+
       def run
         @action.call([], @range)
       end

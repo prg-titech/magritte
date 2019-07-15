@@ -53,6 +53,14 @@ module Magritte
       @own_outputs[n] or parent :output, n
     end
 
+    def set_input(n, ch)
+      @own_inputs[n] = ch
+    end
+
+    def set_output(n, ch)
+      @own_outputs[n] = ch
+    end
+
     def each_input
       (0..32).each do |x|
         ch = input(x) or return
@@ -73,6 +81,10 @@ module Magritte
 
     def stdout
       output(0)
+    end
+
+    def up
+      @parent || self
     end
 
     def splice(new_parent)

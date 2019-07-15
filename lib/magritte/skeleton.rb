@@ -151,7 +151,6 @@ module Magritte
             # it can happen that we try to call free_nl?
             # on a nil object....
             next if !self.open.nil? && self.open.free_nl?
-            next if (last && last.continue?) || lexer.peek.continue?
             @items << []
           else
             y Token[token]

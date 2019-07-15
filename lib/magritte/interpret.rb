@@ -9,6 +9,7 @@ module Magritte
       include Code::DSL
 
       def initialize(root)
+        PRINTER.p(:interpret => root)
         @root = root
         @free_vars = FreeVars.scan(@root)
       end
@@ -51,6 +52,7 @@ module Magritte
 
         error!("Empty command") unless command
 
+        PRINTER.puts "> #{node.range}"
         command.call(args, node.range)
       end
 
@@ -68,7 +70,19 @@ module Magritte
 
       def visit_block(node)
         Proc.enter_frame(Proc.current.env.extend) do
-          visit_exec(node.group)
+          elems = node.group.elems.dup
+          last = elems.pop
+
+          elems.each do |elem|
+            visit_exec(elem)
+          end
+
+          if last
+            Proc.current.frame.tail!
+            visit_exec(last)
+          else
+            Status.normal
+          end
         end
       end
 
@@ -87,7 +101,10 @@ module Magritte
       end
 
       def visit_spawn(node)
-        s_ { visit_exec(node.expr) }.go
+        s_ {
+          Proc.current.frame.tail!
+          visit_exec(node.expr)
+        }.go
         Status.normal
       end
 
@@ -130,11 +147,10 @@ module Magritte
       end
 
       def visit_environment(node)
-        env = Proc.current.env.extend
-        Proc.enter_frame(env) do
+        env = Std.in_new_env(Proc.current.env) do
           visit_exec(node.body)
         end
-        env.unhinge!
+
         yield Value::Environment.new(env)
       end
 
@@ -143,6 +159,7 @@ module Magritte
         outputs = []
         redir_vals = node.redirects.map { |redirect| [redirect.direction, visit_collect(redirect.target).first] }
         redir_vals.each do |(dir, c)|
+          PRINTER.p("redirect #{dir} #{c.class} #{c.inspect}")
           error!("Cannot redirect #{dir} #{c.repr}") unless c.is_a?(Value::Channel)
           if dir == :<
             inputs << c.channel
