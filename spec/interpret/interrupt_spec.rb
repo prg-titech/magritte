@@ -13,10 +13,10 @@ interpret_spec "compensations" do
   interpret "interrupts" do
     source <<-EOF
       c = (make-channel)
-      exec (=> (
+      exec (=>
         put 1 %% (put comp > %c)
         put 2 3 4 5 6
-      )) | take 2
+      ) | take 2
       get < $c
     EOF
 

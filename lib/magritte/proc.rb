@@ -244,6 +244,20 @@ module Magritte
     attr_reader :trace
 
   protected
+    def re_raise?(e)
+      reason = e.status.reason
+      return true unless reason.is_a?(Reason::Close)
+
+      test = proc { |c| return true if c == reason.channel }
+
+      case reason.direction
+      when :< then env.each_input(&test)
+      when :> then env.each_output(&test)
+      end
+
+      false
+    end
+
     def enter_frame(*args, &b)
       own_thread!
 

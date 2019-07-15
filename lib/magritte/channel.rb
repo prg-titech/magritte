@@ -149,7 +149,7 @@ module Magritte
         PRINTER.p(close: [@id, @block_type, @block_set])
       end
 
-      interrupt_blocked! if action == :close
+      interrupt_blocked!(:>) if action == :close
     rescue ThreadError
       binding.pry
     end
@@ -170,20 +170,20 @@ module Magritte
       end
 
       PRINTER.p(closing_channel: @id) if action == :close
-      interrupt_blocked! if action == :close
+      interrupt_blocked!(:<) if action == :close
     end
 
-    def interrupt_blocked!
+    def interrupt_blocked!(d)
       interrupt_self = false
       @block_set.each do |b|
         if b.thread == Thread.current
           interrupt_self = true
         else
-          interrupt_process!(b)
+          interrupt_process!(b, d)
         end
       end
 
-      interrupt_process!(Proc.current) if interrupt_self
+      interrupt_process!(Proc.current, d) if interrupt_self
     end
 
     def read
@@ -192,7 +192,7 @@ module Magritte
           PRINTER.p("#{@id} read: already closed")
           @mutex.p("interrupting #{LogPrinter.thread_name(Thread.current)}")
 
-          interrupt_process!(Proc.current)
+          interrupt_process!(Proc.current, :<)
 
           # jump to the end of the block
           next
@@ -230,7 +230,7 @@ module Magritte
         unless @open
           PRINTER.p("#{@id} write: already closed")
           @mutex.p("interrupting #{LogPrinter.thread_name(Thread.current)}")
-          interrupt_process!(Proc.current)
+          interrupt_process!(Proc.current, :>)
           next
         end
 
@@ -287,8 +287,8 @@ module Magritte
 
     protected
 
-    def interrupt_process!(process)
-      process.interrupt!(Status[reason: Reason::Close.new(self)])
+    def interrupt_process!(process, direction)
+      process.interrupt!(Status[reason: Reason::Close.new(self, direction)])
     end
 
     def inspect_crit
