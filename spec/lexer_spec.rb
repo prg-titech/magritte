@@ -17,7 +17,7 @@ describe Magritte::Lexer do
     }
 
     it "parses basic delimiters" do
-      assert { tokens == [_token(:lparen), _token(:lbrack), _token(:var,"hoge"), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:lparen), _token(:lbrack), _token(:var,"hoge"), _token(:eof)] }
     end
   end
 
@@ -29,7 +29,7 @@ describe Magritte::Lexer do
     }
 
     it "parses basic keywords" do
-      assert { tokens == [_token(:lbrack), _token(:lparen), _token(:lbrace), _token(:rbrace), _token(:rparen), _token(:rbrack), _token(:equal), _token(:lex_var, "a"), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:lbrack), _token(:lparen), _token(:lbrace), _token(:rbrace), _token(:rparen), _token(:rbrack), _token(:equal), _token(:lex_var, "a"), _token(:eof)] }
     end
   end
 
@@ -41,7 +41,7 @@ describe Magritte::Lexer do
     }
 
     it "parses basic function header" do
-      assert { tokens == [_token(:lparen), _token(:bare, "func"), _token(:bind, "n"), _token(:rparen), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:lparen), _token(:bare, "func"), _token(:bind, "n"), _token(:rparen), _token(:eof)] }
     end
   end
 
@@ -53,7 +53,7 @@ describe Magritte::Lexer do
     }
 
     it "parses tokens correctly" do
-      assert { tokens == [_token(:d_bar), _token(:d_amp), _token(:d_bang), _token(:d_per), _token(:d_per_bang),  _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:d_bar), _token(:d_amp), _token(:d_bang), _token(:d_per), _token(:d_per_bang),  _token(:eof)] }
     end
   end
 
@@ -65,7 +65,7 @@ describe Magritte::Lexer do
     }
 
     it "parses operators" do
-      assert { tokens == [_token(:pipe), _token(:amp), _token(:equal), _token(:equal), _token(:arrow), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:pipe), _token(:amp), _token(:equal), _token(:equal), _token(:arrow), _token(:eof)] }
     end
   end
 
@@ -77,7 +77,7 @@ describe Magritte::Lexer do
     }
 
     it "parses numbers correctly" do
-      assert { tokens == [_token(:num, "2"), _token(:num, "6.28"), _token(:num, "0.00001"), _token(:num, "1."), _token(:num,"-5.4"), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:num, "2"), _token(:num, "6.28"), _token(:num, "0.00001"), _token(:num, "1."), _token(:num,"-5.4"), _token(:eof)] }
     end
   end
 
@@ -89,7 +89,7 @@ describe Magritte::Lexer do
     }
 
     it "parses strings correctly" do
-      assert { tokens == [_token(:string, "asksnz-zwjdfqw345 r8 ewn    ih2wu\\\" wihf002+4-r9+***.m.-< \\\""), _token(:nl), _token(:eof)] }
+      assert { tokens == [_token(:string, "asksnz-zwjdfqw345 r8 ewn    ih2wu\\\" wihf002+4-r9+***.m.-< \\\""), _token(:eof)] }
     end
   end
 
