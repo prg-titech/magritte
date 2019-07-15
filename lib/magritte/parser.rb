@@ -37,13 +37,13 @@ module Magritte
         return AST::Spawn[AST::Block[AST::Group[[parse_line(body)]]]]
       end
 
-      item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
-        return AST::Pipe[parse_line(before), parse_command(after)]
-      end
-
       # Match any line that has an equal sign
       item.match(lsplit(~_, token(:equal), ~_)) do |lhs, rhs|
         return parse_assignment(lhs, rhs)
+      end
+
+      item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
+        return AST::Pipe[parse_line(before), parse_command(after)]
       end
 
       # Parse double &
