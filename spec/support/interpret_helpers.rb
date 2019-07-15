@@ -1,5 +1,9 @@
 require "ostruct"
+require_relative 'dangling_threads'
+
 module InterpretHelpers
+  include DanglingThreads
+
   def self.included(base)
     base.send(:extend, ClassMethods)
 
@@ -11,9 +15,11 @@ module InterpretHelpers
       let(:ast) { Magritte::Parser.parse(skel) }
       let(:env) { Magritte::Builtins.load(Magritte::Env.empty) }
       let(:results) { ast;
-        collection, @status = Magritte::Spawn.s_ env do
-          Magritte::Interpret.interpret(ast)
-        end.collect_with_status
+        collection, @status = with_no_dangling_threads do
+          Magritte::Spawn.s_ env do
+            Magritte::Interpret.interpret(ast)
+          end.collect_with_status
+        end
 
         collection.map(&:to_s)
       }

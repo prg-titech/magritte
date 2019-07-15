@@ -4,11 +4,7 @@ module Magritte
     require 'timeout'
     require 'pry'
     def put(val)
-      Timeout.timeout(2) do
-        Proc.current.stdout.write(val)
-      end
-    rescue Timeout::Error
-      binding.pry
+      Proc.current.stdout.write(val)
     end
 
     def in_new_env(env, &b)
@@ -19,13 +15,9 @@ module Magritte
     end
 
     def get
-      Timeout.timeout(2) do
-        out = Proc.current.stdin.read
-        # PRINTER.p get: [out, stdin]
-        out
-      end
-    rescue Timeout::Error
-      binding.pry
+      out = Proc.current.stdin.read
+      # PRINTER.p get: [out, stdin]
+      out
     end
 
     def call(h, a, range=nil)
