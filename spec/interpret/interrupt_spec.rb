@@ -29,11 +29,13 @@ interpret_spec "compensations" do
       & put 1 2 3 > $c
       drain < $c
       (dr) = (put (get); dr)
-      dr < $c
 
-      # we never get here, because we get
-      # interrupted by the above
-      put 4
+      (
+        dr
+        # we never get here, because we get
+        # interrupted by the above
+        put 4
+      ) < $c
     EOF
 
     results %w(1 2 3)
@@ -46,12 +48,11 @@ interpret_spec "compensations" do
       get < $c
       get < $c
 
-      # we never get here, because we get interrupted
-      # by the above
+      # we continue here, because we don't have $c as an input
       put 4
     EOF
 
-    results %w(1)
+    results %w(1 4)
   end
 
   interpret "the bug" do

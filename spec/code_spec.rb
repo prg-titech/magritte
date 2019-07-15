@@ -87,11 +87,11 @@ describe Magritte::Code do
       s { for_ (0..3) }
         .p { loop { put (get * 2) } }.call
 
-      raise "never reached"
+      put 20
     end
 
     it 'interrupts the parent process' do
-      assert { output == [0, 2, 4, 6] }
+      assert { output == [0, 2, 4, 6, 20] }
     end
   end
 

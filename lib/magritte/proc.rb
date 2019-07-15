@@ -284,7 +284,11 @@ module Magritte
     rescue Interrupt => e
       compensate(e) unless frame.elim?
       PRINTER.p :interrupt => [e.status, @stack]
-      raise
+      if re_raise?(e)
+        raise
+      else
+        e.status
+      end
     else
       unless frame.elim?
         checkpoint
