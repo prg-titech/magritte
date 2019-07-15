@@ -319,7 +319,7 @@ module Magritte
       prev_pos = current_pos
       if @scanner.scan(re)
         @match = @scanner.matched
-        @groups = @scanner.captures
+        @groups = [@scanner[1], @scanner[2], @scanner[3]] # XXX HACK XXX
         update_line_col(@match)
         @last_range = Range.new(prev_pos, current_pos)
         true
