@@ -38,7 +38,7 @@ module Magritte
       # will investigate this more when we have a
       # proper vm
       PRINTER.p(alive: (Thread.list - [Thread.current]))
-      # exit! 0
+      exit! 0
     end
 
     def parse_args
