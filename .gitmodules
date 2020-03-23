@@ -1,0 +1,3 @@
+[submodule "vendor/pypy"]
+	path = vendor/pypy
+	url = https://github.com/mozillazg/pypy
