@@ -1,4 +1,4 @@
-interpret_spec "basic functionality" do
+f.interpret_spec "basic functionality" do
   interpret "a vector" do
     source <<-EOF
       put [a b c]

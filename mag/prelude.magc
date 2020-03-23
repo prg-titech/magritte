@@ -1,0 +1,1568 @@
+38 constants
+"{ <prelude> }
+"stdin
+"range
+"each
+"exec
+"for
+"times
+"count-forever
+"take
+"put
+"repeat-forever
+"add
+#1
+#-1
+"drain
+"lt
+"mul
+"rand
+"get
+"inc
+"prob
+"loop-channel
+"stdout
+"produce
+"consume
+"eq
+#0
+"mod
+#2
+"false
+"true
+"not
+"any
+"@!stdout
+"log:
+"make-null
+"from
+"into
+46 symbols
+__repr__
+exec
+in
+n
+fn
+args
+times
+nthreads
+fan
+range
+val
+repeat-forever
+repeat
+inc
+dec
+l
+x
+label
+f
+a
+into
+amt
+total
+prob
+hold
+i
+v
+sample
+produce
+consume
+iter
+each
+even
+odd
+not
+pred
+all
+e
+take-until
+stdout
+LOG
+msg
+log
+null
+o
+through
+209 labels
+antecedent-1 0
+antecedent-2 4
+antecedent-3 9
+block-1 18
+block-10 33
+block-11 45
+block-12 86
+block-13 97
+block-14 109
+block-15 121
+block-16 139
+block-17 157
+block-18 170
+block-19 180
+block-2 190
+block-20 212
+block-21 222
+block-22 238
+block-23 251
+block-24 260
+block-3 263
+block-4 270
+block-5 287
+block-6 294
+block-7 305
+block-8 316
+block-9 329
+body-1 342
+body-10 349
+body-11 356
+body-12 375
+body-13 382
+body-14 389
+body-15 396
+body-16 418
+body-17 425
+body-18 432
+body-19 439
+body-2 446
+body-20 458
+body-21 465
+body-22 478
+body-23 485
+body-24 492
+body-25 499
+body-26 506
+body-27 513
+body-28 526
+body-29 533
+body-3 540
+body-4 547
+body-5 552
+body-6 559
+body-7 566
+body-8 573
+body-9 580
+crash-1 587
+cont-1 587
+cont-2 587
+cont-3 587
+cont-4 587
+cont-5 587
+cont-6 587
+cont-7 587
+cont-8 587
+cont-9 587
+cont-10 587
+cont-11 587
+cont-12 587
+cont-13 587
+cont-14 587
+cont-15 587
+cont-16 587
+cont-17 587
+cont-18 587
+cont-19 587
+cont-20 587
+cont-21 587
+cont-22 587
+cont-23 587
+cont-24 587
+cont-25 587
+cont-26 587
+cont-27 587
+cont-28 587
+cont-29 587
+crash-10 588
+crash-11 589
+crash-12 590
+crash-13 591
+crash-14 592
+crash-15 593
+crash-16 594
+crash-17 595
+crash-18 596
+crash-19 597
+crash-2 598
+crash-20 599
+crash-21 600
+crash-22 601
+crash-23 602
+crash-24 603
+crash-25 604
+crash-26 605
+crash-27 606
+crash-28 607
+crash-29 608
+crash-3 609
+crash-4 610
+crash-5 611
+crash-6 612
+crash-7 613
+crash-8 614
+crash-9 615
+guarded-1 616
+guarded-2 620
+guarded-3 621
+lambda-1 625 mag/prelude.mag@7:1~10:2
+lambda-10 635 mag/prelude.mag@23:1~23:40
+lambda-11 640 mag/prelude.mag@23:20~23:39
+lambda-12 645 mag/prelude.mag@25:1~25:39
+lambda-13 650 mag/prelude.mag@28:1~28:51
+lambda-14 660 mag/prelude.mag@30:1~40:2
+lambda-15 660 mag/prelude.mag@33:8~37:4
+lambda-16 665 mag/prelude.mag@42:1~42:44
+lambda-17 670 mag/prelude.mag@43:1~43:43
+lambda-18 675 mag/prelude.mag@45:1~45:55
+lambda-2 685 mag/prelude.mag@9:19~9:52
+lambda-19 685 mag/prelude.mag@45:26~45:54
+lambda-20 687 mag/prelude.mag@46:1~46:38
+lambda-21 692 mag/prelude.mag@46:23~46:37
+lambda-22 692 mag/prelude.mag@48:1~48:30
+lambda-23 697 mag/prelude.mag@49:1~49:29
+lambda-24 702 mag/prelude.mag@50:1~50:52
+lambda-25 702 mag/prelude.mag@51:1~51:36
+lambda-26 707 mag/prelude.mag@53:1~53:64
+lambda-27 712 mag/prelude.mag@53:28~53:63
+lambda-28 717 mag/prelude.mag@57:1~57:40
+lambda-29 722 mag/prelude.mag@60:1~63:2
+lambda-3 727 mag/prelude.mag@12:1~16:2
+lambda-4 737 mag/prelude.mag@13:19~15:4
+lambda-5 737 mag/prelude.mag@18:1~18:39
+lambda-6 742 mag/prelude.mag@19:1~19:56
+lambda-7 747 mag/prelude.mag@20:1~20:51
+lambda-8 757 mag/prelude.mag@21:1~21:26
+lambda-9 762 mag/prelude.mag@22:1~22:27
+main 767
+otherwise-1 986
+otherwise-2 991
+pattern-1 996
+pipe-lhs-1 996
+pattern-2 996
+pattern-3 996
+pattern-4 996
+pattern-5 996
+pattern-6 996
+pattern-7 996
+pattern-8 996
+pattern-9 996
+pattern-10 996
+pattern-11 996
+pattern-12 996
+pattern-13 996
+pattern-14 996
+pattern-15 996
+pattern-16 996
+pattern-17 996
+pattern-18 996
+pattern-19 996
+pattern-20 996
+pattern-21 996
+pattern-22 996
+pattern-23 996
+pattern-24 996
+pattern-25 996
+pattern-26 996
+pattern-27 996
+pattern-28 996
+pattern-29 996
+pipe-lhs-2 1005
+pipe-lhs-3 1010
+pipe-rhs-1 1019
+pipe-rhs-2 1042
+pipe-rhs-3 1051
+spawn-1 1060
+spawn-2 1074
+spawn-3 1082
+subst-1 1090
+subst-10 1095
+subst-11 1100
+subst-12 1105
+subst-13 1116
+subst-14 1121
+subst-15 1132
+subst-16 1143
+subst-17 1152
+subst-18 1157
+subst-2 1162
+subst-3 1171
+subst-4 1180
+subst-5 1189
+subst-6 1194
+subst-7 1206
+subst-8 1211
+subst-9 1216
+with-1 1225
+with-2 1237
+with-3 1251
+with-4 1261
+1271 instructions
+0 current-env
+1 env-extend
+2 frame 86
+3 jump 616
+4 collection
+5 const 29
+6 collect
+7 invoke
+8 jump 620
+9 collection
+10 const 9
+11 collect
+12 current-env
+13 ref 37
+14 ref-get
+15 collect
+16 invoke
+17 jump 621
+18 collection
+19 current-env
+20 env-collect
+21 frame 1090
+22 index 0
+23 current-env
+24 swap
+25 let 2
+26 current-env
+27 env-extend
+28 channel
+29 env-pipe 0 0
+30 spawn 996
+31 frame 1019
+32 return
+33 collection
+34 const 15
+35 collect
+36 current-env
+37 ref 21
+38 ref-get
+39 collect
+40 current-env
+41 env-collect
+42 frame 1194
+43 invoke
+44 return
+45 collection
+46 current-env
+47 env-collect
+48 frame 1211
+49 index 0
+50 current-env
+51 swap
+52 let 24
+53 collection
+54 const 12
+55 collect
+56 index 0
+57 current-env
+58 swap
+59 let 25
+60 collection
+61 const 3
+62 collect
+63 env
+64 dup
+65 current-env
+66 ref 24
+67 ref-get
+68 let 24
+69 dup
+70 current-env
+71 ref 25
+72 ref-get
+73 let 25
+74 closure 660
+75 collect
+76 invoke
+77 collection
+78 const 9
+79 collect
+80 current-env
+81 ref 24
+82 ref-get
+83 collect
+84 invoke
+85 return
+86 collection
+87 current-env
+88 ref 26
+89 ref-get
+90 collect
+91 index 0
+92 current-env
+93 ref 24
+94 swap
+95 ref-set
+96 return
+97 collection
+98 const 21
+99 collect
+100 current-env
+101 env-collect
+102 frame 1095
+103 current-env
+104 ref 4
+105 ref-get
+106 collect
+107 invoke
+108 return
+109 collection
+110 const 21
+111 collect
+112 current-env
+113 env-collect
+114 frame 1100
+115 current-env
+116 ref 4
+117 ref-get
+118 collect
+119 invoke
+120 return
+121 collection
+122 const 23
+123 collect
+124 env
+125 dup
+126 current-env
+127 ref 19
+128 ref-get
+129 let 19
+130 dup
+131 current-env
+132 ref 4
+133 ref-get
+134 let 4
+135 closure 685
+136 collect
+137 invoke
+138 return
+139 collection
+140 const 9
+141 collect
+142 current-env
+143 ref 19
+144 ref-get
+145 collect
+146 invoke
+147 collection
+148 current-env
+149 env-collect
+150 frame 1105
+151 index 0
+152 current-env
+153 ref 19
+154 swap
+155 ref-set
+156 return
+157 collection
+158 const 24
+159 collect
+160 env
+161 dup
+162 current-env
+163 ref 4
+164 ref-get
+165 let 4
+166 closure 692
+167 collect
+168 invoke
+169 return
+170 collection
+171 const 25
+172 collect
+173 const 26
+174 collect
+175 current-env
+176 env-collect
+177 frame 1121
+178 invoke
+179 return
+180 collection
+181 const 25
+182 collect
+183 const 12
+184 collect
+185 current-env
+186 env-collect
+187 frame 1132
+188 invoke
+189 return
+190 collection
+191 const 6
+192 collect
+193 current-env
+194 ref 7
+195 ref-get
+196 collect
+197 env
+198 dup
+199 current-env
+200 ref 5
+201 ref-get
+202 let 5
+203 dup
+204 current-env
+205 ref 4
+206 ref-get
+207 let 4
+208 closure 737
+209 collect
+210 invoke
+211 return
+212 collection
+213 const 4
+214 collect
+215 current-env
+216 env-collect
+217 frame 1143
+218 invoke
+219 last-status
+220 jumpfail 986
+221 jump 4
+222 collection
+223 const 31
+224 collect
+225 const 32
+226 collect
+227 collection
+228 const 31
+229 collect
+230 current-env
+231 ref 35
+232 ref-get
+233 collect
+234 vector
+235 collect
+236 invoke
+237 return
+238 collection
+239 const 3
+240 collect
+241 env
+242 dup
+243 current-env
+244 ref 35
+245 ref-get
+246 let 35
+247 closure 712
+248 collect
+249 invoke
+250 return
+251 current-env
+252 env-extend
+253 dup
+254 current-env
+255 ref 40
+256 ref-get
+257 env-set-output 0
+258 frame 1237
+259 return
+260 spawn 1074
+261 spawn 1082
+262 return
+263 current-env
+264 env-extend
+265 channel
+266 env-pipe 0 0
+267 spawn 1005
+268 frame 1042
+269 return
+270 collection
+271 const 9
+272 collect
+273 current-env
+274 ref 10
+275 ref-get
+276 collect
+277 invoke
+278 collection
+279 const 10
+280 collect
+281 current-env
+282 ref 10
+283 ref-get
+284 collect
+285 invoke
+286 return
+287 current-env
+288 env-extend
+289 channel
+290 env-pipe 0 0
+291 spawn 1010
+292 frame 1051
+293 return
+294 collection
+295 const 11
+296 collect
+297 current-env
+298 ref 10
+299 ref-get
+300 collect
+301 const 12
+302 collect
+303 invoke
+304 return
+305 collection
+306 const 11
+307 collect
+308 current-env
+309 ref 10
+310 ref-get
+311 collect
+312 const 13
+313 collect
+314 invoke
+315 return
+316 collection
+317 const 3
+318 collect
+319 env
+320 dup
+321 current-env
+322 ref 15
+323 ref-get
+324 let 15
+325 closure 640
+326 collect
+327 invoke
+328 return
+329 collection
+330 current-env
+331 ref 18
+332 ref-get
+333 collect
+334 current-env
+335 env-collect
+336 frame 1180
+337 current-env
+338 env-collect
+339 frame 1189
+340 invoke
+341 return
+342 current-env
+343 env-extend
+344 frame 18
+345 current-env
+346 env-extend
+347 swap
+348 env-merge
+349 current-env
+350 env-extend
+351 frame 316
+352 current-env
+353 env-extend
+354 swap
+355 env-merge
+356 collection
+357 const 9
+358 collect
+359 collection
+360 current-env
+361 ref 15
+362 ref-get
+363 collect
+364 current-env
+365 ref 16
+366 ref-get
+367 collect
+368 vector
+369 collect
+370 invoke
+371 current-env
+372 env-extend
+373 swap
+374 env-merge
+375 current-env
+376 env-extend
+377 frame 329
+378 current-env
+379 env-extend
+380 swap
+381 env-merge
+382 current-env
+383 env-extend
+384 frame 33
+385 current-env
+386 env-extend
+387 swap
+388 env-merge
+389 current-env
+390 env-extend
+391 frame 45
+392 current-env
+393 env-extend
+394 swap
+395 env-merge
+396 collection
+397 current-env
+398 env-collect
+399 frame 1216
+400 index 0
+401 current-env
+402 ref 25
+403 swap
+404 ref-set
+405 collection
+406 const 20
+407 collect
+408 current-env
+409 ref 25
+410 ref-get
+411 collect
+412 const 12
+413 collect
+414 invoke
+415 last-status
+416 jumpfail 616
+417 jump 0
+418 current-env
+419 env-extend
+420 frame 97
+421 current-env
+422 env-extend
+423 swap
+424 env-merge
+425 current-env
+426 env-extend
+427 frame 109
+428 current-env
+429 env-extend
+430 swap
+431 env-merge
+432 current-env
+433 env-extend
+434 frame 121
+435 current-env
+436 env-extend
+437 swap
+438 env-merge
+439 current-env
+440 env-extend
+441 frame 139
+442 current-env
+443 env-extend
+444 swap
+445 env-merge
+446 current-env
+447 env-extend
+448 dup
+449 current-env
+450 ref 2
+451 ref-get
+452 env-set-input 0
+453 frame 1225
+454 current-env
+455 env-extend
+456 swap
+457 env-merge
+458 current-env
+459 env-extend
+460 frame 157
+461 current-env
+462 env-extend
+463 swap
+464 env-merge
+465 collection
+466 current-env
+467 ref 4
+468 ref-get
+469 collect
+470 current-env
+471 env-collect
+472 frame 1116
+473 invoke
+474 current-env
+475 env-extend
+476 swap
+477 env-merge
+478 current-env
+479 env-extend
+480 frame 170
+481 current-env
+482 env-extend
+483 swap
+484 env-merge
+485 current-env
+486 env-extend
+487 frame 180
+488 current-env
+489 env-extend
+490 swap
+491 env-merge
+492 current-env
+493 env-extend
+494 frame 212
+495 current-env
+496 env-extend
+497 swap
+498 env-merge
+499 current-env
+500 env-extend
+501 frame 222
+502 current-env
+503 env-extend
+504 swap
+505 env-merge
+506 current-env
+507 env-extend
+508 frame 238
+509 current-env
+510 env-extend
+511 swap
+512 env-merge
+513 collection
+514 current-env
+515 ref 35
+516 ref-get
+517 collect
+518 current-env
+519 ref 37
+520 ref-get
+521 collect
+522 invoke
+523 last-status
+524 jumpfail 991
+525 jump 9
+526 current-env
+527 env-extend
+528 frame 251
+529 current-env
+530 env-extend
+531 swap
+532 env-merge
+533 current-env
+534 env-extend
+535 frame 260
+536 current-env
+537 env-extend
+538 swap
+539 env-merge
+540 current-env
+541 env-extend
+542 frame 190
+543 current-env
+544 env-extend
+545 swap
+546 env-merge
+547 spawn 1060
+548 current-env
+549 env-extend
+550 swap
+551 env-merge
+552 current-env
+553 env-extend
+554 frame 263
+555 current-env
+556 env-extend
+557 swap
+558 env-merge
+559 current-env
+560 env-extend
+561 frame 270
+562 current-env
+563 env-extend
+564 swap
+565 env-merge
+566 current-env
+567 env-extend
+568 frame 287
+569 current-env
+570 env-extend
+571 swap
+572 env-merge
+573 current-env
+574 env-extend
+575 frame 294
+576 current-env
+577 env-extend
+578 swap
+579 env-merge
+580 current-env
+581 env-extend
+582 frame 305
+583 current-env
+584 env-extend
+585 swap
+586 env-merge
+587 crash
+588 crash
+589 crash
+590 crash
+591 crash
+592 crash
+593 crash
+594 crash
+595 crash
+596 crash
+597 crash
+598 crash
+599 crash
+600 crash
+601 crash
+602 crash
+603 crash
+604 crash
+605 crash
+606 crash
+607 crash
+608 crash
+609 crash
+610 crash
+611 crash
+612 crash
+613 crash
+614 crash
+615 crash
+616 current-env
+617 env-extend
+618 swap
+619 env-merge
+620 return
+621 current-env
+622 env-extend
+623 swap
+624 env-merge
+625 index 0
+626 dup
+627 current-env
+628 swap
+629 let 3
+630 index 1
+631 dup
+632 current-env
+633 swap
+634 let 4
+635 index 0
+636 dup
+637 current-env
+638 swap
+639 let 15
+640 index 0
+641 dup
+642 current-env
+643 swap
+644 let 16
+645 index 0
+646 dup
+647 current-env
+648 swap
+649 let 18
+650 index 0
+651 dup
+652 current-env
+653 swap
+654 let 22
+655 index 1
+656 dup
+657 current-env
+658 swap
+659 let 21
+660 index 0
+661 dup
+662 current-env
+663 swap
+664 let 26
+665 index 0
+666 dup
+667 current-env
+668 swap
+669 let 4
+670 index 0
+671 dup
+672 current-env
+673 swap
+674 let 4
+675 index 0
+676 dup
+677 current-env
+678 swap
+679 let 4
+680 index 1
+681 dup
+682 current-env
+683 swap
+684 let 19
+685 index 0
+686 pop
+687 index 0
+688 dup
+689 current-env
+690 swap
+691 let 4
+692 index 0
+693 dup
+694 current-env
+695 swap
+696 let 16
+697 index 0
+698 dup
+699 current-env
+700 swap
+701 let 16
+702 index 0
+703 dup
+704 current-env
+705 swap
+706 let 35
+707 index 0
+708 dup
+709 current-env
+710 swap
+711 let 35
+712 index 0
+713 dup
+714 current-env
+715 swap
+716 let 37
+717 index 0
+718 dup
+719 current-env
+720 swap
+721 let 41
+722 index 0
+723 dup
+724 current-env
+725 swap
+726 let 44
+727 index 0
+728 dup
+729 current-env
+730 swap
+731 let 7
+732 index 1
+733 dup
+734 current-env
+735 swap
+736 let 4
+737 index 0
+738 dup
+739 current-env
+740 swap
+741 let 3
+742 index 0
+743 dup
+744 current-env
+745 swap
+746 let 10
+747 index 0
+748 dup
+749 current-env
+750 swap
+751 let 3
+752 index 1
+753 dup
+754 current-env
+755 swap
+756 let 10
+757 index 0
+758 dup
+759 current-env
+760 swap
+761 let 10
+762 index 0
+763 dup
+764 current-env
+765 swap
+766 let 10
+767 collection
+768 const 0
+769 collect
+770 index 0
+771 current-env
+772 swap
+773 let 0
+774 collection
+775 collection
+776 vector
+777 collect
+778 index 0
+779 current-env
+780 swap
+781 let 1
+782 collection
+783 env
+784 closure 625
+785 collect
+786 index 0
+787 current-env
+788 swap
+789 let 6
+790 collection
+791 env
+792 closure 727
+793 collect
+794 index 0
+795 current-env
+796 swap
+797 let 8
+798 collection
+799 env
+800 closure 737
+801 collect
+802 index 0
+803 current-env
+804 swap
+805 let 9
+806 collection
+807 env
+808 closure 742
+809 collect
+810 index 0
+811 current-env
+812 swap
+813 let 11
+814 collection
+815 env
+816 closure 747
+817 collect
+818 index 0
+819 current-env
+820 swap
+821 let 12
+822 collection
+823 env
+824 closure 757
+825 collect
+826 index 0
+827 current-env
+828 swap
+829 let 13
+830 collection
+831 env
+832 closure 762
+833 collect
+834 index 0
+835 current-env
+836 swap
+837 let 14
+838 collection
+839 env
+840 closure 635
+841 collect
+842 index 0
+843 current-env
+844 swap
+845 let 17
+846 collection
+847 env
+848 closure 645
+849 collect
+850 index 0
+851 current-env
+852 swap
+853 let 20
+854 collection
+855 env
+856 closure 650
+857 collect
+858 index 0
+859 current-env
+860 swap
+861 let 23
+862 collection
+863 env
+864 closure 660
+865 collect
+866 index 0
+867 current-env
+868 swap
+869 let 27
+870 collection
+871 env
+872 closure 665
+873 collect
+874 index 0
+875 current-env
+876 swap
+877 let 28
+878 collection
+879 env
+880 closure 670
+881 collect
+882 index 0
+883 current-env
+884 swap
+885 let 29
+886 collection
+887 env
+888 closure 675
+889 collect
+890 index 0
+891 current-env
+892 swap
+893 let 30
+894 collection
+895 env
+896 closure 687
+897 collect
+898 index 0
+899 current-env
+900 swap
+901 let 31
+902 collection
+903 env
+904 closure 692
+905 collect
+906 index 0
+907 current-env
+908 swap
+909 let 32
+910 collection
+911 env
+912 closure 697
+913 collect
+914 index 0
+915 current-env
+916 swap
+917 let 33
+918 collection
+919 env
+920 closure 702
+921 collect
+922 index 0
+923 current-env
+924 swap
+925 let 34
+926 collection
+927 env
+928 closure 702
+929 collect
+930 index 0
+931 current-env
+932 swap
+933 let 36
+934 collection
+935 env
+936 closure 707
+937 collect
+938 index 0
+939 current-env
+940 swap
+941 let 38
+942 collection
+943 const 33
+944 collect
+945 index 0
+946 current-env
+947 swap
+948 let 39
+949 collection
+950 current-env
+951 env-collect
+952 frame 1152
+953 index 0
+954 current-env
+955 swap
+956 let 40
+957 collection
+958 env
+959 closure 717
+960 collect
+961 index 0
+962 current-env
+963 swap
+964 let 42
+965 collection
+966 current-env
+967 env-collect
+968 frame 1157
+969 index 0
+970 current-env
+971 swap
+972 let 43
+973 collection
+974 env
+975 dup
+976 current-env
+977 ref 43
+978 ref-get
+979 let 43
+980 closure 722
+981 collect
+982 index 0
+983 current-env
+984 swap
+985 let 45
+986 collection
+987 const 30
+988 collect
+989 invoke
+990 jump 620
+991 collection
+992 const 29
+993 collect
+994 invoke
+995 jump 621
+996 collection
+997 const 2
+998 collect
+999 current-env
+1000 ref 3
+1001 ref-get
+1002 collect
+1003 invoke
+1004 return
+1005 collection
+1006 const 7
+1007 collect
+1008 invoke
+1009 return
+1010 collection
+1011 const 10
+1012 collect
+1013 current-env
+1014 ref 10
+1015 ref-get
+1016 collect
+1017 invoke
+1018 return
+1019 collection
+1020 const 3
+1021 collect
+1022 env
+1023 dup
+1024 current-env
+1025 ref 5
+1026 ref-get
+1027 let 5
+1028 dup
+1029 current-env
+1030 ref 4
+1031 ref-get
+1032 let 4
+1033 dup
+1034 current-env
+1035 ref 2
+1036 ref-get
+1037 let 2
+1038 closure 685
+1039 collect
+1040 invoke
+1041 return
+1042 collection
+1043 const 8
+1044 collect
+1045 current-env
+1046 ref 3
+1047 ref-get
+1048 collect
+1049 invoke
+1050 return
+1051 collection
+1052 const 8
+1053 collect
+1054 current-env
+1055 ref 3
+1056 ref-get
+1057 collect
+1058 invoke
+1059 return
+1060 collection
+1061 const 3
+1062 collect
+1063 collection
+1064 current-env
+1065 ref 4
+1066 ref-get
+1067 collect
+1068 current-env
+1069 env-collect
+1070 frame 1171
+1071 vector
+1072 collect
+1073 invoke
+1074 current-env
+1075 env-extend
+1076 dup
+1077 current-env
+1078 ref 43
+1079 ref-get
+1080 env-set-input 0
+1081 frame 1251
+1082 current-env
+1083 env-extend
+1084 dup
+1085 current-env
+1086 ref 43
+1087 ref-get
+1088 env-set-output 0
+1089 frame 1261
+1090 collection
+1091 const 1
+1092 collect
+1093 invoke
+1094 return
+1095 collection
+1096 const 22
+1097 collect
+1098 invoke
+1099 return
+1100 collection
+1101 const 1
+1102 collect
+1103 invoke
+1104 return
+1105 collection
+1106 current-env
+1107 ref 4
+1108 ref-get
+1109 collect
+1110 current-env
+1111 ref 19
+1112 ref-get
+1113 collect
+1114 invoke
+1115 return
+1116 collection
+1117 const 18
+1118 collect
+1119 invoke
+1120 return
+1121 collection
+1122 const 27
+1123 collect
+1124 const 28
+1125 collect
+1126 current-env
+1127 ref 16
+1128 ref-get
+1129 collect
+1130 invoke
+1131 return
+1132 collection
+1133 const 27
+1134 collect
+1135 const 28
+1136 collect
+1137 current-env
+1138 ref 16
+1139 ref-get
+1140 collect
+1141 invoke
+1142 return
+1143 collection
+1144 const 5
+1145 collect
+1146 current-env
+1147 ref 5
+1148 ref-get
+1149 collect
+1150 invoke
+1151 return
+1152 collection
+1153 const 22
+1154 collect
+1155 invoke
+1156 return
+1157 collection
+1158 const 35
+1159 collect
+1160 invoke
+1161 return
+1162 collection
+1163 const 5
+1164 collect
+1165 current-env
+1166 ref 5
+1167 ref-get
+1168 collect
+1169 invoke
+1170 return
+1171 collection
+1172 const 5
+1173 collect
+1174 current-env
+1175 ref 5
+1176 ref-get
+1177 collect
+1178 invoke
+1179 return
+1180 collection
+1181 const 5
+1182 collect
+1183 current-env
+1184 ref 19
+1185 ref-get
+1186 collect
+1187 invoke
+1188 return
+1189 collection
+1190 const 14
+1191 collect
+1192 invoke
+1193 return
+1194 collection
+1195 const 16
+1196 collect
+1197 current-env
+1198 ref 22
+1199 ref-get
+1200 collect
+1201 current-env
+1202 env-collect
+1203 frame 1206
+1204 invoke
+1205 return
+1206 collection
+1207 const 17
+1208 collect
+1209 invoke
+1210 return
+1211 collection
+1212 const 18
+1213 collect
+1214 invoke
+1215 return
+1216 collection
+1217 const 19
+1218 collect
+1219 current-env
+1220 ref 25
+1221 ref-get
+1222 collect
+1223 invoke
+1224 return
+1225 collection
+1226 const 4
+1227 collect
+1228 current-env
+1229 ref 4
+1230 ref-get
+1231 collect
+1232 current-env
+1233 env-collect
+1234 frame 1162
+1235 invoke
+1236 return
+1237 collection
+1238 const 9
+1239 collect
+1240 collection
+1241 const 34
+1242 collect
+1243 current-env
+1244 ref 41
+1245 ref-get
+1246 collect
+1247 vector
+1248 collect
+1249 invoke
+1250 return
+1251 collection
+1252 current-env
+1253 ref 44
+1254 ref-get
+1255 const 36
+1256 dynamic-ref
+1257 ref-get
+1258 collect
+1259 invoke
+1260 return
+1261 collection
+1262 current-env
+1263 ref 44
+1264 ref-get
+1265 const 37
+1266 dynamic-ref
+1267 ref-get
+1268 collect
+1269 invoke
+1270 return

@@ -1,3 +1,5 @@
+@allow-intrinsics
+
 __repr__ = "{ <prelude> }"
 
 exec = []
@@ -50,6 +52,7 @@ exec = []
 
 (take-until ?pred) = (each (?e => %pred %e && put %e !! false))
 
+stdout = @!stdout
 LOG = (stdout)
 (log ?msg) = (put ["log:" %msg] > $LOG)
 

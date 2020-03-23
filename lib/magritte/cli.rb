@@ -8,8 +8,20 @@ module Magritte
       @argv = argv
     end
 
+    def compile_files
+      load "#{LIB_DIR}/magritte/compiler.rb"
+
+      # TODO
+      file = @files[0]
+      ast = Parser.parse(Skeleton.parse(Lexer.new(file, File.read(file))))
+
+      Magritte::Compiler.new(ast).compile.render($stdout)
+    end
+
     def run
       parse_args
+
+      return compile_files if @mode == :compile
 
       if @files.any?
         run_files
@@ -33,10 +45,12 @@ module Magritte
     def parse_args
       @libs = []
       @files = []
+      @mode = :interpret
 
       while (head = @argv.shift)
         case head
         when '-r' then @libs << @argv.shift
+        when '-c' then @mode = :compile
         else @files << head
         end
       end

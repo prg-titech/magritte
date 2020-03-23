@@ -25,7 +25,7 @@ module Magritte
     end
 
     def initialize
-      @allow_intrinsics = false
+      @allow_intrinsics = true # TODO default this to false
     end
 
     def parse(skel)
@@ -55,11 +55,6 @@ module Magritte
     def parse_line(item)
       item.match(starts(token(:amp), ~_)) do |body|
         return AST::Spawn[parse_line(body)]
-      end
-
-      item.match(starts(~token(:intrinsic), ~_)) do |intrinsic, args|
-        error!(intrinsic, "use @allow_intrinsics") unless @allow_intrinsics
-        return AST::Intrinsic[intrinsic.value, args.elems.map(&:value)]
       end
 
       item.match(rsplit(~_, token(:pipe), ~_)) do |before, after|
@@ -238,6 +233,11 @@ module Magritte
     end
 
     def parse_term(term)
+      term.match(~token(:intrinsic)) do |intrinsic|
+        error!(intrinsic, "use @allow-intrinsics") unless @allow_intrinsics
+        return AST::String["@!#{intrinsic.value}"]
+      end
+
       term.match(~token(:var)) do |var|
         return AST::Variable[var.value]
       end
@@ -303,8 +303,6 @@ module Magritte
       end
 
       error!(term, "unrecognized syntax")
-    rescue
-      binding.pry
     end
   end
 end

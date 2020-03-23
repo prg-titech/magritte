@@ -184,7 +184,7 @@ module Magritte
       elsif scan /[?](#{WORD})/
         skip_ws
         return token(:bind, group(1))
-      elsif scan /[@]!#{WORD}/
+      elsif scan /[@]!(#{WORD})/
         skip_ws
         return token(:intrinsic, group(1))
       elsif scan /[@](#{WORD})/

@@ -1,0 +1,3 @@
+@allow-intrinsics
+
+(@!put hello world)

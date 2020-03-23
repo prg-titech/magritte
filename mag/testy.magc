@@ -1,0 +1,22 @@
+3 constants
+"@!put
+"hello
+"world
+0 symbols
+2 labels
+block-1 0
+main 9
+13 instructions
+0 collection
+1 const 0
+2 collect
+3 const 1
+4 collect
+5 const 2
+6 collect
+7 invoke
+8 return
+9 current-env
+10 env-extend
+11 frame 0
+12 return

@@ -8,17 +8,12 @@ module InterpretHelpers
 
       let(:lex) { Magritte::Lexer.new(input_name, input) }
       let(:skel) { Magritte::Skeleton::Parser.parse(lex) }
-      let(:ast) { Magritte::Parser.parse_root(skel) }
-      let(:env) { Magritte::Builtins.load(Magritte::Env.empty) }
-      let(:results) { ast;
-        collection, @status = Magritte::Spawn.s_ env do
-          Magritte::Interpret.interpret(ast)
-        end.collect_with_status
+      let(:ast) { Magritte::Parser.parse(skel) }
+      let(:scheduler) { Magritte::Runtime::Scheduler.new(logger: $stdout) }
+      let(:output) { scheduler.spawn_root(ast, Magritte::Env.base) }
 
-        collection.map(&:to_s)
-      }
-      let(:status) { results; @status }
-      let(:result) { results.join("\n") }
+      let(:result) { output; scheduler.run; output.output }
+      let(:results) { output.map(&:repr) }
     end
   end
 
@@ -56,20 +51,23 @@ module InterpretHelpers
     end
 
     def status(query)
+      source_loc = @source_loc
       @status_expectations << proc do
-        assert { status.send(query) }
+        assert { source_loc; status.send(query) }
       end
     end
 
     def results(outputs)
+      source_loc = @source_loc
       @result_expectations << proc do
-        assert { results == outputs }
+        assert { source_loc; results == outputs }
       end
     end
 
     def results_size(len)
+      source_loc = @source_loc
       @result_expectations << proc do
-        assert { results.size == len }
+        assert { source_loc; results.size == len }
       end
     end
 
