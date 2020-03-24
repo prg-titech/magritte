@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec python2 "$(dirname "$0")/../vendor/pypy/rpython/__main__.py" "$@"
