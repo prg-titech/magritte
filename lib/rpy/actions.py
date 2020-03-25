@@ -94,7 +94,7 @@ def jump(frame, args):
 
 @inst_action
 def return_(frame, args):
-    frame.proc.frames.pop()
+    frame.proc.pop()
     if DEBUG: print 'after-return', frame.proc.frames
     if not frame.proc.frames:
         frame.proc.set_done()

@@ -3,11 +3,13 @@ from util import as_dashed
 from symbol import sym
 from channel import Streamer
 from value import *
+from debug import DEBUG
 
 base_env = Env()
 
 def global_out(proc, vals):
     for val in vals:
+        if DEBUG: print '==== GLOBAL_OUT ====', repr(val)
         print repr(val)
 
 base_env.set_output(0, Streamer(global_out))
@@ -19,7 +21,11 @@ def builtin(fn):
     # allow_intrinsics set (i.e. only usable in prelude and other controlled
     # places).
     builtin_name = '@!' + as_dashed(fn.__name__)
-    base_env.let(sym(builtin_name), Builtin(fn))
+    def wrapper(frame, args):
+        if DEBUG: print frame.proc.id, ':'+builtin_name, args
+        return fn(frame, args)
+
+    base_env.let(sym(builtin_name), Builtin(wrapper))
 
 @builtin
 def add(frame, args):

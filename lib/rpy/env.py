@@ -1,12 +1,13 @@
 from value import *
 from symbol import revsym
 
+MAX_CHANNELS = 8
 class Env(Value):
     def __init__(self, parent=None):
         assert parent is None or isinstance(parent, Env)
         self.parent = parent
-        self.inputs = [None] * 8
-        self.outputs = [None] * 8
+        self.inputs = [None] * MAX_CHANNELS
+        self.outputs = [None] * MAX_CHANNELS
         self.dict = {}
 
     def as_dict(self):
@@ -35,6 +36,20 @@ class Env(Value):
     def get_input(self, i):
         return self.inputs[i] or (self.parent and self.parent.get_input(i))
 
+    def has_input(self, ch):
+        if ch in self.inputs: return True
+        if not self.parent: return False
+        return self.parent.has_input(ch)
+
+    def has_output(self, ch):
+        if ch in self.inputs: return True
+        if not self.parent: return False
+        return self.parent.has_input(ch)
+
+    def has_channel(self, is_input, channel):
+        if is_input: return self.has_input(channel)
+        else: return self.has_output(channel)
+
     def get_output(self, i):
         return self.outputs[i] or (self.parent and self.parent.get_output(i))
 
@@ -43,9 +58,20 @@ class Env(Value):
         self.inputs[i] = ch
 
     def set_output(self, i, ch):
-        print 'set_output', ch
         assert isinstance(ch, Channelable)
         self.outputs[i] = ch
+
+    def each_input(self, fn, *a):
+        for i in range(0, MAX_CHANNELS):
+            input = self.get_input(i)
+            if not input: return
+            fn(input, *a)
+
+    def each_output(self, fn, *a):
+        for i in range(0, MAX_CHANNELS):
+            output = self.get_output(i)
+            if not output: return
+            fn(output, *a)
 
     def lookup_ref(self, key):
         try:

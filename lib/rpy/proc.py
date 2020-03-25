@@ -3,7 +3,7 @@ from actions import inst_actions
 from debug import DEBUG
 from inst import inst_type_table
 from value import *
-from channel import Channel
+from channel import Channel, Close
 from env import Env
 from code import labels_by_addr, inst_table
 
@@ -24,21 +24,45 @@ class Proc(TableEntry):
         self.state = Proc.INIT
         self.machine = machine
         self.frames = []
+        self.interrupts = []
 
     def frame(self, env, addr):
         if DEBUG: print '--', self.id, labels_by_addr[addr].name
         assert isinstance(addr, int)
-        self.frames.append(Frame(self, env, addr))
+        frame = Frame(self, env, addr)
+        self.frames.append(frame)
+        frame.setup()
 
     def current_frame(self):
         return self.frames[len(self.frames)-1]
 
+    def pop(self):
+        top = self.frames.pop()
+        top.cleanup()
+
     def step(self):
+        if self.check_interrupts(): return
         self.state = Proc.RUNNING
         return self.current_frame().step()
 
-    def interrupt(self, channel):
-        raise NotImplementedError
+    def check_interrupts(self):
+        if not self.interrupts: return
+        interrupt = self.interrupts.pop(0)
+
+        # unwind the stack until the channel goes out of scope
+        if isinstance(interrupt, Close):
+            while self.frames and self.has_channel(interrupt.is_input, interrupt.channel):
+                if DEBUG: print 'unwind!'
+                self.pop()
+
+    def has_channel(self, is_input, channel):
+        return self.current_frame().env.has_channel(is_input, channel)
+
+    def interrupt(self, interrupt):
+        if DEBUG: print 'interrupt', repr(interrupt)
+        self.interrupts.append(interrupt)
+        self.state = Proc.RUNNING
+
 
 class Frame(object):
     def crash(self, message):
@@ -56,6 +80,20 @@ class Frame(object):
 
     def __str__(self):
         return repr(self)
+
+    def register_as_input(self, ch): ch.add_reader(self)
+    def register_as_output(self, ch): ch.add_writer(self)
+    def deregister_as_input(self, ch): ch.rm_reader(self)
+    def deregister_as_output(self, ch): ch.rm_writer(self)
+
+    def setup(self):
+        self.env.each_input(self.register_as_input)
+        self.env.each_output(self.register_as_output)
+
+    def cleanup(self):
+        if DEBUG: print 'cleanup', self
+        self.env.each_input(self.deregister_as_input)
+        self.env.each_output(self.deregister_as_output)
 
     def push(self, val):
         if val is None: raise Crash('pushing None onto the stack')
@@ -97,6 +135,7 @@ class Frame(object):
         return self.stack[len(self.stack)-1]
 
     def put(self, vals):
+        if DEBUG: print 'put', self.env.get_output(0), vals
         self.env.get_output(0).write_all(self.proc, vals)
 
     def get(self, into, n=1):

@@ -4,7 +4,6 @@ label_table = Table()
 labels_by_addr = {}
 
 def register_label(label):
-    print 'register_label', label.name, label.addr
     label_table.register(label)
     labels_by_addr[label.addr] = label
 

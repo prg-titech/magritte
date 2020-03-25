@@ -15,3 +15,6 @@
 
 # vim
 .init.vim
+
+# python
+*.pyc

@@ -1,6 +1,13 @@
 from value import *
 from debug import DEBUG
 
+class Interrupt(object): pass
+
+class Close(Interrupt):
+    def __init__(self, channel, is_input):
+        self.channel = channel
+        self.is_input = is_input
+
 class Blocker(object):
     proc = None
 
@@ -61,18 +68,17 @@ class Channel(Channelable):
     def is_open(self): return self.state != Channel.CLOSED
 
     def read(self, proc, count, into):
-        if self.is_closed(): return proc.interrupt(self)
+        if self.is_closed(): return proc.interrupt(Close(self, True))
         self.receivers.append(Receiver(proc, count, into))
         proc.set_waiting()
 
     def write_all(self, proc, vals):
-        if self.is_closed(): return proc.interrupt(self)
+        if self.is_closed(): return proc.interrupt(Close(self, False))
         self.senders.append(Sender(proc, vals))
         proc.set_waiting()
 
     def resolve(self):
         while self.senders and self.receivers:
-            print 'receive loop'
             (sender, receiver) = (self.senders.pop(0), self.receivers.pop(0))
 
             sender.send(receiver)
@@ -97,24 +103,29 @@ class Channel(Channelable):
         self.writer_count -= 1
         self.writers.remove(frame)
 
-    def rm_reader(self):
+    def rm_reader(self, frame):
         if self.is_closed(): return
         self.reader_count -= 1
         self.readers.remove(frame)
 
-    def check_for_close():
+    def check_for_close(self):
         # set up the initial state if we've got readers or writers
         if self.state == Channel.INIT and self.reader_count > 0 and self.writer_count > 0:
             self.state = Channel.OPEN
             return False
 
         if self.state != Channel.OPEN: return False
-        if self.reader_count > 0: return False
-        if self.writer_count > 0: return False
 
+        if self.reader_count > 0 and self.writer_count > 0: return False
+
+        if DEBUG: print 'closing', self.id
         self.state = Channel.CLOSED
-        for frame in (self.readers or self.writers):
-            frame.interrupt(self)
+
+        for frame in self.readers:
+            frame.proc.interrupt(Close(self, True))
+
+        for frame in self.writers:
+            frame.proc.interrupt(Close(self, False))
 
         return True
 

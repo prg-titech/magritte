@@ -67,24 +67,29 @@ class Machine(object):
         assert False # impossible
 
     def step(self):
-        moved = 0
-        waiting = 0
-
         for proc in self.procs.table:
             if not proc: continue
             if proc.state == Proc.DONE: continue
 
-            if proc.state == Proc.WAITING: waiting += 1
-            else:
-                moved += 1
+            if proc.state in [Proc.RUNNING, Proc.INIT]:
                 proc.step()
 
         for channel in self.channels.table:
-            print 'start resolve'
             assert isinstance(channel, Channel)
             channel.resolve()
 
-        if moved == 0 and waiting > 0: raise Deadlock
-        if moved == 0: raise Done
+        running = 0
+        waiting = 0
+        for proc in self.procs.table:
+            if proc.state == Proc.RUNNING:
+                # if DEBUG: print '> ', proc.id, 'running'
+                running += 1
+            elif proc.state == Proc.WAITING:
+                # if DEBUG: print '> ', proc.id, 'waiting'
+                waiting += 1
+
+
+        if running == 0 and waiting > 0: raise Deadlock
+        if running == 0: raise Done
 
 machine = Machine()

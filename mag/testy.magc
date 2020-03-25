@@ -4,43 +4,38 @@
 "world
 "@!get
 0 symbols
-5 labels
-block-1 0
-main 7
-pipe-lhs-1 11
-pipe-rhs-1 20
-subst-1 28
-33 instructions
+4 labels
+main 0
+pipe-lhs-1 7
+pipe-rhs-1 16
+subst-1 24
+29 instructions
 0 current-env
 1 env-extend
 2 channel
 3 env-pipe 0 0
-4 spawn 11
-5 frame 20
+4 spawn 7
+5 frame 16
 6 return
-7 current-env
-8 env-extend
-9 frame 0
-10 return
-11 collection
-12 const 0
+7 collection
+8 const 0
+9 collect
+10 const 1
+11 collect
+12 const 2
 13 collect
-14 const 1
-15 collect
-16 const 2
-17 collect
-18 invoke
-19 return
-20 collection
-21 const 0
-22 collect
-23 current-env
-24 env-collect
-25 frame 28
-26 invoke
-27 return
-28 collection
-29 const 3
-30 collect
-31 invoke
-32 return
+14 invoke
+15 return
+16 collection
+17 const 0
+18 collect
+19 current-env
+20 env-collect
+21 frame 24
+22 invoke
+23 return
+24 collection
+25 const 3
+26 collect
+27 invoke
+28 return

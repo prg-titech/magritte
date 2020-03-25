@@ -1,8 +1,6 @@
 from machine import machine
 from base import base_env
 
-print base_env
-
 def run_file(filename):
     machine.load_file(filename)
     machine.spawn_label(base_env, 'main')

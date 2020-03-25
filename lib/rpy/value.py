@@ -25,7 +25,11 @@ class Channelable(Value):
     def write(self, proc, val):
         return self.write_all(proc, [val])
 
-print 'channelable def', id(Channelable)
+    def add_writer(self, frame): pass
+    def add_reader(self, frame): pass
+    def rm_writer(self, frame): pass
+    def rm_reader(self, frame): pass
+
 
 class String(Invokable):
     def __init__(self, string):
