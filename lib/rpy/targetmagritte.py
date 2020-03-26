@@ -5,6 +5,7 @@ def run_file(filename):
     machine.load_file(filename)
     machine.spawn_label(base_env, 'main')
     machine.run()
+    return 0
 
 
 def usage():
@@ -22,7 +23,7 @@ def entry_point(argv):
         else:
             filename = arg
 
-    run_file(filename)
+    return run_file(filename)
 
 def target(*args):
     return entry_point

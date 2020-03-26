@@ -195,6 +195,10 @@ module Magritte
       emit 'const', const(Value::Number.new(node.value))
     end
 
+    def visit_intrinsic(node)
+      emit 'intrinsic', sym(node.name)
+    end
+
     def visit_command(node)
       emit 'collection'
       collect(node.vec)
@@ -450,6 +454,7 @@ module Magritte
           addr = label('subst') { visit(node.group); emit 'return' }
 
           emit 'current-env'
+          emit 'env-extend'
           emit 'env-collect'
           emit 'frame', addr
         else

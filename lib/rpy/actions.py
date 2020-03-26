@@ -5,6 +5,9 @@ from util import as_dashed
 from value import *
 from debug import DEBUG
 from const import const_table
+from intrinsic import intrinsics
+from env import Env
+from symbol import revsym # error messages only
 
 inst_actions = [None] * len(inst_type_table)
 inst_action_sig = enforceargs(None, lltype.Array(lltype.Signed))
@@ -144,3 +147,11 @@ def env_pipe(frame, args):
     consumer.set_input(0, channel)
     frame.push(consumer)
     frame.push(producer)
+
+@inst_action
+def intrinsic(frame, args):
+    try:
+        builtin = intrinsics[args[0]]
+        frame.push(builtin)
+    except KeyError:
+        frame.crash('unknown intrinsic: '+revsym(args[0]))

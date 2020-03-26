@@ -235,7 +235,7 @@ module Magritte
     def parse_term(term)
       term.match(~token(:intrinsic)) do |intrinsic|
         error!(intrinsic, "use @allow-intrinsics") unless @allow_intrinsics
-        return AST::String["@!#{intrinsic.value}"]
+        return AST::Intrinsic[intrinsic.value]
       end
 
       term.match(~token(:var)) do |var|

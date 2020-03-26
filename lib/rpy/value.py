@@ -12,6 +12,9 @@ class Value(TableEntry):
     def as_number(self):
         raise Crash('not a number: '+repr(self))
 
+    def __repr__(self):
+        raise NotImplementedError('repr: ', str(self))
+
 class Invokable(Value):
     def invoke(self, frame, args): raise NotImplementedError
 
@@ -102,7 +105,7 @@ class Function(Invokable):
         new_env = frame.env.extend().merge(self.env)
         frame.proc.frame(new_env, self.addr)
 
-class Builtin(Invokable):
+class Intrinsic(Invokable):
     def __init__(self, fn):
         self.fn = fn
 

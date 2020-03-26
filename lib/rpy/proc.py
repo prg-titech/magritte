@@ -69,6 +69,7 @@ class Frame(object):
         raise Crash(message)
 
     def __init__(self, proc, env, addr):
+        assert isinstance(env, Env)
         assert isinstance(addr, int)
         self.proc = proc
         self.env = env

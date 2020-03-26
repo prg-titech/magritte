@@ -33,6 +33,8 @@ class Env(Value):
         for (k, v) in other.dict.iteritems():
             self.dict[k] = v
 
+        return self
+
     def get_input(self, i):
         return self.inputs[i] or (self.parent and self.parent.get_input(i))
 

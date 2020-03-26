@@ -35,7 +35,6 @@ def parse_constant(arr):
 
 def load(machine, loader):
     offsets = {
-        'sym': len(symbol_table),
         'const': len(const_table),
         'label': len(label_table),
         'inst': len(inst_table),
@@ -48,8 +47,9 @@ def load(machine, loader):
 
     # symbols block
     num_symbols = int(loader.get_line().split(' ')[0])
-    for _ in range(0, num_symbols):
-        sym(loader.get_line().split(' ')[0])
+    symbol_translation = [0] * num_symbols
+    for i in range(0, num_symbols):
+        symbol_translation[i] = sym(loader.get_line().split(' ')[0])
 
     num_labels = int(loader.get_line().split(' ')[0])
     for _ in range(0, num_labels):
@@ -66,6 +66,6 @@ def load(machine, loader):
         parts = loader.get_line().split(' ')
         inst_type = inst_type_table.get(parts[1])
         raw_args = map_int(parts[2:])
-        args = inst_type.reindex(raw_args, offsets)
+        args = inst_type.reindex(raw_args, offsets, symbol_translation)
         inst_table.register(Inst(inst_type.id, args))
 

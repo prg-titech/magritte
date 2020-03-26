@@ -15,7 +15,6 @@ module Magritte
 
     class Intrinsic < Tree::Node
       defdata :name
-      defdata :args
     end
 
     class String < Tree::Node

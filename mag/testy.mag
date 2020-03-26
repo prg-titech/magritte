@@ -1,3 +1,5 @@
 @allow-intrinsics
 
-@!put hello world | @!put (@!get)
+(put ?x) = @!put $x
+
+put hello world | put (@!get)

@@ -9,9 +9,16 @@ class InstType(TableEntry):
 
     # important step for loading more than one file: re-index all references
     # to constants and addresses relative to the global table.
-    def reindex(self, arr, offsets):
+    def reindex(self, arr, offsets, symbol_translation):
         for (i, tname) in enumerate(self.static_types):
             if tname:
+                # special case for symbols - we have to re-use
+                # existing symbol ids, so the translation has to
+                # be done manually
+                if tname == 'sym':
+                    arr[i] = symbol_translation[arr[i]]
+                    continue
+
                 try:
                     arr[i] += offsets[tname]
                 except IndexError:
@@ -81,6 +88,7 @@ mkinst('pop', [], [None], [], 'pop')
 # functions
 mkinst('closure', ['inst'], ['env'], ['closure'], 'make a new closure')
 mkinst('last-status', [], [], ['status'], 'load the last status')
+mkinst('intrinsic', ['sym'], [], ['builtin'], 'load an intrinsic fn')
 
 # channels
 mkinst('channel', [], [], ['channel'], 'make a new channel')
