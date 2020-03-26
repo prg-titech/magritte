@@ -8,6 +8,10 @@ class Close(Interrupt):
         self.channel = channel
         self.is_input = is_input
 
+    def s(self):
+        direction = 'read' if self.is_input else 'write'
+        return '<close:%s %s>' % (self.channel.s(), direction)
+
 class Blocker(object):
     proc = None
 
@@ -21,7 +25,7 @@ class Receiver(Blocker):
 
     def receive(self, val):
         if DEBUG: print 'receiving', val, 'into', self.into
-        self.into.push(val)
+        self.into.write(self.proc, val)
         self.count -= 1
         if DEBUG: print 'remaining', self.count, self.is_done()
         if self.is_done(): self.proc.set_running()
@@ -47,7 +51,9 @@ class Sender(Blocker):
         return self.index >= len(self.values)
 
     def send(self, receiver):
+        if DEBUG: print 'sending', self.values, self.index, self.current_val()
         receiver.receive(self.next_val())
+        if DEBUG: print 'sender is_done()', self.is_done()
         if self.is_done(): self.proc.set_running()
 
 class Channel(Channelable):
@@ -63,6 +69,15 @@ class Channel(Channelable):
         self.senders = []
         self.receivers = []
         self.state = Channel.INIT
+
+    def state_name(self):
+        if self.state == Channel.INIT: return 'init'
+        if self.state == Channel.OPEN: return 'open'
+        if self.state == Channel.CLOSED: return 'closed'
+        assert False, 'no such state'
+
+    def s(self):
+        return '<channel %d/%d:%s>' % (self.reader_count, self.writer_count, self.state_name())
 
     def is_closed(self): return self.state == Channel.CLOSED
     def is_open(self): return self.state != Channel.CLOSED
@@ -136,4 +151,7 @@ class Streamer(Channelable):
 
     def write_all(self, proc, vals):
         self.fn(proc, vals)
+
+    def s(self):
+        return '<streamer>'
 

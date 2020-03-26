@@ -1,5 +1,7 @@
 @allow-intrinsics
 
-(put ?x) = @!put $x
+(put ?x ?y) = @!put $x $y
+(get) = @!get
 
-put hello world | put (@!get)
+
+put hello jneen | @!take 2

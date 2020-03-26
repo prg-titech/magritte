@@ -1,4 +1,6 @@
 from table import Table, TableEntry
+from symbol import revsym
+from intrinsic import intrinsics
 
 class InstType(TableEntry):
     def __init__(self, name, static_types, in_types, out_types, doc):
@@ -19,11 +21,17 @@ class InstType(TableEntry):
                     arr[i] = symbol_translation[arr[i]]
                     continue
 
-                try:
-                    arr[i] += offsets[tname]
-                except IndexError:
-                    print 'oops', self.name, arr, offsets, tname
-                    raise
+                # special case for intrinsics, which are a static table
+                if tname == 'intrinsic':
+                    intrinsic_name = revsym(symbol_translation[arr[i]])
+                    new_id = intrinsics.get(intrinsic_name).id
+                    arr[i] = intrinsics.get(intrinsic_name).id
+                    continue
+
+                arr[i] += offsets[tname]
+                    # except IndexError:
+                    #     print 'oops' # , self.name, arr, offsets, tname
+                    #     raise
 
         return arr
 
@@ -88,7 +96,7 @@ mkinst('pop', [], [None], [], 'pop')
 # functions
 mkinst('closure', ['inst'], ['env'], ['closure'], 'make a new closure')
 mkinst('last-status', [], [], ['status'], 'load the last status')
-mkinst('intrinsic', ['sym'], [], ['builtin'], 'load an intrinsic fn')
+mkinst('intrinsic', ['intrinsic'], [], ['intrinsic'], 'load an intrinsic fn')
 
 # channels
 mkinst('channel', [], [], ['channel'], 'make a new channel')

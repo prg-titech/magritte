@@ -17,11 +17,17 @@ class Env(Value):
 
         return out
 
-    def __repr__(self):
-        return '<env %s>' % repr(self.as_dict())
+    def s(self):
+        out = ['<env ']
+        for (k, v) in self.as_dict().iteritems():
+            out.append('%s = %s' % (k, v.s()))
+
+        out.append('>')
+
+        return ''.join(out)
 
     def __str__(self):
-        return repr(self)
+        return self.s()
 
     def extend(self):
         return Env(self)

@@ -33,6 +33,11 @@ def swap(frame, args):
     frame.push(y)
 
 @inst_action
+def dup(frame, args):
+    if DEBUG: print 'dup', frame.top().s()
+    frame.push(frame.top())
+
+@inst_action
 def frame(frame, args):
     env = frame.pop_env()
     addr = args[0]
@@ -69,6 +74,8 @@ def index(frame, args):
     elif isinstance(source, Vector):
         frame.push(source.values[idx])
     else:
+        if DEBUG: print source.s()
+        if DEBUG: print 'frame: ', frame.s()
         frame.crash('not indexable')
 
 @inst_action
@@ -80,6 +87,7 @@ def let(frame, args):
     val = frame.pop()
     env = frame.pop()
     sym = args[0]
+    if DEBUG: print revsym(sym), '=', val.s()
     env.let(sym, val)
 
 @inst_action
@@ -90,6 +98,23 @@ def vector(frame, args):
 @inst_action
 def env(frame, args):
     frame.push(Env())
+
+@inst_action
+def ref(frame, args):
+    env = frame.pop_env()
+    ref = env.lookup_ref(args[0])
+    frame.push(ref)
+
+@inst_action
+def ref_get(frame, args):
+    ref = frame.pop_ref()
+    frame.push(ref.ref_get())
+
+@inst_action
+def ref_set(frame, args):
+    val = frame.pop()
+    ref = frame.pop_ref()
+    ref.ref_set(val)
 
 @inst_action
 def jump(frame, args):
@@ -112,7 +137,7 @@ def invoke(frame, args):
     if frame.current_inst().id == InstType.RETURN:
         frame.proc.frames.pop()
 
-    collection.values[0].invoke(frame, collection.values[1:])
+    collection.values[0].invoke(frame, collection)
 
 @inst_action
 def closure(frame, args):
@@ -151,7 +176,7 @@ def env_pipe(frame, args):
 @inst_action
 def intrinsic(frame, args):
     try:
-        builtin = intrinsics[args[0]]
+        builtin = intrinsics.lookup(args[0])
         frame.push(builtin)
-    except KeyError:
+    except IndexError:
         frame.crash('unknown intrinsic: '+revsym(args[0]))

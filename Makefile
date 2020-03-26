@@ -35,3 +35,15 @@ sigplan-watch:
 .PHONY: clean
 clean:
 	rm -f -- $(CLEAN)
+
+targetmagritte-c:
+	./bin/rpython-compile ./lib/rpy/targetmagritte.py
+
+%.magc: %.mag
+	./bin/mag -c $^
+
+
+
+.PHONY: hello-world
+hello-world: targetmagritte-c mag/testy.magc
+	./targetmagritte-c mag/testy.magc

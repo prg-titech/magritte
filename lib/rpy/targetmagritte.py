@@ -1,8 +1,17 @@
 from machine import machine
 from base import base_env
+from load import load
+import os
 
 def run_file(filename):
-    machine.load_file(filename)
+    fd = -1
+
+    try:
+        fd = os.open(filename, os.O_RDONLY, 0o777)
+        load(fd)
+    finally:
+        os.close(fd)
+
     machine.spawn_label(base_env, 'main')
     machine.run()
     return 0
@@ -22,6 +31,10 @@ def entry_point(argv):
             usage()
         else:
             filename = arg
+
+    if filename is None:
+        usage()
+        return 1
 
     return run_file(filename)
 

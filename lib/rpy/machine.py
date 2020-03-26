@@ -5,7 +5,6 @@ import rpython.rtyper.lltypesystem.lltype as lltype
 from table import Table
 from util import as_dashed, map_int
 from value import *
-from load import load
 from proc import Proc, Frame
 from debug import DEBUG
 from channel import *
@@ -45,9 +44,6 @@ class Machine(object):
 
     def make_channel(self):
         return self.channels.register(Channel())
-
-    def load_file(self, filename):
-        load(self, FileLoader(filename))
 
     def spawn_label(self, env, label):
         self.spawn(env, label_table.get(label).addr)

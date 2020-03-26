@@ -59,6 +59,10 @@ module Magritte
       def size
         @instrs.size
       end
+
+      def to_s
+        "@#{@name}"
+      end
     end
 
     def initialize(root)
@@ -119,12 +123,13 @@ module Magritte
         emit 'return'
       end
 
-      finalize
-
       self
     end
 
     def finalize
+      return if @finalized
+      @finalized = true
+
       offset = 0
       labels = @labels.values.sort_by(&:name)
 
@@ -136,36 +141,70 @@ module Magritte
       labels.each(&:offset_jumps!)
     end
 
+    def render_decomp(out)
+      out << "==== constants\n"
+      @constant_table.each_with_index do |const, i|
+        out << i << " " << const << "\n"
+      end
+
+      out << "==== symbols\n"
+      @symbol_table.each_with_index do |sym, i|
+        out << i << " " << sym << "\n"
+      end
+
+      out << "==== code\n"
+      @labels.values.each do |label|
+        out << label.name << ":"
+        out << " " * (16 - label.name.size) << label.trace.repr if label.trace
+        out << "\n"
+        label.instrs.each do |instr|
+          out << "  " << instr.map(&:to_s).join(' ') << "\n"
+        end
+      end
+    end
+
+    INT_FORMAT = 'L'
+
+    def render_str(out, str)
+      out << [str.size].pack(INT_FORMAT)
+      out << str
+    end
+
     def render(out)
-      out << @constant_table.size << " constants\n"
+      finalize
+
+      out << [@constant_table.size].pack(INT_FORMAT)
       @constant_table.each do |const|
         case const
         when Value::Number
-          out << '#' << const.repr
+          out << '#'
+          out << [const.value].pack(INT_FORMAT)
         when Value::String
-          out << '"' << const.repr.gsub("\\", "\\\\").gsub("\n", "\\n")
+          out << '"'
+          render_str(out, const.value)
         else raise 'oh no'
         end
-        out << "\n"
       end
 
-      out << @symbol_table.size << " symbols\n"
+      out << [@symbol_table.size].pack(INT_FORMAT)
       @symbol_table.each do |sym|
-        out << sym << "\n"
+        render_str(out, sym)
       end
 
       labels = @labels.values.sort_by(&:addr)
-      out << labels.size << " labels\n"
+      out << [labels.size].pack(INT_FORMAT)
       labels.each do |label|
-        line = "#{label.name} #{label.addr}"
-        line << " #{label.trace.repr}" if label.trace
-        out << line << "\n"
+        render_str out, label.name
+        out << [label.addr].pack(INT_FORMAT)
+        out << (label.trace ? [1] : [0]).pack(INT_FORMAT)
+        render_str(out, label.trace.repr) if label.trace
       end
 
       instrs = labels.flat_map(&:instrs)
-      out << instrs.size << " instructions\n"
-      instrs.each_with_index do |inst, i|
-        out << "#{i} " << inst.join(' ') << "\n"
+      out << [instrs.size].pack(INT_FORMAT)
+      instrs.each do |(name, *args)|
+        render_str out, name
+        out << [args.size, *args].pack("#{INT_FORMAT}*")
       end
 
       out
@@ -246,33 +285,30 @@ module Magritte
       emit 'spawn', addr
     end
 
-    def compile_patterns(patterns, bodies, failto, contto)
+    def compile_patterns(name, range, patterns, bodies, failto)
       start_label = @current_label
-      labels = patterns.map { label('pattern') }
+      labels = (0...patterns.size).map { |i| label("#{name}-#{i}", range) }
       fallthrough = labels[1..] + [failto]
 
       patterns.zip(labels, fallthrough, bodies) do |pat, label, failto, body|
-        body_label = label('body') do
-          # we assume the match-bound env is on the stack,
-          # and the closure is already bound
-          visit(body)
-          emit 'current-env'
-          emit 'env-extend'
-          emit 'swap'
-          emit 'env-merge'
-        end
-
-        PatternCompiler.new(self, failto, body_label).visit(pat)
+        @current_label = label
+        PatternCompiler.new(self, failto).visit(pat)
+        visit(body)
+        emit 'return'
       end
+
+      labels
+    ensure
+      @current_label = start_label
     end
 
     def visit_lambda(node)
       # TODO: make this global or unnecessary
       crash = label('crash') { emit 'crash' }
-      cont = label('cont')
+      pattern_labels = compile_patterns(node.name, node.range, node.patterns, node.bodies, crash)
 
       addr = label('lambda', node.range) do
-        compile_patterns(node.patterns, node.bodies, crash, cont)
+        emit 'jump', pattern_labels.first
       end
 
       free = @free_vars[node]
@@ -289,7 +325,7 @@ module Magritte
         emit 'let', sym(var)
       end
 
-      emit 'closure', addr
+      emit 'closure', pattern_labels.first
     end
 
     def visit_assignment(node)
@@ -401,10 +437,9 @@ module Magritte
     class PatternCompiler < Tree::Walker
       # should fail to the failto label, or continue to the contto label
       # with the new env on the stack
-      def initialize(compiler, failto, contto)
+      def initialize(compiler, failto)
         @compiler = compiler
         @failto = failto
-        @contto = contto
       end
 
       def emit(*a); @compiler.emit(*a); end
@@ -421,7 +456,7 @@ module Magritte
       end
 
       def visit_binder(node)
-        emit 'dup'
+        # no dup here - we want to pop off the last value
         emit 'current-env'
         emit 'swap'
         emit 'let', sym(node.name)
@@ -429,7 +464,8 @@ module Magritte
 
       def visit_vector_pattern(node)
         node.patterns.each_with_index do |el_pattern, i|
-          emit 'index', i
+          emit 'dup'
+          emit 'index', i+1
           visit(el_pattern)
         end
       end

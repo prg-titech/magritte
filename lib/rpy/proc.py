@@ -32,6 +32,7 @@ class Proc(TableEntry):
         frame = Frame(self, env, addr)
         self.frames.append(frame)
         frame.setup()
+        return frame
 
     def current_frame(self):
         return self.frames[len(self.frames)-1]
@@ -41,7 +42,9 @@ class Proc(TableEntry):
         top.cleanup()
 
     def step(self):
-        if self.check_interrupts(): return
+        # IMPORTANT: only check interrupts when we're waiting!
+        if self.state == Proc.WAITING and self.check_interrupts(): return
+
         self.state = Proc.RUNNING
         return self.current_frame().step()
 
@@ -59,7 +62,7 @@ class Proc(TableEntry):
         return self.current_frame().env.has_channel(is_input, channel)
 
     def interrupt(self, interrupt):
-        if DEBUG: print 'interrupt', repr(interrupt)
+        if DEBUG: print 'interrupt', interrupt.s()
         self.interrupts.append(interrupt)
         self.state = Proc.RUNNING
 
@@ -76,55 +79,73 @@ class Frame(object):
         self.pc = self.addr = addr
         self.stack = []
 
-    def __repr__(self):
-        return '<frame(%s:%d) %s>' % (self.label_name(), self.addr, repr(self.stack))
+    def s(self):
+        out = ['<frame']
+        out.append(str(self.proc.id))
+        out.append('(')
+        out.append(self.label_name())
+        out.append(':')
+        out.append(str(self.addr))
+        for el in self.stack:
+            out.append(' ')
+            out.append(el.s())
+
+        out.append('>')
+        return ''.join(out)
 
     def __str__(self):
-        return repr(self)
-
-    def register_as_input(self, ch): ch.add_reader(self)
-    def register_as_output(self, ch): ch.add_writer(self)
-    def deregister_as_input(self, ch): ch.rm_reader(self)
-    def deregister_as_output(self, ch): ch.rm_writer(self)
+        return self.s()
 
     def setup(self):
-        self.env.each_input(self.register_as_input)
-        self.env.each_output(self.register_as_output)
+        self.env.each_input(register_as_input, self)
+        self.env.each_output(register_as_output, self)
 
     def cleanup(self):
         if DEBUG: print 'cleanup', self
-        self.env.each_input(self.deregister_as_input)
-        self.env.each_output(self.deregister_as_output)
+        self.env.each_input(deregister_as_input, self)
+        self.env.each_output(deregister_as_output, self)
 
     def push(self, val):
         if val is None: raise Crash('pushing None onto the stack')
         self.stack.append(val)
 
     def pop(self):
-        if not self.stack.pop: raise Crash('empty stack!')
-        return self.stack.pop()
+        if not self.stack: raise Crash('empty stack!')
+        val = self.stack.pop()
+        assert isinstance(val, Value)
+        return val
 
     def pop_number(self):
         return self.pop().as_number()
 
     def pop_string(self, message='not a string: %s'):
         val = self.pop()
-        if not isinstance(val, String): raise Crash(message % repr(val))
+        if not isinstance(val, String): raise Crash(message % val.s())
         return val.value
 
     def pop_env(self, message='not an env: %s'):
         val = self.pop()
-        if not isinstance(val, Env): raise Crash(message % repr(val))
+        if not isinstance(val, Env): raise Crash(message % val.s())
+        return val
+
+    def pop_ref(self, message='not a ref: %s'):
+        val = self.pop()
+        if not isinstance(val, Ref): raise Crash(message % val.s())
         return val
 
     def pop_channel(self, message='not a channel: %s'):
         val = self.pop()
-        if not isinstance(val, Channel): raise Crash(message % repr(val))
+        if not isinstance(val, Channel): raise Crash(message % val.s())
+        return val
+
+    def pop_vec(self, message='not a vector: %s'):
+        val = self.pop()
+        if not isinstance(val, Vector): raise Crash(message % val.s())
         return val
 
     def top_collection(self, message='not a collection: %s'):
         val = self.top()
-        if not isinstance(val, Collection): raise Crash(message % repr(val))
+        if not isinstance(val, Collection): raise Crash(message % val.s())
         return val
 
     def pop_collection(self, message='not a collection: %s'):
@@ -166,4 +187,9 @@ class Frame(object):
 
     def current_inst(self):
         return inst_table.lookup(self.pc)
+
+def register_as_input(ch, frame): ch.add_reader(frame)
+def register_as_output(ch, frame): ch.add_writer(frame)
+def deregister_as_input(ch, frame): ch.rm_reader(frame)
+def deregister_as_output(ch, frame): ch.rm_writer(frame)
 

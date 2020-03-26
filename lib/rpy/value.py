@@ -1,5 +1,7 @@
 from table import TableEntry
 from symbol import sym
+from debug import DEBUG
+from code import labels_by_addr
 
 class Crash(Exception): pass
 class Done(Exception): pass
@@ -10,10 +12,10 @@ class Value(TableEntry):
     pass
 
     def as_number(self):
-        raise Crash('not a number: '+repr(self))
+        raise Crash('not a number: '+self.s())
 
-    def __repr__(self):
-        raise NotImplementedError('repr: ', str(self))
+    def s(self):
+        raise NotImplementedError
 
 class Invokable(Value):
     def invoke(self, frame, args): raise NotImplementedError
@@ -38,7 +40,7 @@ class String(Invokable):
     def __init__(self, string):
         self.value = string
 
-    def __repr__(self): return self.value
+    def s(self): return self.value
 
     def invoke(self, frame, args):
         invokee = None
@@ -51,7 +53,7 @@ class String(Invokable):
         if isinstance(invokee, Invokable):
             invokee.invoke(frame, args)
         else:
-            frame.crash('not invokable: '+repr(invokee))
+            frame.crash('not invokable: '+invokee.s())
 
 class Int(Value):
     def __init__(self, value):
@@ -60,7 +62,7 @@ class Int(Value):
     def as_number(self):
         return self.value
 
-    def __repr__(self): return str(self.value)
+    def s(self): return str(self.value)
 
 class Collection(Channelable):
     def __init__(self):
@@ -76,6 +78,15 @@ class Collection(Channelable):
     def write_all(self, proc, values):
         self.push_all(values)
 
+    def s(self):
+        out = ['<collection']
+        for value in self.values:
+            out.append(' ')
+            out.append(value.s())
+        out.append('>')
+
+        return ''.join(out)
+
 class Vector(Invokable):
     def __init__(self, values):
         self.values = values
@@ -84,10 +95,21 @@ class Vector(Invokable):
         if len(self.values) == 0:
             return frame.crash('empty invoke')
 
-        if isinstance(Invokable, self.values[0]):
-            new_args = self.values[1:]
-            new_args.extend(args)
-            self.values[0].invoke(frame, new_args)
+        if not isinstance(self.values[0], Invokable): raise Crash('not invokable: %s' % self.values[0].s())
+        new_args = Collection()
+        new_args.values = self.values[1:]
+        new_args.values.extend(args.values)
+        self.values[0].invoke(frame, new_args)
+
+
+    def s(self):
+        out = ['<vec']
+        for val in self.values:
+            out.append(' ')
+            out.append(val.s())
+
+        out.append('>')
+        return ''.join(out)
 
 class Ref(Value):
     def __init__(self, value):
@@ -96,19 +118,34 @@ class Ref(Value):
     def ref_get(self): return self.value
     def ref_set(self, value): self.value = value
 
+    def s(self):
+        return '<ref %s>' % self.value
+
 class Function(Invokable):
     def __init__(self, env, addr):
         self.env = env
         self.addr = addr
 
-    def invoke(self, frame, args):
+    def label(self):
+        return labels_by_addr[self.addr]
+
+    def invoke(self, frame, collection):
+        if DEBUG: print '()', self.label().s()
         new_env = frame.env.extend().merge(self.env)
-        frame.proc.frame(new_env, self.addr)
+        new_frame = frame.proc.frame(new_env, self.addr)
+        new_frame.push(collection)
+
+    def s(self):
+        return '<function '+self.label().s()+'>'
 
 class Intrinsic(Invokable):
-    def __init__(self, fn):
+    def __init__(self, name, fn):
+        self.name = name
         self.fn = fn
 
-    def invoke(self, frame, args):
-        self.fn(frame, args)
+    def invoke(self, frame, collection):
+        self.fn(frame, collection.values)
+
+    def s(self):
+        return '@!'+self.name
 

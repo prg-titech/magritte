@@ -15,7 +15,10 @@ module Magritte
       file = @files[0]
       ast = Parser.parse(Skeleton.parse(Lexer.new(file, File.read(file))))
 
-      Magritte::Compiler.new(ast).compile.render($stdout)
+      compiler = Magritte::Compiler.new(ast)
+      compiler.compile
+      compiler.render_decomp(File.open("#{file}x", 'w'))
+      compiler.render(File.open("#{file}c", 'w'))
     end
 
     def run
