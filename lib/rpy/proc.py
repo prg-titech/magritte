@@ -1,6 +1,6 @@
 from table import TableEntry
 from actions import inst_actions
-from debug import DEBUG
+from debug import debug
 from inst import inst_type_table
 from value import *
 from channel import Channel, Close
@@ -27,7 +27,7 @@ class Proc(TableEntry):
         self.interrupts = []
 
     def frame(self, env, addr):
-        if DEBUG: print '--', self.id, labels_by_addr[addr].name
+        if debug(): print '--', self.id, labels_by_addr[addr].name
         assert isinstance(addr, int)
         frame = Frame(self, env, addr)
         self.frames.append(frame)
@@ -55,14 +55,14 @@ class Proc(TableEntry):
         # unwind the stack until the channel goes out of scope
         if isinstance(interrupt, Close):
             while self.frames and self.has_channel(interrupt.is_input, interrupt.channel):
-                if DEBUG: print 'unwind!'
+                if debug(): print 'unwind!'
                 self.pop()
 
     def has_channel(self, is_input, channel):
         return self.current_frame().env.has_channel(is_input, channel)
 
     def interrupt(self, interrupt):
-        if DEBUG: print 'interrupt', interrupt.s()
+        if debug(): print 'interrupt', interrupt.s()
         self.interrupts.append(interrupt)
         self.state = Proc.RUNNING
 
@@ -101,7 +101,7 @@ class Frame(object):
         self.env.each_output(register_as_output, self)
 
     def cleanup(self):
-        if DEBUG: print 'cleanup', self
+        if debug(): print 'cleanup', self
         self.env.each_input(deregister_as_input, self)
         self.env.each_output(deregister_as_output, self)
 
@@ -157,7 +157,7 @@ class Frame(object):
         return self.stack[len(self.stack)-1]
 
     def put(self, vals):
-        if DEBUG: print 'put', self.env.get_output(0), vals
+        if debug(): print 'put', self.env.get_output(0), vals
         self.env.get_output(0).write_all(self.proc, vals)
 
     def get(self, into, n=1):
@@ -168,7 +168,7 @@ class Frame(object):
 
     # @enforceargs(None, lltype.Signed, lltype.Array(lltype.Signed))
     def run_inst_action(self, inst_id, static_args):
-        if DEBUG:
+        if debug():
             print '+', self.proc.id, inst_type_table.lookup(inst_id).name, static_args
 
         action = inst_actions[inst_id]

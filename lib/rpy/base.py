@@ -3,13 +3,13 @@ from util import as_dashed
 from symbol import sym
 from channel import Streamer
 from value import *
-from debug import DEBUG
+from debug import debug
 
 base_env = Env()
 
 def global_out(proc, vals):
     for val in vals:
-        if DEBUG: print '==== GLOBAL_OUT ====', val.s()
+        if debug(): print '==== GLOBAL_OUT ====', val.s()
         print val.s()
 
 base_env.set_output(0, Streamer(global_out))

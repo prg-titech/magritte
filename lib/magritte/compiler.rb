@@ -465,9 +465,18 @@ module Magritte
       def visit_vector_pattern(node)
         node.patterns.each_with_index do |el_pattern, i|
           emit 'dup'
-          emit 'index', i+1
+          emit 'index', i
           visit(el_pattern)
         end
+
+        if node.rest
+          emit 'rest', node.patterns.size
+          visit(node.rest)
+        end
+      end
+
+      def visit_rest_pattern(node)
+        visit(node.binder)
       end
 
       def visit_default_pattern(node)

@@ -2,7 +2,7 @@ from util import as_dashed
 from table import Table, TableEntry
 from value import *
 from symbol import sym
-from debug import DEBUG
+from debug import debug
 
 intrinsics = Table()
 
@@ -10,8 +10,8 @@ intrinsics = Table()
 def intrinsic(fn):
     intrinsic_name = as_dashed(fn.__name__)
     def wrapper(frame, args):
-        if DEBUG: print frame.proc.id, ':'+intrinsic_name, args
-        return fn(frame, args[1:])
+        if debug(): print frame.proc.id, ':'+intrinsic_name, args
+        return fn(frame, args)
 
     # make sure the name is stored as a symbol
     sym(intrinsic_name)

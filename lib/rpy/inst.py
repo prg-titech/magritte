@@ -41,6 +41,7 @@ class Inst(TableEntry):
     def __init__(self, inst_id, arguments):
         for a in arguments:
             assert isinstance(a, int)
+            assert a >= 0
 
         self.inst_id = inst_id
         assert isinstance(arguments, list)
@@ -103,3 +104,4 @@ mkinst('channel', [], [], ['channel'], 'make a new channel')
 mkinst('env-set-output', [None], ['env', 'channel'], [], 'set the output on an env')
 mkinst('env-set-input', [None], ['env', 'channel'], [], 'set the input on an env')
 mkinst('crash', [], ['string'], [], 'crash')
+mkinst('rest', [None], ['collection'], [], 'get the remaining elements of a collection')

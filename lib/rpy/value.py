@@ -1,6 +1,6 @@
 from table import TableEntry
 from symbol import sym
-from debug import DEBUG
+from debug import debug
 from code import labels_by_addr
 
 class Crash(Exception): pass
@@ -93,7 +93,7 @@ class Vector(Invokable):
 
     def invoke(self, frame, args):
         if len(self.values) == 0:
-            return frame.crash('empty invoke')
+            raise Crash('empty invoke')
 
         if not isinstance(self.values[0], Invokable): raise Crash('not invokable: %s' % self.values[0].s())
         new_args = Collection()
@@ -130,7 +130,7 @@ class Function(Invokable):
         return labels_by_addr[self.addr]
 
     def invoke(self, frame, collection):
-        if DEBUG: print '()', self.label().s()
+        if debug(): print '()', self.label().s()
         new_env = frame.env.extend().merge(self.env)
         new_frame = frame.proc.frame(new_env, self.addr)
         new_frame.push(collection)

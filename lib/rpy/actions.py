@@ -3,7 +3,7 @@ import rpython.rtyper.lltypesystem.lltype as lltype
 from inst import inst_type_table, InstType
 from util import as_dashed
 from value import *
-from debug import DEBUG
+from debug import debug
 from const import const_table
 from intrinsic import intrinsics
 from env import Env
@@ -34,7 +34,7 @@ def swap(frame, args):
 
 @inst_action
 def dup(frame, args):
-    if DEBUG: print 'dup', frame.top().s()
+    if debug(): print 'dup', frame.top().s()
     frame.push(frame.top())
 
 @inst_action
@@ -74,8 +74,8 @@ def index(frame, args):
     elif isinstance(source, Vector):
         frame.push(source.values[idx])
     else:
-        if DEBUG: print source.s()
-        if DEBUG: print 'frame: ', frame.s()
+        if debug(): print source.s()
+        if debug(): print 'frame: ', frame.s()
         frame.crash('not indexable')
 
 @inst_action
@@ -87,7 +87,7 @@ def let(frame, args):
     val = frame.pop()
     env = frame.pop()
     sym = args[0]
-    if DEBUG: print revsym(sym), '=', val.s()
+    if debug(): print revsym(sym), '=', val.s()
     env.let(sym, val)
 
 @inst_action
@@ -123,7 +123,7 @@ def jump(frame, args):
 @inst_action
 def return_(frame, args):
     frame.proc.pop()
-    if DEBUG: print 'after-return', frame.proc.frames
+    if debug(): print 'after-return', frame.proc.frames
     if not frame.proc.frames:
         frame.proc.set_done()
 
@@ -137,7 +137,10 @@ def invoke(frame, args):
     if frame.current_inst().id == InstType.RETURN:
         frame.proc.frames.pop()
 
-    collection.values[0].invoke(frame, collection)
+    invokee = collection.values.pop(0)
+    if not isinstance(invokee, Invokable): raise Crash('cannot invoke %s' % invokee.s())
+
+    invokee.invoke(frame, collection)
 
 @inst_action
 def closure(frame, args):
@@ -180,3 +183,17 @@ def intrinsic(frame, args):
         frame.push(builtin)
     except IndexError:
         frame.crash('unknown intrinsic: '+revsym(args[0]))
+
+@inst_action
+def rest(frame, args):
+    size = args[0]
+    assert size >= 0
+    source = frame.pop()
+    if isinstance(source, Collection):
+        frame.push(Vector(source.values[size:]))
+    elif isinstance(source, Vector):
+        frame.push(Vector(source.values[size:]))
+    else:
+        if debug(): print source.s()
+        if debug(): print 'frame: ', frame.s()
+        frame.crash('not indexable')

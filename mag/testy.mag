@@ -1,6 +1,6 @@
 @allow-intrinsics
 
-(put ?x ?y) = @!put $x $y
+(put (?a)) = @!for $a
 (get) = @!get
 
 

@@ -6,7 +6,7 @@ from table import Table
 from util import as_dashed, map_int
 from value import *
 from proc import Proc, Frame
-from debug import DEBUG
+from debug import debug
 from channel import *
 from base import base_env
 from symbol import symbol_table
@@ -54,7 +54,7 @@ class Machine(object):
         proc.frame(env, addr)
 
     def run(self):
-        if DEBUG: print 'run!'
+        if debug(): print 'run!'
         try:
             while True: self.step()
         except Done:
@@ -78,10 +78,10 @@ class Machine(object):
         waiting = 0
         for proc in self.procs.table:
             if proc.state == Proc.RUNNING:
-                # if DEBUG: print '> ', proc.id, 'running'
+                # if debug(): print '> ', proc.id, 'running'
                 running += 1
             elif proc.state == Proc.WAITING:
-                # if DEBUG: print '> ', proc.id, 'waiting'
+                # if debug(): print '> ', proc.id, 'waiting'
                 waiting += 1
 
 

@@ -1,5 +1,5 @@
 from value import *
-from debug import DEBUG
+from debug import debug
 
 class Interrupt(object): pass
 
@@ -24,10 +24,10 @@ class Receiver(Blocker):
         self.count = count
 
     def receive(self, val):
-        if DEBUG: print 'receiving', val, 'into', self.into
+        if debug(): print 'receiving', val, 'into', self.into
         self.into.write(self.proc, val)
         self.count -= 1
-        if DEBUG: print 'remaining', self.count, self.is_done()
+        if debug(): print 'remaining', self.count, self.is_done()
         if self.is_done(): self.proc.set_running()
 
     def is_done(self):
@@ -51,9 +51,9 @@ class Sender(Blocker):
         return self.index >= len(self.values)
 
     def send(self, receiver):
-        if DEBUG: print 'sending', self.values, self.index, self.current_val()
+        if debug(): print 'sending', self.values, self.index, self.current_val()
         receiver.receive(self.next_val())
-        if DEBUG: print 'sender is_done()', self.is_done()
+        if debug(): print 'sender is_done()', self.is_done()
         if self.is_done(): self.proc.set_running()
 
 class Channel(Channelable):
@@ -133,7 +133,7 @@ class Channel(Channelable):
 
         if self.reader_count > 0 and self.writer_count > 0: return False
 
-        if DEBUG: print 'closing', self.id
+        if debug(): print 'closing', self.id
         self.state = Channel.CLOSED
 
         for frame in self.readers:

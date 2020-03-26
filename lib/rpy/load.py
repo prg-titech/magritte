@@ -2,7 +2,7 @@ from table import Table, Label
 from inst import inst_type_table, Inst
 from value import *
 from util import map_int
-from debug import DEBUG
+from debug import debug
 from const import const_table
 from code import inst_table, label_table, register_label
 from symbol import symbol_table, sym
@@ -14,7 +14,9 @@ def unescape(s):
     return s.replace('\\n', '\n').replace('\\\\', '\\')
 
 def read_int(fd):
-    return runpack('i', os.read(fd, 4))
+    out = runpack('i', os.read(fd, 4))
+    assert out >= 0 # unsigned
+    return out
 
 def read_str(fd):
     length = read_int(fd)

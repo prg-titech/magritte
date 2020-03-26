@@ -88,7 +88,7 @@ class Env(Value):
             if self.parent:
                 return self.parent.lookup_ref(key)
             else:
-                raise
+                raise KeyError(revsym(key))
 
     def let(self, key, val):
         self.dict[key] = Ref(val)
