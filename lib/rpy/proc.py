@@ -1,7 +1,7 @@
 from table import TableEntry
 from actions import inst_actions
 from debug import debug
-from inst import inst_type_table
+from inst import inst_type_table, InstType
 from value import *
 from channel import Channel, Close
 from env import Env
@@ -11,14 +11,28 @@ class Proc(TableEntry):
     INIT = 0
     RUNNING = 1
     WAITING = 2
-    DONE = 3
-    TERMINATED = 4
+    INTERRUPTED = 3
+    DONE = 4
+    TERMINATED = 5
 
     def set_init(self): self.state = Proc.INIT
     def set_running(self): self.state = Proc.RUNNING
     def set_waiting(self): self.state = Proc.WAITING
+    def set_interrupted(self): self.state = Proc.INTERRUPTED
     def set_done(self): self.state = Proc.DONE
     def set_terminated(self): self.state = Proc.TERMINATED
+
+    def state_name(self):
+        if self.state == Proc.INIT: return 'init'
+        if self.state == Proc.RUNNING: return 'running'
+        if self.state == Proc.WAITING: return 'waiting'
+        if self.state == Proc.INTERRUPTED: return 'interrupted'
+        if self.state == Proc.DONE: return 'done'
+        if self.state == Proc.TERMINATED: return 'terminated'
+        assert False
+
+    def is_running(self):
+        return self.state in [Proc.INIT, Proc.RUNNING, Proc.INTERRUPTED]
 
     def __init__(self, machine):
         self.state = Proc.INIT
@@ -29,10 +43,23 @@ class Proc(TableEntry):
     def frame(self, env, addr):
         if debug(): print '--', self.id, labels_by_addr[addr].name
         assert isinstance(addr, int)
+        eliminated = self.tail_eliminate()
+
+        if eliminated:
+            env = eliminated.env.merge(env)
+
         frame = Frame(self, env, addr)
         self.frames.append(frame)
         frame.setup()
         return frame
+
+    def tail_eliminate(self):
+        out = None
+        while self.frames and self.current_frame().should_eliminate():
+            if debug(): print 'tail eliminating %s' % self.current_frame().s()
+            out = self.frames.pop()
+
+        return out
 
     def current_frame(self):
         return self.frames[len(self.frames)-1]
@@ -43,20 +70,27 @@ class Proc(TableEntry):
 
     def step(self):
         # IMPORTANT: only check interrupts when we're waiting!
-        if self.state == Proc.WAITING and self.check_interrupts(): return
+        if self.state == Proc.INTERRUPTED and self.check_interrupts(): return
 
         self.state = Proc.RUNNING
         return self.current_frame().step()
 
     def check_interrupts(self):
+        print 'check_interrupts', self.s()
         if not self.interrupts: return
         interrupt = self.interrupts.pop(0)
 
         # unwind the stack until the channel goes out of scope
         if isinstance(interrupt, Close):
+            if debug(): print 'channel closed', interrupt.s()
             while self.frames and self.has_channel(interrupt.is_input, interrupt.channel):
                 if debug(): print 'unwind!'
                 self.pop()
+            self.state = Proc.RUNNING
+            return
+
+        # TODO: status types
+        self.state = Proc.TERMINATED
 
     def has_channel(self, is_input, channel):
         return self.current_frame().env.has_channel(is_input, channel)
@@ -64,8 +98,16 @@ class Proc(TableEntry):
     def interrupt(self, interrupt):
         if debug(): print 'interrupt', interrupt.s()
         self.interrupts.append(interrupt)
-        self.state = Proc.RUNNING
+        self.state = Proc.INTERRUPTED
 
+    def s(self):
+        out = ['<proc', str(self.id), ':', self.state_name()]
+        for frame in self.frames:
+            out.append(' ')
+            out.append(frame.s())
+
+        out.append('>')
+        return ''.join(out)
 
 class Frame(object):
     def crash(self, message):
@@ -80,9 +122,9 @@ class Frame(object):
         self.stack = []
 
     def s(self):
-        out = ['<frame']
+        out = ['<frame/']
         out.append(str(self.proc.id))
-        out.append('(')
+        out.append('@')
         out.append(self.label_name())
         out.append(':')
         out.append(str(self.addr))
@@ -184,6 +226,9 @@ class Frame(object):
         self.pc += 1
         self.state = self.run_inst_action(inst.inst_id, inst.arguments)
         return self.state
+
+    def should_eliminate(self):
+        return self.current_inst().inst_id == InstType.RETURN
 
     def current_inst(self):
         return inst_table.lookup(self.pc)

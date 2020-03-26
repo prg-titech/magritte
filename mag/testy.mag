@@ -2,6 +2,10 @@
 
 (put (?a)) = @!for $a
 (get) = @!get
+(take ?n) = @!take $n
 
 
-put hello jneen | @!take 2
+
+(drain) = (@!get; drain)
+(repeat ?x) = (@!put $x; repeat $x)
+repeat yes | drain

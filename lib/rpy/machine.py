@@ -67,8 +67,7 @@ class Machine(object):
             if not proc: continue
             if proc.state == Proc.DONE: continue
 
-            if proc.state in [Proc.RUNNING, Proc.INIT]:
-                proc.step()
+            if proc.is_running(): proc.step()
 
         for channel in self.channels.table:
             assert isinstance(channel, Channel)
@@ -77,7 +76,7 @@ class Machine(object):
         running = 0
         waiting = 0
         for proc in self.procs.table:
-            if proc.state == Proc.RUNNING:
+            if proc.is_running():
                 # if debug(): print '> ', proc.id, 'running'
                 running += 1
             elif proc.state == Proc.WAITING:

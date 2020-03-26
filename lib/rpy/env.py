@@ -39,6 +39,10 @@ class Env(Value):
         for (k, v) in other.dict.iteritems():
             self.dict[k] = v
 
+        # TODO: all channels
+        if other.get_input(0): self.set_input(0, other.get_input(0))
+        if other.get_output(0): self.set_output(0, other.get_output(0))
+
         return self
 
     def get_input(self, i):
