@@ -57,3 +57,5 @@ hello-world: $(VM_BIN) mag/testy.magc
 .PHONY: hello-world-dynamic
 hello-world-dynamic: mag/testy.magc
 	python2 ./lib/rpy/targetmagritte.py mag/testy.magc
+
+CLEAN += **/*.magc **/*.magx build/*

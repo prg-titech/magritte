@@ -15,6 +15,8 @@ from rpython.rlib.jit import JitDriver, elidable
 
 from random import shuffle
 
+jit_driver = JitDriver(greens=['pc'], reds=['env', 'stack'])
+
 ################## machine ####################
 class Machine(object):
     def __init__(self):
@@ -49,6 +51,12 @@ class Machine(object):
             if proc.state == Proc.DONE: continue
 
             if proc.is_running():
+                jit_driver.jit_merge_point(
+                    pc=proc.current_frame().pc,
+                    stack=proc.frames,
+                    env=proc.current_frame().env
+                )
+
                 proc.step()
 
         if debug(): print '%%%%% PHASE: resolve %%%%%'

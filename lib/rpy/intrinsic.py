@@ -29,6 +29,14 @@ def add(frame, args):
     frame.put([Int(total)])
 
 @intrinsic
+def mul(frame, args):
+    product = 1
+    for arg in args:
+        product *= arg.as_number()
+
+    frame.put([Int(product)])
+
+@intrinsic
 def put(frame, args):
     frame.put(args)
 
@@ -43,7 +51,7 @@ def get(frame, args):
 def take(frame, args):
     assert isinstance(args[0], Value)
     count = args[0].as_number()
-    frame.env.get_input(0).read(frame.proc, count, frame.env.get_output(0))
+    frame.env.get_input(0).channelable.read(frame.proc, count, frame.env.get_output(0))
 
 @intrinsic
 def for_(frame, args):

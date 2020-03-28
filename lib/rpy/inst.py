@@ -61,6 +61,7 @@ mkinst('return', [], [], [], 'pop a frame off the stack')
 mkinst('spawn', ['inst'], ['env'], [], 'spawn a new process')
 mkinst('jump', ['inst'], [], [], 'jump')
 mkinst('jumpne', ['inst'], [None, None], [], 'jump if not equal')
+mkinst('jumplt', [None, 'inst'], ['int'], [], 'jump if less than')
 mkinst('invoke', [], ['collection'], [], 'invoke a collection')
 mkinst('jumpfail', ['inst'], ['status'], [], 'jump if the last status is a failure')
 
@@ -69,6 +70,7 @@ mkinst('collection', [], [], ['collection'], 'start a collection')
 mkinst('index', [None], ['vec', 'idx'], [], 'index a vector')
 mkinst('collect', [], ['collection', None], ['collection'], 'collect a single value into a collection')
 mkinst('vector', [], ['collection'], ['vec'], 'make a new vector')
+mkinst('typeof', [], [None], ['str'], 'get the type of a value')
 
 # environments and refs
 mkinst('env', [], [], ['env'], 'make a new env')
@@ -102,3 +104,7 @@ mkinst('env-set-output', [None], ['env', 'channel'], [], 'set the output on an e
 mkinst('env-set-input', [None], ['env', 'channel'], [], 'set the input on an env')
 mkinst('crash', [], ['string'], [], 'crash')
 mkinst('rest', [None], ['collection'], [], 'get the remaining elements of a collection')
+
+mkinst('noop', ['sym'], [], [], 'do nothing. debugging tool for the compiler')
+mkinst('clear', [], [], [], 'flush the value stack down to one element (used in pattern matching)')
+mkinst('size', [], ['vector'], ['int'], 'get the size of a vector or collection')

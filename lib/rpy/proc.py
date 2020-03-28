@@ -121,9 +121,9 @@ class Proc(TableEntry):
         if isinstance(interrupt, Close):
             if debug(): print 'channel closed', interrupt.s()
             if debug(): print 'env:', self.current_frame().env.s()
-            if debug(): print 'has channel?', self.has_channel(interrupt.is_input, interrupt.channel)
+            if debug(): print 'has channel?', self.has_channel(not interrupt.is_input, interrupt.channel)
 
-            while self.frames and self.has_channel(interrupt.is_input, interrupt.channel):
+            while self.frames and self.has_channel(not interrupt.is_input, interrupt.channel):
                 if debug(): print 'unwind!'
                 self.pop()
 
@@ -231,14 +231,9 @@ class Frame(object):
         if not isinstance(val, Vector): raise Crash(message % val.s())
         return val
 
-    def top_collection(self, message='not a collection: %s'):
+    def top_vec(self, message='not a vector: %s'):
         val = self.top()
-        if not isinstance(val, Collection): raise Crash(message % val.s())
-        return val
-
-    def pop_collection(self, message='not a collection: %s'):
-        val = self.top_collection(message)
-        self.pop()
+        if not isinstance(val, Vector): raise Crash(message % val.s())
         return val
 
     def top(self):
@@ -246,10 +241,10 @@ class Frame(object):
 
     def put(self, vals):
         if debug(): print 'put', self.env.get_output(0).s(), ' '.join(v.s() for v in vals)
-        self.env.get_output(0).write_all(self.proc, vals)
+        self.env.get_output(0).channelable.write_all(self.proc, vals)
 
     def get(self, into, n=1):
-        self.env.get_input(0).read(self.proc, n, into)
+        self.env.get_input(0).channelable.read(self.proc, n, into)
 
     def label_name(self):
         return labels_by_addr[self.addr].name
@@ -286,8 +281,8 @@ class Frame(object):
     def current_inst(self):
         return inst_table.lookup(self.pc)
 
-def register_as_input(ch, frame): ch.add_reader(frame)
-def register_as_output(ch, frame): ch.add_writer(frame)
-def deregister_as_input(ch, frame): ch.rm_reader(frame)
-def deregister_as_output(ch, frame): ch.rm_writer(frame)
+def register_as_input(ch, frame): ch.channelable.add_reader(frame)
+def register_as_output(ch, frame): ch.channelable.add_writer(frame)
+def deregister_as_input(ch, frame): ch.channelable.rm_reader(frame)
+def deregister_as_output(ch, frame): ch.channelable.rm_writer(frame)
 

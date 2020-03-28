@@ -1,3 +1,13 @@
 load mag/prelude.mag
 
-iter [add 1] 0 | (& drain) | take 10
+(
+  put [a 1]
+  put [b 2]
+  put [a 3]
+  put [b 4]
+) | each (
+  [a ?x] => put [a (mul 10 $x)]
+  [b ?y] => put [b (mul 100 $y)]
+)
+
+# iter [add 1] 0 | each mul 3 | take 10

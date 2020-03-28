@@ -155,7 +155,7 @@ module Magritte
       out << "==== code\n"
       @labels.values.each do |label|
         out << label.name << ":"
-        out << " " * (16 - label.name.size) << label.trace.repr if label.trace
+        out << " " * [2, 24 - label.name.size].max << label.trace.repr if label.trace
         out << "\n"
         label.instrs.each_with_index do |instr, i|
           out << i << "  " << instr.map(&:to_s).join(' ') << "\n"
@@ -182,7 +182,7 @@ module Magritte
         when Value::String
           out << '"'
           render_str(out, const.value)
-        else raise 'oh no'
+        else raise "oh no, #{const.inspect}"
         end
       end
 
@@ -247,7 +247,6 @@ module Magritte
     def visit_vector(node)
       emit 'collection'
       collect(node.elems)
-      emit 'vector'
     end
 
     def visit_group(node)
@@ -293,7 +292,7 @@ module Magritte
 
       patterns.zip(labels, fallthrough, bodies) do |pat, label, failto, body|
         @current_label = label
-        PatternCompiler.new(self, failto).visit(pat)
+        PatternCompiler.new(self, failto).compile(pat)
         visit(body)
         emit 'return'
       end
@@ -449,7 +448,8 @@ module Magritte
       def sym(*a, &b); @compiler.sym(*a, &b); end
 
       def compile(node)
-        visit_root_pattern(node)
+        emit 'clear'
+        visit(node)
       end
 
       def visit_default(node)
@@ -464,7 +464,24 @@ module Magritte
       end
 
       def visit_vector_pattern(node)
+        emit 'dup'
+        emit 'typeof'
+        emit 'const', const(Value::String.new('vector'))
+        emit 'jumpne', @failto
+
+        emit 'dup'
+        emit 'size'
+
+        if node.rest
+          emit 'jumplt', node.patterns.size, @failto
+        else
+          emit 'noop', sym(node.patterns.size.to_s)
+          emit 'const', const(Value::Number.new(node.patterns.size))
+          emit 'jumpne', @failto
+        end
+
         node.patterns.each_with_index do |el_pattern, i|
+          emit 'noop', sym("vec-index-#{i}")
           emit 'dup'
           emit 'index', i
           visit(el_pattern)
@@ -485,9 +502,12 @@ module Magritte
       end
 
       def visit_string_pattern(node)
-        emit 'dup'
-        emit 'typeof'
-        emit 'const', const('string')
+        emit 'noop', sym('string_pattern')
+        # emit 'dup'
+        # emit 'typeof'
+        # emit 'const', const(Value::String.new('string'))
+        # emit 'jumpne', @failto
+        emit 'const', const(Value::String.new(node.value))
         emit 'jumpne', @failto
       end
     end

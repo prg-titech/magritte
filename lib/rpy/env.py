@@ -71,12 +71,13 @@ class Env(Value):
         return self.outputs[i] or (self.parent and self.parent.get_output(i))
 
     def set_input(self, i, ch):
-        assert isinstance(ch, Channelable)
+        assert ch.channelable
         if debug(): print 'set_input', self.s(), ch.s()
         self.inputs[i] = ch
 
     def set_output(self, i, ch):
-        assert isinstance(ch, Channelable)
+        assert ch.channelable
+        if debug(): print 'set_output', self.s(), ch.s()
         self.outputs[i] = ch
 
     def each_input(self, fn, *a):
@@ -109,3 +110,4 @@ class Env(Value):
     def mut(self, key, val):
         return self.lookup_ref(key).ref_set(val)
 
+    def typeof(self): return 'env'

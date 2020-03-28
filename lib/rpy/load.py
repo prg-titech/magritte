@@ -65,7 +65,7 @@ def load_fd(fd):
         register_label(label)
 
     num_insts = read_int(fd)
-    for _ in range(0, num_insts):
+    for i in range(0, num_insts):
         command = read_str(fd)
         num_args = read_int(fd)
         raw_args = [999] * num_args
@@ -156,11 +156,15 @@ def _get_fname(args):
     return fname
 
 def precompile(fname):
-    mag_binary = os.getenv('MAG_COMPILER', None)
-    if not mag_binary: return
     fnamec = fname + 'c'
-
     if os.path.exists(fnamec) and os.path.getmtime(fnamec) >= os.path.getmtime(fname): return
+
+    mag_binary = None
+    try:
+        mag_binary = os.environ['MAG_COMPILER']
+    except KeyError:
+        raise Crash('cannot load %s, is not precompiled and MAG_COMPILER is not set' % fname)
+
 
     if debug(): print 'magc out of date, recompiling', mag_binary, '-c', fname
     spawn(mag_binary, ['-c', fname])

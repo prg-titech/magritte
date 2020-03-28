@@ -26,6 +26,10 @@ def pop(frame, args):
     frame.stack.pop()
 
 @inst_action
+def noop(frame, args):
+    pass
+
+@inst_action
 def swap(frame, args):
     x = frame.pop()
     y = frame.pop()
@@ -34,7 +38,7 @@ def swap(frame, args):
 
 @inst_action
 def dup(frame, args):
-    if debug(): print 'dup', frame.top().s()
+    if debug(): print '-- dup', frame.s()
     frame.push(frame.top())
 
 @inst_action
@@ -53,7 +57,7 @@ def spawn(frame, args):
 
 @inst_action
 def collection(frame, args):
-    frame.push(Collection())
+    frame.push(Vector([]))
 
 @inst_action
 def const(frame, args):
@@ -62,7 +66,7 @@ def const(frame, args):
 @inst_action
 def collect(frame, args):
     value = frame.pop()
-    collection = frame.top_collection()
+    collection = frame.top_vec()
     collection.push(value)
 
 
@@ -71,9 +75,7 @@ def index(frame, args):
     idx = args[0]
     source = frame.pop()
 
-    if isinstance(source, Collection):
-        frame.push(source.values[idx])
-    elif isinstance(source, Vector):
+    if isinstance(source, Vector):
         frame.push(source.values[idx])
     else:
         if debug(): print source.s()
@@ -91,11 +93,6 @@ def let(frame, args):
     sym = args[0]
     if debug(): print revsym(sym), '=', val.s()
     env.let(sym, val)
-
-@inst_action
-def vector(frame, args):
-    collection = frame.pop_collection()
-    frame.push(Vector(collection.values))
 
 @inst_action
 def env(frame, args):
@@ -123,27 +120,47 @@ def jump(frame, args):
     frame.pc = args[0]
 
 @inst_action
+def jumpne(frame, args):
+    lhs = frame.pop()
+    rhs = frame.pop()
+
+    if debug(): print '-- jumpne', lhs.s(), rhs.s()
+
+    # TODO: define equality properly!
+    if lhs.s() == rhs.s(): return
+
+    frame.pc = args[0]
+
+@inst_action
+def jumplt(frame, args):
+    val = frame.pop_number()
+    if val < args[0]:
+        frame.pc = args[1]
+
+@inst_action
 def return_(frame, args):
     proc = frame.proc
     proc.pop()
-    if debug(): print 'after-return', proc.frames
+    if debug(): print 'after-return', proc.s()
     if not proc.frames:
         proc.set_done()
 
 @inst_action
 def invoke(frame, args):
-    collection = frame.pop_collection()
+    collection = frame.pop_vec()
     if not collection.values:
         raise Crash('empty invocation')
+
+    if debug(): print '-- invoke', collection.s()
 
     # tail elim
     if frame.current_inst().id == InstType.RETURN:
         frame.proc.frames.pop()
 
     invokee = collection.values.pop(0)
-    if not isinstance(invokee, Invokable): raise Crash('cannot invoke %s' % invokee.s())
+    if not invokee.invokable: raise Crash('cannot invoke %s' % invokee.s())
 
-    invokee.invoke(frame, collection)
+    invokee.invokable.invoke(frame, collection)
 
 @inst_action
 def closure(frame, args):
@@ -154,7 +171,7 @@ def closure(frame, args):
 @inst_action
 def env_collect(frame, args):
     env = frame.pop_env()
-    collection = frame.pop_collection()
+    collection = frame.pop_vec()
     env.set_output(0, collection)
     frame.push(collection)
     frame.push(env)
@@ -193,13 +210,36 @@ def rest(frame, args):
     size = args[0]
     assert size >= 0
     source = frame.pop()
-    if isinstance(source, Collection):
-        assert size <= len(source.values)
-        frame.push(Vector(source.values[size:]))
-    elif isinstance(source, Vector):
+    if isinstance(source, Vector):
         assert size <= len(source.values)
         frame.push(Vector(source.values[size:]))
     else:
         if debug(): print source.s()
         if debug(): print 'frame: ', frame.s()
         frame.crash('not indexable')
+
+@inst_action
+def size(frame, args):
+    source = frame.pop()
+    if isinstance(source, Vector):
+        frame.push(Int(len(source.values)))
+    else:
+        if debug(): print source.s()
+        if debug(): print 'frame: ', frame.s()
+        frame.crash('not indexable')
+
+@inst_action
+def typeof(frame, args):
+    val = frame.pop()
+    frame.push(String(val.typeof()))
+
+@inst_action
+def crash(frame, args):
+    if debug(): print '-- crash', frame.proc.s()
+    raise Crash
+
+@inst_action
+def clear(frame, args):
+    if len(frame.stack) > 1:
+        frame.stack.pop(len(frame.stack) - 1)
+    if debug(): print '-- clear', frame.s()

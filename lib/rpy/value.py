@@ -7,9 +7,42 @@ class Crash(Exception): pass
 class Done(Exception): pass
 class Deadlock(Exception): pass
 
+def impl(klass):
+    """NOT_RPYTHON"""
+    import copy
+
+
+    def init_fn(self, value): self._ = value
+
+    def hack_method(name, method, impl_name):
+        setattr(klass, impl_name, staticmethod(method))
+        setattr(klass, name, lambda self, *a: getattr(self, impl_name)(self._, *a))
+
+    for (name, method) in dict(klass.__dict__).iteritems():
+        if name[0] == '_': continue
+        hack_method(name, method, '_impl_'+name)
+
+    setattr(klass, '__init__', init_fn)
+
+    return klass
+
+class Invokable(object):
+    def invoke(self, frame, arguments): raise NotImplementedError
+
+class Channelable(object):
+    def write_all(self, proc, vals): raise NotImplementedError
+    def read(self, proc, count, into): raise NotImplementedError
+    def write(self, proc, val): return self.write_all(proc, [val])
+
+    def add_writer(self, frame): pass
+    def add_reader(self, frame): pass
+    def rm_writer(self, frame): pass
+    def rm_reader(self, frame): pass
+
 class Value(TableEntry):
     name = None
-    pass
+    invokable = None
+    channelable = None
 
     def as_number(self):
         raise Crash('not a number: '+self.s())
@@ -17,43 +50,31 @@ class Value(TableEntry):
     def s(self):
         raise NotImplementedError
 
-class Invokable(Value):
-    def invoke(self, frame, args): raise NotImplementedError
-
-class Channelable(Value):
-    def write_all(self, proc, vals):
+    def typeof(self):
         raise NotImplementedError
 
-    def read(self, proc, count, into):
-        raise NotImplementedError
+class String(Value):
+    @impl
+    class Invoke(Invokable):
+        def invoke(self, frame, args):
+            invokee = None
+            symbol = sym(self.value)
+            try:
+                invokee = frame.env.get(symbol)
+            except KeyError:
+                raise Crash('no such function '+self.value)
 
-    def write(self, proc, val):
-        return self.write_all(proc, [val])
+            if invokee.invokable:
+                invokee.invokable.invoke(frame, args)
+            else:
+                frame.crash('not invokable: '+invokee.s())
 
-    def add_writer(self, frame): pass
-    def add_reader(self, frame): pass
-    def rm_writer(self, frame): pass
-    def rm_reader(self, frame): pass
-
-
-class String(Invokable):
     def __init__(self, string):
         self.value = string
+        self.invokable = String.Invoke(self)
 
     def s(self): return self.value
-
-    def invoke(self, frame, args):
-        invokee = None
-        symbol = sym(self.value)
-        try:
-            invokee = frame.env.get(symbol)
-        except KeyError:
-            raise Crash('no such function '+self.value)
-
-        if isinstance(invokee, Invokable):
-            invokee.invoke(frame, args)
-        else:
-            frame.crash('not invokable: '+invokee.s())
+    def typeof(self): return 'string'
 
 class Int(Value):
     def __init__(self, value):
@@ -63,22 +84,9 @@ class Int(Value):
         return self.value
 
     def s(self): return str(self.value)
+    def typeof(self): return 'int'
 
-class Collection(Channelable):
-    def __init__(self):
-        self.values = []
-
-    def push(self, value):
-        assert value is not None
-        self.values.append(value)
-
-    def push_all(self, values):
-        for v in values: self.push(v)
-
-    # Channelable
-    def write_all(self, proc, values):
-        self.push_all(values)
-
+class Collection(Value):
     def s(self):
         out = ['<collection']
         for value in self.values:
@@ -88,32 +96,56 @@ class Collection(Channelable):
 
         return ''.join(out)
 
-class Vector(Invokable):
+    def typeof(self): return 'collection'
+
+class Vector(Value):
+    @impl
+    class Invoke(Invokable):
+        def invoke(self, frame, args):
+            values = self.values
+
+            if len(values) == 0:
+                raise Crash('empty invoke')
+
+            invokable = values[0].invokable
+            if not invokable: raise Crash('not invokable: %s' % values[0].s())
+
+            new_args = Vector(self.values[1:] + args.values)
+            invokable.invoke(frame, new_args)
+
+    @impl
+    class Channel(Channelable):
+        def write_all(self, proc, values): self.push_all(values)
+
+
     def __init__(self, values):
         self.values = values
+        self.invokable = Vector.Invoke(self)
+        self.channelable = Vector.Channel(self)
 
-    def invoke(self, frame, args):
-        if len(self.values) == 0:
-            raise Crash('empty invoke')
+    def push(self, value):
+        assert value is not None
+        self.values.append(value)
 
-        if not isinstance(self.values[0], Invokable): raise Crash('not invokable: %s' % self.values[0].s())
-        new_args = Collection()
-        new_args.values = self.values[1:]
-        new_args.values.extend(args.values)
-        self.values[0].invoke(frame, new_args)
-
+    def push_all(self, values):
+        for v in values: self.push(v)
 
     def s(self):
-        out = ['<vec']
+        out = ['[']
+        not_first = False
         for val in self.values:
-            out.append(' ')
-            if val is None:
+            if not_first: out.append(' ')
+            not_first = True
+
+            if debug() and val is None:
                 out.append('None')
             else:
                 out.append(val.s())
 
-        out.append('>')
+        out.append(']')
         return ''.join(out)
+
+    def typeof(self): return 'vector'
 
 class Ref(Value):
     def __init__(self, value):
@@ -128,31 +160,43 @@ class Ref(Value):
     def s(self):
         return '<ref %s>' % self.value.s()
 
-class Function(Invokable):
+    def typeof(self): return 'ref'
+
+class Function(Value):
+    @impl
+    class Invoke(Invokable):
+        def invoke(self, frame, collection):
+            if debug(): print '()', self.label().s()
+            new_env = frame.env.extend().merge(self.env)
+            new_frame = frame.proc.frame(new_env, self.addr)
+            new_frame.push(collection)
+
     def __init__(self, env, addr):
         self.env = env
         self.addr = addr
+        self.invokable = Function.Invoke(self)
 
     def label(self):
         return labels_by_addr[self.addr]
 
-    def invoke(self, frame, collection):
-        if debug(): print '()', self.label().s()
-        new_env = frame.env.extend().merge(self.env)
-        new_frame = frame.proc.frame(new_env, self.addr)
-        new_frame.push(collection)
-
     def s(self):
         return '<function '+self.label().s()+'>'
 
-class Intrinsic(Invokable):
+    def typeof(self): return 'function'
+
+class Intrinsic(Value):
+    @impl
+    class Invoke(Invokable):
+        def invoke(self, frame, collection):
+            self.fn(frame, collection.values)
+
     def __init__(self, name, fn):
         self.name = name
         self.fn = fn
-
-    def invoke(self, frame, collection):
-        self.fn(frame, collection.values)
+        self.invokable = Intrinsic.Invoke(self)
 
     def s(self):
         return '@!'+self.name
+
+    def typeof(self): return 'intrinsic'
 

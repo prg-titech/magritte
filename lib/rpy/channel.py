@@ -26,7 +26,7 @@ class Receiver(Blocker):
 
     def receive(self, val):
         if debug(): print 'receiving', val.s(), 'into', self.into.s()
-        self.into.write(self.proc, val)
+        self.into.channelable.write(self.proc, val)
         self.count -= 1
         if debug(): print 'remaining', self.count, self.is_done()
         if self.is_done(): self.proc.try_set_running()
@@ -77,7 +77,7 @@ class Sender(Blocker):
         return ''.join(out)
 
 
-class Channel(Channelable):
+class Channel(Value):
     INIT = 0
     OPEN = 1
     CLOSED = 2
@@ -90,6 +90,14 @@ class Channel(Channelable):
         self.senders = []
         self.receivers = []
         self.state = Channel.INIT
+        self.channelable = Channel.Impl(self)
+
+    def s(self):
+        return '<channel%d %d/%d:%s>' % (self.id, self.reader_count, self.writer_count, self.state_name())
+
+    def typeof(self): return 'channel'
+
+    def resolve(self): return self.channelable.resolve()
 
     def state_name(self):
         if self.state == Channel.INIT: return 'init'
@@ -97,51 +105,8 @@ class Channel(Channelable):
         if self.state == Channel.CLOSED: return 'closed'
         assert False, 'no such state'
 
-    def s(self):
-        return '<channel%d %d/%d:%s>' % (self.id, self.reader_count, self.writer_count, self.state_name())
-
     def is_closed(self): return self.state == Channel.CLOSED
     def is_open(self): return self.state != Channel.CLOSED
-
-    def read(self, proc, count, into):
-        if self.is_closed(): return proc.interrupt(Close(self, True))
-        self.receivers.append(Receiver(proc, count, into))
-        proc.set_waiting()
-
-    def write_all(self, proc, vals):
-        if self.is_closed(): return proc.interrupt(Close(self, False))
-        self.senders.append(Sender(proc, vals))
-        proc.set_waiting()
-
-    def resolve(self):
-        while self.senders and self.receivers:
-            (sender, receiver) = (self.senders.pop(0), self.receivers.pop(0))
-
-            sender.send(receiver)
-
-            if not sender.is_done(): self.senders.insert(0, sender)
-            if not receiver.is_done(): self.receivers.insert(0, receiver)
-
-        assert (not self.senders) or (not self.receivers)
-
-        return self.check_for_close()
-
-    def add_writer(self, frame):
-        if debug(): print '-- add_writer', self.s(), frame.s()
-        self.writer_count += 1
-    def add_reader(self, frame):
-        if debug(): print '-- add_reader', self.s(), frame.s()
-        self.reader_count += 1
-
-    def rm_writer(self, frame):
-        if self.is_closed(): return
-        if debug(): print 'rm_writer', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
-        self.writer_count -= 1
-
-    def rm_reader(self, frame):
-        if self.is_closed(): return
-        if debug(): print 'rm_reader', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
-        self.reader_count -= 1
 
     def check_for_close(self):
         # set up the initial state if we've got readers or writers
@@ -165,14 +130,62 @@ class Channel(Channelable):
 
         return True
 
+    def resolve(self):
+        while self.senders and self.receivers:
+            (sender, receiver) = (self.senders.pop(0), self.receivers.pop(0))
 
-class Streamer(Channelable):
+            sender.send(receiver)
+
+            if not sender.is_done(): self.senders.insert(0, sender)
+            if not receiver.is_done(): self.receivers.insert(0, receiver)
+
+        assert (not self.senders) or (not self.receivers)
+
+        return self.check_for_close()
+
+    @impl
+    class Impl(Channelable):
+        def read(self, proc, count, into):
+            if self.is_closed(): return proc.interrupt(Close(self, True))
+            self.receivers.append(Receiver(proc, count, into))
+            proc.set_waiting()
+
+        def write_all(self, proc, vals):
+            if self.is_closed(): return proc.interrupt(Close(self, False))
+            self.senders.append(Sender(proc, vals))
+            proc.set_waiting()
+
+        def add_writer(self, frame):
+            if debug(): print '-- add_writer', self.s(), frame.s()
+            self.writer_count += 1
+
+        def add_reader(self, frame):
+            if debug(): print '-- add_reader', self.s(), frame.s()
+            self.reader_count += 1
+
+        def rm_writer(self, frame):
+            if self.is_closed(): return
+            if debug(): print 'rm_writer', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
+            self.writer_count -= 1
+
+        def rm_reader(self, frame):
+            if self.is_closed(): return
+            if debug(): print 'rm_reader', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
+            self.reader_count -= 1
+
+
+class Streamer(Value):
+    @impl
+    class Channel(Channelable):
+        def write_all(self, proc, vals):
+            self.fn(proc, vals)
+
     def __init__(self, fn):
         self.fn = fn
-
-    def write_all(self, proc, vals):
-        self.fn(proc, vals)
+        self.channelable = Streamer.Channel(self)
 
     def s(self):
         return '<streamer>'
+
+    def typeof(self): return 'streamer'
 

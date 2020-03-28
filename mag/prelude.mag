@@ -10,8 +10,15 @@ __repr__ = "{ <prelude> }"
 (repeat (?a)) = (@!for $a; repeat (@!for $a))
 (iter ?fn ?x) = (put $x; iter $fn ($fn $x))
 (add (?x)) = @!add (@!for $x)
+(mul (?x)) = @!mul (@!for $x)
+(each ?fn (?args)) = (
+  x = [$fn (@!for $args)]
+  (k) = (%x (@!get); k)
+  k
+)
 
-# exec = []
+exec = []
+
 # 
 # (times ?n ?fn (?args)) = (
 #   in = (stdin)

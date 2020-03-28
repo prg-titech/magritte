@@ -1,5 +1,6 @@
 import os
 from rpython.rlib.rposix import execv
+from debug import debug
 
 def spawn(program, args):
     pid = os.fork()
