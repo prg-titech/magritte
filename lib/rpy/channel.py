@@ -16,6 +16,7 @@ class Blocker(object):
     proc = None
 
     def is_done(self): return True
+    def s(self): raise NotImplementedError
 
 class Receiver(Blocker):
     def __init__(self, proc, count, into):
@@ -24,14 +25,18 @@ class Receiver(Blocker):
         self.count = count
 
     def receive(self, val):
-        if debug(): print 'receiving', val, 'into', self.into
+        if debug(): print 'receiving', val.s(), 'into', self.into.s()
         self.into.write(self.proc, val)
         self.count -= 1
         if debug(): print 'remaining', self.count, self.is_done()
-        if self.is_done(): self.proc.set_running()
+        if self.is_done(): self.proc.try_set_running()
 
     def is_done(self):
         return self.count <= 0
+
+    def s(self):
+        return '<receiver/%d@%s into:%s>' % (self.count, self.proc.s(), self.into.s())
+
 
 class Sender(Blocker):
     def __init__(self, proc, values):
@@ -40,7 +45,12 @@ class Sender(Blocker):
         self.index = 0
 
     def next_val(self):
-        (out, self.values[self.index]) = (self.values[self.index], None)
+        # [jneen] nice thought, but this array might be still in use!
+        # if we take this approach we have to be sure we copy stuff. should
+        # see if that makes a perf difference.
+        # (out, self.values[self.index]) = (self.values[self.index], None)
+        out = self.values[self.index]
+
         self.index += 1
         return out
 
@@ -51,10 +61,21 @@ class Sender(Blocker):
         return self.index >= len(self.values)
 
     def send(self, receiver):
-        if debug(): print 'sending', self.values, self.index, self.current_val()
+        if debug(): print 'sending', self.s()
+
         receiver.receive(self.next_val())
         if debug(): print 'sender is_done()', self.is_done()
-        if self.is_done(): self.proc.set_running()
+        if self.is_done(): self.proc.try_set_running()
+
+    def s(self):
+        out = ['<sender@', self.proc.s()]
+        for i in range(self.index, len(self.values)):
+            out.append(' ')
+            out.append(self.values[i].s())
+
+        out.append('>')
+        return ''.join(out)
+
 
 class Channel(Channelable):
     INIT = 0
@@ -77,7 +98,7 @@ class Channel(Channelable):
         assert False, 'no such state'
 
     def s(self):
-        return '<channel %d/%d:%s>' % (self.reader_count, self.writer_count, self.state_name())
+        return '<channel%d %d/%d:%s>' % (self.id, self.reader_count, self.writer_count, self.state_name())
 
     def is_closed(self): return self.state == Channel.CLOSED
     def is_open(self): return self.state != Channel.CLOSED
@@ -106,22 +127,21 @@ class Channel(Channelable):
         return self.check_for_close()
 
     def add_writer(self, frame):
+        if debug(): print '-- add_writer', self.s(), frame.s()
         self.writer_count += 1
-        self.writers.append(frame)
-
     def add_reader(self, frame):
+        if debug(): print '-- add_reader', self.s(), frame.s()
         self.reader_count += 1
-        self.readers.append(frame)
 
     def rm_writer(self, frame):
         if self.is_closed(): return
+        if debug(): print 'rm_writer', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
         self.writer_count -= 1
-        self.writers.remove(frame)
 
     def rm_reader(self, frame):
         if self.is_closed(): return
+        if debug(): print 'rm_reader', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
         self.reader_count -= 1
-        self.readers.remove(frame)
 
     def check_for_close(self):
         # set up the initial state if we've got readers or writers
@@ -131,16 +151,17 @@ class Channel(Channelable):
 
         if self.state != Channel.OPEN: return False
 
+        if debug(): print 'check_for_close', self.s()
         if self.reader_count > 0 and self.writer_count > 0: return False
 
-        if debug(): print 'closing', self.id
+        if debug(): print 'closing', self.s()
         self.state = Channel.CLOSED
 
-        for frame in self.readers:
-            frame.proc.interrupt(Close(self, True))
+        for blocker in self.senders:
+            blocker.proc.interrupt(Close(self, True))
 
-        for frame in self.writers:
-            frame.proc.interrupt(Close(self, False))
+        for blocker in self.receivers:
+            blocker.proc.interrupt(Close(self, False))
 
         return True
 

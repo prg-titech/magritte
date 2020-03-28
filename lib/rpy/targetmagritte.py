@@ -1,17 +1,10 @@
 from machine import machine
 from base import base_env
-from load import load
+from load import load_file
 import os
 
 def run_file(filename):
-    fd = -1
-
-    try:
-        fd = os.open(filename, os.O_RDONLY, 0o777)
-        load(fd)
-    finally:
-        os.close(fd)
-
+    load_file(filename)
     machine.spawn_label(base_env, 'main')
     machine.run()
     return 0

@@ -69,6 +69,7 @@ class Collection(Channelable):
         self.values = []
 
     def push(self, value):
+        assert value is not None
         self.values.append(value)
 
     def push_all(self, values):
@@ -106,20 +107,26 @@ class Vector(Invokable):
         out = ['<vec']
         for val in self.values:
             out.append(' ')
-            out.append(val.s())
+            if val is None:
+                out.append('None')
+            else:
+                out.append(val.s())
 
         out.append('>')
         return ''.join(out)
 
 class Ref(Value):
     def __init__(self, value):
+        assert value is not None
         self.value = value
 
     def ref_get(self): return self.value
-    def ref_set(self, value): self.value = value
+    def ref_set(self, value):
+        assert value is not None
+        self.value = value
 
     def s(self):
-        return '<ref %s>' % self.value
+        return '<ref %s>' % self.value.s()
 
 class Function(Invokable):
     def __init__(self, env, addr):

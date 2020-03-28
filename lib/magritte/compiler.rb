@@ -157,8 +157,8 @@ module Magritte
         out << label.name << ":"
         out << " " * (16 - label.name.size) << label.trace.repr if label.trace
         out << "\n"
-        label.instrs.each do |instr|
-          out << "  " << instr.map(&:to_s).join(' ') << "\n"
+        label.instrs.each_with_index do |instr, i|
+          out << i << "  " << instr.map(&:to_s).join(' ') << "\n"
         end
       end
     end
@@ -282,6 +282,7 @@ module Magritte
 
     def visit_spawn(node)
       addr = label('spawn') { visit(node.expr) }
+      emit 'current-env'
       emit 'spawn', addr
     end
 

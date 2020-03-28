@@ -1,11 +1,3 @@
-@allow-intrinsics
+load mag/prelude.mag
 
-(put (?a)) = @!for $a
-(get) = @!get
-(take ?n) = @!take $n
-
-
-
-(drain) = (@!get; drain)
-(repeat ?x) = (@!put $x; repeat $x)
-repeat yes | drain
+iter [add 1] 0 | (& drain) | take 10

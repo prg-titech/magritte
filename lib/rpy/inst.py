@@ -29,9 +29,6 @@ class InstType(TableEntry):
                     continue
 
                 arr[i] += offsets[tname]
-                    # except IndexError:
-                    #     print 'oops' # , self.name, arr, offsets, tname
-                    #     raise
 
         return arr
 
@@ -69,7 +66,7 @@ mkinst('jumpfail', ['inst'], ['status'], [], 'jump if the last status is a failu
 
 # vectors and collections
 mkinst('collection', [], [], ['collection'], 'start a collection')
-mkinst('index', [], ['vec', 'idx'], [], 'index a vector')
+mkinst('index', [None], ['vec', 'idx'], [], 'index a vector')
 mkinst('collect', [], ['collection', None], ['collection'], 'collect a single value into a collection')
 mkinst('vector', [], ['collection'], ['vec'], 'make a new vector')
 

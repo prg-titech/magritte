@@ -41,13 +41,15 @@ def dup(frame, args):
 def frame(frame, args):
     env = frame.pop_env()
     addr = args[0]
+    if debug(): print '-- frame', env.s()
     frame.proc.frame(env, addr)
 
 @inst_action
 def spawn(frame, args):
     addr = args[0]
     env = frame.pop_env()
-    frame.proc.machine.spawn(env, addr)
+    new_proc = frame.proc.machine.spawn(env, addr)
+    if debug(): print '-- spawn', env.s(), new_proc.s()
 
 @inst_action
 def collection(frame, args):
@@ -122,10 +124,11 @@ def jump(frame, args):
 
 @inst_action
 def return_(frame, args):
-    frame.proc.pop()
-    if debug(): print 'after-return', frame.proc.frames
-    if not frame.proc.frames:
-        frame.proc.set_done()
+    proc = frame.proc
+    proc.pop()
+    if debug(): print 'after-return', proc.frames
+    if not proc.frames:
+        proc.set_done()
 
 @inst_action
 def invoke(frame, args):
@@ -173,6 +176,7 @@ def env_pipe(frame, args):
     producer.set_output(0, channel)
     consumer = env.extend()
     consumer.set_input(0, channel)
+    if debug(): print '-- pipe %s | %s' % (producer, consumer)
     frame.push(consumer)
     frame.push(producer)
 
@@ -190,8 +194,10 @@ def rest(frame, args):
     assert size >= 0
     source = frame.pop()
     if isinstance(source, Collection):
+        assert size <= len(source.values)
         frame.push(Vector(source.values[size:]))
     elif isinstance(source, Vector):
+        assert size <= len(source.values)
         frame.push(Vector(source.values[size:]))
     else:
         if debug(): print source.s()

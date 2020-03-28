@@ -11,30 +11,9 @@ from channel import *
 from base import base_env
 from symbol import symbol_table
 from code import label_table
+from rpython.rlib.jit import JitDriver, elidable
 
-############# channels ##################
-
-############# parsing the compiled file ###############
-stdin_fn = sys.stdin.readline
-def load_stdin():
-    return load(stdin_fn)
-
-class FileLoader(object):
-    def __init__(self, filename):
-        self.filename = filename
-
-        fd = -1
-        try:
-            fd = os.open(filename, os.O_RDONLY, 0o777)
-            self.contents = os.read(fd, 0xFFFFFFF).split("\n")
-        finally:
-            os.close(fd)
-
-        self.index = -1
-
-    def get_line(self):
-        self.index += 1
-        return self.contents[self.index]
+from random import shuffle
 
 ################## machine ####################
 class Machine(object):
@@ -46,12 +25,13 @@ class Machine(object):
         return self.channels.register(Channel())
 
     def spawn_label(self, env, label):
-        self.spawn(env, label_table.get(label).addr)
+        return self.spawn(env, label_table.get(label).addr)
 
     def spawn(self, env, addr):
         proc = Proc(self)
         self.procs.register(proc)
         proc.frame(env, addr)
+        return proc
 
     def run(self):
         if debug(): print 'run!'
@@ -63,15 +43,22 @@ class Machine(object):
         assert False # impossible
 
     def step(self):
+        if debug(): print '%%%%% PHASE: step %%%%%'
         for proc in self.procs.table:
             if not proc: continue
             if proc.state == Proc.DONE: continue
 
-            if proc.is_running(): proc.step()
+            if proc.is_running():
+                proc.step()
 
+        if debug(): print '%%%%% PHASE: resolve %%%%%'
         for channel in self.channels.table:
             assert isinstance(channel, Channel)
             channel.resolve()
+
+        if debug():
+            print '%%%%% PHASE: check %%%%%'
+            for p in self.procs.table: print p.s()
 
         running = 0
         waiting = 0
@@ -82,7 +69,6 @@ class Machine(object):
             elif proc.state == Proc.WAITING:
                 # if debug(): print '> ', proc.id, 'waiting'
                 waiting += 1
-
 
         if running == 0 and waiting > 0: raise Deadlock
         if running == 0: raise Done

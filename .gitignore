@@ -18,6 +18,7 @@
 
 # python
 *.pyc
+/target*-c
 
 # magritte
 *.magc

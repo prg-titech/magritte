@@ -6,6 +6,7 @@ from value import *
 from channel import Channel, Close
 from env import Env
 from code import labels_by_addr, inst_table
+from load import arg_as_str
 
 class Proc(TableEntry):
     INIT = 0
@@ -21,6 +22,16 @@ class Proc(TableEntry):
     def set_interrupted(self): self.state = Proc.INTERRUPTED
     def set_done(self): self.state = Proc.DONE
     def set_terminated(self): self.state = Proc.TERMINATED
+
+    # important: a channel will set a successful write to "running". but
+    # if that write pipes into a closed channel it will properly get set to
+    # INTERRUPTED and we want to avoid overriding that.
+    def try_set_running(self):
+        if self.state == Proc.INTERRUPTED:
+            if debug(): print 'try_set_running: already interrupted', self.s()
+        else:
+            if debug(): print 'try_set_running: set to running', self.s()
+            self.set_running()
 
     def state_name(self):
         if self.state == Proc.INIT: return 'init'
@@ -55,9 +66,17 @@ class Proc(TableEntry):
 
     def tail_eliminate(self):
         out = None
-        while self.frames and self.current_frame().should_eliminate():
+
+        # don't tail eliminate the root frame, for Reasons.
+        # the root frame might have the global env and we really don't want
+        # to mess with that env
+        if len(self.frames) <= 1: return
+
+        while len(self.frames) > 1 and self.current_frame().should_eliminate():
             if debug(): print 'tail eliminating %s' % self.current_frame().s()
-            out = self.frames.pop()
+            out = self.pop()
+
+        if debug() and out: print 'after elimination', self.s()
 
         return out
 
@@ -67,36 +86,62 @@ class Proc(TableEntry):
     def pop(self):
         top = self.frames.pop()
         top.cleanup()
+        return top
 
     def step(self):
-        # IMPORTANT: only check interrupts when we're waiting!
-        if self.state == Proc.INTERRUPTED and self.check_interrupts(): return
+        if debug():
+            print '=== step %s ===' % self.s()
+            if self.frames:
+                env = self.current_frame().env
+                print 'env:', env.s()
+                print 'in:', env.get_input(0) and env.get_input(0).s()
+                print 'out:', env.get_output(0) and env.get_output(0).s()
 
-        self.state = Proc.RUNNING
-        return self.current_frame().step()
+
+        while self.frames and self.is_running():
+            # IMPORTANT: only check interrupts when we're waiting!
+            if self.state == Proc.INTERRUPTED and self.check_interrupts(): return
+
+            self.state = Proc.RUNNING
+            self.current_frame().step()
+
+        if not self.frames:
+            if debug(): print 'out of frames', self.s()
+            self.state = Proc.DONE
+
 
     def check_interrupts(self):
-        print 'check_interrupts', self.s()
-        if not self.interrupts: return
+        if debug(): print 'check_interrupts', self.s()
+        if not self.interrupts: return False
+
         interrupt = self.interrupts.pop(0)
+        if debug(): print 'interrupted:', interrupt.s()
 
         # unwind the stack until the channel goes out of scope
         if isinstance(interrupt, Close):
             if debug(): print 'channel closed', interrupt.s()
+            if debug(): print 'env:', self.current_frame().env.s()
+            if debug(): print 'has channel?', self.has_channel(interrupt.is_input, interrupt.channel)
+
             while self.frames and self.has_channel(interrupt.is_input, interrupt.channel):
                 if debug(): print 'unwind!'
                 self.pop()
-            self.state = Proc.RUNNING
-            return
 
-        # TODO: status types
-        self.state = Proc.TERMINATED
+            if self.frames:
+                self.state = Proc.RUNNING
+            else:
+                self.state = Proc.DONE
+        else:
+            # TODO: status types
+            self.state = Proc.TERMINATED
+
+        return True
 
     def has_channel(self, is_input, channel):
         return self.current_frame().env.has_channel(is_input, channel)
 
     def interrupt(self, interrupt):
-        if debug(): print 'interrupt', interrupt.s()
+        if debug(): print 'interrupt', self.s(), interrupt.s()
         self.interrupts.append(interrupt)
         self.state = Proc.INTERRUPTED
 
@@ -127,7 +172,7 @@ class Frame(object):
         out.append('@')
         out.append(self.label_name())
         out.append(':')
-        out.append(str(self.addr))
+        out.append(str(self.pc - self.addr))
         for el in self.stack:
             out.append(' ')
             out.append(el.s())
@@ -149,6 +194,7 @@ class Frame(object):
 
     def push(self, val):
         if val is None: raise Crash('pushing None onto the stack')
+
         self.stack.append(val)
 
     def pop(self):
@@ -199,7 +245,7 @@ class Frame(object):
         return self.stack[len(self.stack)-1]
 
     def put(self, vals):
-        if debug(): print 'put', self.env.get_output(0), vals
+        if debug(): print 'put', self.env.get_output(0).s(), ' '.join(v.s() for v in vals)
         self.env.get_output(0).write_all(self.proc, vals)
 
     def get(self, into, n=1):
@@ -211,7 +257,14 @@ class Frame(object):
     # @enforceargs(None, lltype.Signed, lltype.Array(lltype.Signed))
     def run_inst_action(self, inst_id, static_args):
         if debug():
-            print '+', self.proc.id, inst_type_table.lookup(inst_id).name, static_args
+            inst_type = inst_type_table.lookup(inst_id)
+            msg = ['+ ']
+            msg.append(inst_type.name)
+            for (i, arg) in enumerate(static_args):
+                msg.append(' ')
+                msg.append(arg_as_str(inst_type, i, arg))
+
+            print ''.join(msg)
 
         action = inst_actions[inst_id]
         if not action:

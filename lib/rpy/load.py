@@ -5,9 +5,14 @@ from util import map_int
 from debug import debug
 from const import const_table
 from code import inst_table, label_table, register_label
-from symbol import symbol_table, sym
+from symbol import symbol_table, sym, revsym
+from intrinsic import intrinsic, intrinsics
+from base import base_env
+from spawn import spawn
+
 import os
 
+from rpython.rlib.rposix import spawnv
 from rpython.rlib.rstruct.runpack import runpack
 
 def unescape(s):
@@ -28,7 +33,7 @@ def read_constant(fd):
     if typechar == '#': return Int(read_int(fd))
     assert False, 'unexpected typechar %s' % typechar
 
-def load(fd):
+def load_fd(fd):
     offsets = {
         'const': len(const_table),
         'label': len(label_table),
@@ -51,7 +56,7 @@ def load(fd):
     num_labels = read_int(fd)
     for _ in range(0, num_labels):
         name = read_str(fd)
-        addr = read_int(fd)
+        addr = read_int(fd) + offsets['inst']
         trace = None
         has_trace = read_int(fd)
         trace = None
@@ -68,4 +73,117 @@ def load(fd):
         inst_type = inst_type_table.get(command)
         args = inst_type.reindex(raw_args, offsets, symbol_translation)
         inst_table.register(Inst(inst_type.id, args))
+
+def load_file(fname):
+    fd = 0
+
+    try:
+        fd = os.open(fname, os.O_RDONLY, 0o777)
+        load_fd(fd)
+    finally:
+        os.close(fd)
+
+def decomp_to_file(fname):
+    fd = 0
+
+    try:
+        fd = os.open(fname, os.O_WRONLY | os.O_CREAT, 0o777)
+        decomp_fd(fd)
+    finally:
+        os.close(fd)
+
+def arg_as_str(inst_type, i, arg):
+    arg_type = None
+    try:
+        arg_type = inst_type.static_types[i]
+        if arg_type is None: return '#'+str(arg)
+        if arg_type == 'inst': return '@'+labels_by_addr[arg].name
+        if arg_type == 'const': return '+'+const_table.lookup(arg).s()
+        if arg_type == 'sym': return ':'+revsym(arg)
+        if arg_type == 'intrinsic': return '@!'+intrinsics.lookup(arg).name
+    except KeyError as e:
+        if debug(): print 'no key:', inst_type.name, arg_type, i, arg
+    except IndexError as e:
+        if debug(): print 'no index:', inst_type.name, arg_type, i, arg
+
+    return '?%s' % str(arg)
+
+
+def decomp_fd(fd):
+    out = []
+
+    out.append('==== symbols ====\n')
+    for s in symbol_table.table:
+        out.append('%d %s\n' % (s.id, s.name))
+
+    out.append('\n')
+    out.append('==== consts ====\n')
+    for (i, c) in enumerate(const_table.table):
+        out.append('%d %s\n' % (i, c.s()))
+
+    out.append('==== labels ====\n')
+    for (i, l) in enumerate(label_table.table):
+        out.append('%d %s\n' % (i, l.s()))
+
+    out.append('==== instructions ====\n')
+    for (i, inst) in enumerate(inst_table.table):
+        try:
+            label = labels_by_addr[i]
+            out.append("%s:" % label.name)
+            if label.trace:
+                out.append(" %s" % label.trace)
+            out.append('\n')
+        except KeyError:
+            pass
+
+        inst_type = inst.type()
+        typename = inst_type.name
+        out.append('  %d %s' % (i, typename))
+
+        for (i, arg) in enumerate(inst.arguments):
+            out.append(' %s' % arg_as_str(inst_type, i, arg))
+
+        out.append('\n')
+
+    os.write(fd, ''.join(out))
+
+def _get_fname(args):
+    assert len(args) == 1
+    fname_obj = args[0]
+    assert isinstance(fname_obj, String)
+    fname = fname_obj.value
+    assert fname is not None
+    return fname
+
+def precompile(fname):
+    mag_binary = os.getenv('MAG_COMPILER', None)
+    if not mag_binary: return
+    fnamec = fname + 'c'
+
+    if os.path.exists(fnamec) and os.path.getmtime(fnamec) >= os.path.getmtime(fname): return
+
+    if debug(): print 'magc out of date, recompiling', mag_binary, '-c', fname
+    spawn(mag_binary, ['-c', fname])
+
+@intrinsic
+def load(frame, args):
+    fname = _get_fname(args)
+
+    precompile(fname)
+
+    load_file(fname + 'c')
+    addr = label_table.get('main').addr
+    if debug(): print 'load!', fname, addr
+
+    frame.proc.frame(base_env, addr)
+
+base_env.let(sym('load'), load)
+
+@intrinsic
+def decomp(frame, args):
+    if len(args) == 0:
+        decomp_fd(1) # stdout
+    else:
+        fname = _get_fname(args)
+        decomp_to_file(fname)
 

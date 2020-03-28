@@ -18,9 +18,14 @@ class Env(Value):
         return out
 
     def s(self):
-        out = ['<env ']
+        out = ['<env']
         for (k, v) in self.as_dict().iteritems():
-            out.append('%s = %s' % (k, v.s()))
+            out.append('; %s = %s' % (k, v.s()))
+
+        inp = self.get_input(0)
+        if inp: out.append(' in:%s' % inp.s())
+        outp = self.get_output(0)
+        if outp: out.append(' out:%s' % outp.s())
 
         out.append('>')
 
@@ -54,9 +59,9 @@ class Env(Value):
         return self.parent.has_input(ch)
 
     def has_output(self, ch):
-        if ch in self.inputs: return True
+        if ch in self.outputs: return True
         if not self.parent: return False
-        return self.parent.has_input(ch)
+        return self.parent.has_output(ch)
 
     def has_channel(self, is_input, channel):
         if is_input: return self.has_input(channel)
@@ -67,6 +72,7 @@ class Env(Value):
 
     def set_input(self, i, ch):
         assert isinstance(ch, Channelable)
+        if debug(): print 'set_input', self.s(), ch.s()
         self.inputs[i] = ch
 
     def set_output(self, i, ch):

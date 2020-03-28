@@ -10,13 +10,15 @@ intrinsics = Table()
 def intrinsic(fn):
     intrinsic_name = as_dashed(fn.__name__)
     def wrapper(frame, args):
-        if debug(): print frame.proc.id, ':'+intrinsic_name, args
+        if debug(): print frame.proc.id, ':'+intrinsic_name, ' '.join(a.s() for a in args)
         return fn(frame, args)
 
     # make sure the name is stored as a symbol
     sym(intrinsic_name)
 
-    intrinsics.register(Intrinsic(intrinsic_name, wrapper))
+    intrinsic = Intrinsic(intrinsic_name, wrapper)
+    intrinsics.register(intrinsic)
+    return intrinsic
 
 @intrinsic
 def add(frame, args):
@@ -57,3 +59,4 @@ def stdout(frame, args):
         parent_frame = frame
 
     frame.push(parent_frame.env.get_output(0))
+
