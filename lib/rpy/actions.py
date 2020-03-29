@@ -210,8 +210,8 @@ def intrinsic(frame, args):
 def rest(frame, args):
     size = args[0]
     source = frame.pop_vec()
-    assert size <= len(source.values)
-    assert size > 0
+    assert size < len(source.values)
+    assert size >= 0
     frame.push(Vector(source.values[size:]))
 
 @inst_action
