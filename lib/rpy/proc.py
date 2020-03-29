@@ -107,7 +107,10 @@ class Proc(TableEntry):
                 self.state = Proc.RUNNING
                 self.current_frame().step()
         except Crash as e:
+            print '-- crash', e.status.s()
+            if debug(): print '-- crashed', self.s()
             self.status = e.status
+            self.state = Proc.TERMINATED
 
         if not self.frames:
             if debug(): print 'out of frames', self.s()
