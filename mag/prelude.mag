@@ -6,17 +6,18 @@ __repr__ = "{ <prelude> }"
 (get) = @!get
 (take ?n) = @!take $n
 
+add = @!add
+mul = @!mul
+
 (drain) = (@!get; drain)
 (repeat (?a)) = (@!for $a; repeat (@!for $a))
-(iter ?fn ?x) = (@!put $x; iter $fn ($fn $x))
-(add (?x)) = @!add (@!for $x)
-(mul (?x)) = @!mul (@!for $x)
+(iter ?fn ?x) = (put $x; iter $fn ($fn $x))
 (each (?args)) = (
   (k) = (%args (@!get); k)
   k
 )
 
-(for ?v) = @!for $v
+for = @!for
 
 (crash ?msg) = @!crash $msg
 
@@ -24,6 +25,8 @@ exec = []
 
 (true) = ()
 (false) = (@!fail false)
+
+(make-channel) = @!make-channel
 
 # 
 # (times ?n ?fn (?args)) = (

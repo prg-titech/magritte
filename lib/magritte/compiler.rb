@@ -435,6 +435,15 @@ module Magritte
       @current_label = final_label
     end
 
+    def visit_compensation(node)
+      comp_label = label('compensation', node.range) do
+        visit(node.compensation)
+        emit 'return'
+      end
+
+      emit 'compensate', comp_label, (node.unconditional ? 1 : 0)
+    end
+
     # assume a collection of values is on the stack.
     # every visit should leave it only on the stack.
 
@@ -453,7 +462,7 @@ module Magritte
 
       def compile(node)
         emit 'clear'
-        visit(node)
+        visit_root_pattern(node)
       end
 
       def visit_default(node)
@@ -467,22 +476,37 @@ module Magritte
         emit 'let', sym(node.name)
       end
 
+      def visit_root_pattern(node)
+        # we can guarantee it's a vector on the stack here,
+        # since there's a vector for every call. so we eliminate
+        # the checking
+        unpack_indexable(node)
+      end
+
       def visit_vector_pattern(node)
         emit 'dup'
         emit 'typeof'
         emit 'const', const(Value::String.new('vector'))
         emit 'jumpne', @failto
+        unpack_indexable(node)
+      end
 
-        emit 'dup'
-        emit 'size'
-
-        if node.rest
-          emit 'const', const(Value::Number.new(node.patterns.size))
-          emit 'jumplt', @failto
-        else
+      def unpack_indexable(node)
+        # check args
+        if node.rest.nil?
+          # no rest-pattern, number of args must be exact
+          emit 'dup'
+          emit 'size'
           emit 'noop', sym(node.patterns.size.to_s)
           emit 'const', const(Value::Number.new(node.patterns.size))
           emit 'jumpne', @failto
+        elsif node.patterns.size > 0
+          # at least one regular pattern, number of args must be at
+          # least as many
+          emit 'dup'
+          emit 'size'
+          emit 'const', const(Value::Number.new(node.patterns.size))
+          emit 'jumplt', @failto
         end
 
         node.patterns.each_with_index do |el_pattern, i|

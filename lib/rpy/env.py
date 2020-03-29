@@ -18,16 +18,20 @@ class Env(Value):
         return out
 
     def s(self):
-        out = ['<env']
+        out = ['{ ']
+        is_first = True
         for (k, v) in self.as_dict().iteritems():
-            out.append('; %s = %s' % (k, v.s()))
+            if not is_first: out.append('; ')
+            is_first = False
+
+            out.append('%s = %s' % (k, v.s()))
 
         inp = self.get_input(0)
-        if inp: out.append(' in:%s' % inp.s())
+        if inp: out.append('; in:%s' % inp.s())
         outp = self.get_output(0)
-        if outp: out.append(' out:%s' % outp.s())
+        if outp: out.append('; out:%s' % outp.s())
 
-        out.append('>')
+        out.append(' }')
 
         return ''.join(out)
 
@@ -36,6 +40,9 @@ class Env(Value):
 
     def extend(self):
         return Env(self)
+
+    def unhinge(self):
+        return Env(None).merge(self)
 
     def merge(self, other):
         assert isinstance(other, Env)

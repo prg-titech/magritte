@@ -1,17 +1,34 @@
 load mag/prelude.mag
 
+# (
+#   put [a 1]
+#   put [b 2]
+#   put [a 3]
+#   put [b 4]
+# ) | each (
+#   [a ?x] => put [a (mul 10 $x)]
+#   [b ?y] => put [b (mul 100 $y)]
+# )
+# 
+# iter ([a ?x] => put [b (add 1 $x)]; [b ?y] => put [a (add 2 $y)]) [a 1]
+# 
+# # iter [add 1] 0 | each mul 3 | take 10
+# 
+# # crash oops && put yay !! put "oh no"
+
+# my-module = {
+#   a = 1
+#   b = 2
+#   (thing ?c) = add %a %b %c
+# }
+# 
+# $my-module!thing 6
+
+c = (make-channel)
+
 (
-  put [a 1]
-  put [b 2]
-  put [a 3]
-  put [b 4]
-) | each (
-  [a ?x] => put [a (mul 10 $x)]
-  [b ?y] => put [b (mul 100 $y)]
-)
+  put 1 %% (put comp > %c)
+  put 2 3 4 5 6
+) | take 2
 
-iter ([a ?x] => put [b (add 2 $x)]; [b ?y] => put [a (mul 3 $y)]) [a 1]
-
-# iter [add 1] 0 | each mul 3 | take 10
-
-# crash oops && put yay !! put "oh no"
+get < $c

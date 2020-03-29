@@ -147,11 +147,13 @@ class Channel(Value):
         def read(self, proc, count, into):
             if self.is_closed(): return proc.interrupt(Close(self, True))
             self.receivers.append(Receiver(proc, count, into))
+            if debug(): print '-- read set-waiting', proc.s()
             proc.set_waiting()
 
         def write_all(self, proc, vals):
             if self.is_closed(): return proc.interrupt(Close(self, False))
             self.senders.append(Sender(proc, vals))
+            if debug(): print '-- write set-waiting', proc.s()
             proc.set_waiting()
 
         def add_writer(self, frame):
@@ -164,12 +166,12 @@ class Channel(Value):
 
         def rm_writer(self, frame):
             if self.is_closed(): return
-            if debug(): print 'rm_writer', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
+            if debug(): print '-- rm_writer', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
             self.writer_count -= 1
 
         def rm_reader(self, frame):
             if self.is_closed(): return
-            if debug(): print 'rm_reader', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
+            if debug(): print '-- rm_reader', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
             self.reader_count -= 1
 
 

@@ -83,6 +83,7 @@ mkinst('env-extend', [], ['env'], ['env'], 'extend an environment')
 mkinst('env-collect', [], ['collection', 'env'], ['collection', 'env'], 'set up an environment to write to a collection')
 mkinst('env-pipe', [None, None], ['env', 'channel'], ['env', 'env'], 'make a producer and a consumer env from a channel')
 mkinst('env-merge', [], ['env', 'env'], ['env'], 'merge an env into another (mutates first)')
+mkinst('env-unhinge', [], ['env'], ['env'], 'unhinge an env from its parent')
 mkinst('let', ['sym'], ['env', None], [], 'make a new binding in an env')
 
 # tables
@@ -108,3 +109,5 @@ mkinst('rest', [None], ['collection'], [], 'get the remaining elements of a coll
 mkinst('noop', ['sym'], [], [], 'do nothing. debugging tool for the compiler')
 mkinst('clear', [], [], [], 'flush the value stack down to one element (used in pattern matching)')
 mkinst('size', [], ['vector'], ['int'], 'get the size of a vector or collection')
+
+mkinst('compensate', ['inst', None], [], [], 'register a compensation')

@@ -1,3 +1,9 @@
+def print_list_s(tag, vals):
+    print tag,
+    for v in vals: print v.s(),
+    print
+
+
 def as_dashed(name):
     name = name.replace('_', '-')
 

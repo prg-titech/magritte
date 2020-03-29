@@ -8,6 +8,7 @@ from env import Env
 from code import labels_by_addr, inst_table
 from load import arg_as_str
 from status import Status, Success, Fail
+from util import print_list_s
 
 class Proc(TableEntry):
     INIT = 0
@@ -51,6 +52,8 @@ class Proc(TableEntry):
         self.machine = machine
         self.frames = []
         self.interrupts = []
+        self.status = Success()
+        self.last_cleaned = []
 
     def frame(self, env, addr):
         if debug(): print '--', self.id, labels_by_addr[addr].name
@@ -61,6 +64,12 @@ class Proc(TableEntry):
             env = eliminated.env.merge(env)
 
         frame = Frame(self, env, addr)
+
+        if eliminated:
+            if debug(): print '-- saving compensations', frame.s()
+            for comp in eliminated.compensations:
+                frame.compensations.append(comp)
+
         self.frames.append(frame)
         frame.setup()
         return frame
@@ -74,10 +83,10 @@ class Proc(TableEntry):
         if len(self.frames) <= 1: return
 
         while len(self.frames) > 1 and self.current_frame().should_eliminate():
-            if debug(): print 'tail eliminating %s' % self.current_frame().s()
+            if debug(): print '-- tco', self.s()
             out = self.pop()
 
-        if debug() and out: print 'after elimination', self.s()
+        if debug() and out: print '-- post-tco', self.s()
 
         return out
 
@@ -104,6 +113,12 @@ class Proc(TableEntry):
                 # IMPORTANT: only check interrupts when we're waiting!
                 if self.state == Proc.INTERRUPTED and self.check_interrupts(): return
 
+                if debug() and self.last_cleaned:
+                    print '-- emptying last_cleaned',
+                    for f in self.last_cleaned: print f.s(),
+                    print
+
+                self.last_cleaned = []
                 self.state = Proc.RUNNING
                 self.current_frame().step()
         except Crash as e:
@@ -133,14 +148,23 @@ class Proc(TableEntry):
             while self.frames and self.has_channel(not interrupt.is_input, interrupt.channel):
                 if debug(): print 'unwind!'
                 self.pop()
-
-            if self.frames:
-                self.state = Proc.RUNNING
-            else:
-                self.state = Proc.DONE
         else:
-            # TODO: status types
-            self.state = Proc.TERMINATED
+            while self.frame:
+                if debug(): print 'unwind all!'
+                self.pop()
+
+        if debug(): print_list_s('-- unwound', self.last_cleaned)
+        for frame in self.last_cleaned:
+            if debug():
+                print '-- compensating', frame.s(), len(frame.compensations)
+            for (addr, _) in frame.compensations:
+                if debug(): print '-- unwind-comp', frame.s(), labels_by_addr[addr].name
+                self.frame(frame.env, addr)
+
+        if self.frames:
+            self.state = Proc.RUNNING
+        else:
+            self.state = Proc.DONE
 
         return True
 
@@ -172,6 +196,10 @@ class Frame(object):
     def fail_str(self, reason_str):
         raise Crash(Fail(String(reason_str)))
 
+    def add_compensation(self, addr, is_unconditional):
+        if debug(): print '-- add-compensation', self.s(), addr, is_unconditional
+        self.compensations.append((addr, is_unconditional))
+
     def __init__(self, proc, env, addr):
         assert isinstance(env, Env)
         assert isinstance(addr, int)
@@ -179,6 +207,7 @@ class Frame(object):
         self.env = env
         self.pc = self.addr = addr
         self.stack = []
+        self.compensations = []
 
     def s(self):
         out = ['<frame/']
@@ -191,6 +220,10 @@ class Frame(object):
             out.append(' ')
             out.append(el.s())
 
+        if self.compensations:
+            out.append(' %% ')
+            out.append(str(len(self.compensations)))
+
         out.append('>')
         return ''.join(out)
 
@@ -202,9 +235,11 @@ class Frame(object):
         self.env.each_output(register_as_output, self)
 
     def cleanup(self):
-        if debug(): print 'cleanup', self
+        if debug(): print '-- cleanup', self
         self.env.each_input(deregister_as_input, self)
         self.env.each_output(deregister_as_output, self)
+        is_success = self.proc.status.is_success()
+        self.proc.last_cleaned.append(self)
 
     def push(self, val):
         assert val is not None, 'pushing None onto the stack'
@@ -242,7 +277,7 @@ class Frame(object):
 
     def pop_channel(self, message='not-a-channel'):
         val = self.pop()
-        if not isinstance(val, Channel): self.fail(tagged(message, val))
+        if not val.channelable: self.fail(tagged(message, val))
         return val
 
     def pop_vec(self, message='not-a-vector'):

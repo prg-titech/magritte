@@ -11,7 +11,11 @@ intrinsics = Table()
 def intrinsic(fn):
     intrinsic_name = as_dashed(fn.__name__)
     def wrapper(frame, args):
-        if debug(): print frame.proc.id, ':'+intrinsic_name, ' '.join(a.s() for a in args)
+        if debug():
+            print ':', '@!'+intrinsic_name,
+            for a in args:
+                print ' '+a.s(),
+            print
         return fn(frame, args)
 
     # make sure the name is stored as a symbol
@@ -38,10 +42,6 @@ def mul(frame, args):
     frame.put([Int(product)])
 
 @intrinsic
-def put(frame, args):
-    frame.put(args)
-
-@intrinsic
 def get(frame, args):
     # we can't block, so we have to specify a place to write
     # the value to when it's ready. eventually this will be
@@ -56,9 +56,9 @@ def take(frame, args):
 
 @intrinsic
 def for_(frame, args):
-    vec = args[0]
-    if not isinstance(vec, Vector): frame.fail(tagged('not-a-vector', vec))
-    frame.put(vec.values)
+    for vec in args:
+        if not isinstance(vec, Vector): frame.fail(tagged('not-a-vector', vec))
+        frame.put(vec.values)
 
 @intrinsic
 def stdout(frame, args):
@@ -77,3 +77,7 @@ def fail(frame, args):
 @intrinsic
 def crash(frame, args):
     frame.crash(Fail(args[0]))
+
+@intrinsic
+def make_channel(frame, args):
+    frame.put([frame.proc.machine.make_channel()])

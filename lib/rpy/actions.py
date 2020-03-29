@@ -97,8 +97,20 @@ def env(frame, args):
 @inst_action
 def ref(frame, args):
     env = frame.pop_env()
-    ref = env.lookup_ref(args[0])
-    frame.push(ref)
+    try:
+        frame.push(env.lookup_ref(args[0]))
+    except KeyError:
+        frame.fail(tagged('missing-key', env, String(revsym(args[0]))))
+
+@inst_action
+def dynamic_ref(frame, args):
+    lookup = frame.pop_string()
+    env = frame.pop_env()
+
+    try:
+        frame.push(env.lookup_ref(sym(lookup)))
+    except KeyError:
+        frame.fail(tagged('missing-key', env, String(lookup)))
 
 @inst_action
 def ref_get(frame, args):
@@ -142,7 +154,13 @@ def return_(frame, args):
     proc = frame.proc
     proc.pop()
     proc.status = Success()
-    if debug(): print 'after-return', proc.s()
+    if debug(): print '-- returned', proc.s()
+
+    for (addr, is_unconditional) in frame.compensations:
+        if debug():
+            print '-- ret-comp', ('(run!)' if is_unconditional else '(skip)'), labels_by_addr[addr].name
+        if is_unconditional: proc.frame(frame.env, addr)
+
     if not proc.frames:
         proc.set_done()
 
@@ -183,6 +201,11 @@ def env_extend(frame, args):
     frame.push(env.extend())
 
 @inst_action
+def env_unhinge(frame, args):
+    env = frame.pop_env()
+    frame.push(env.unhinge())
+
+@inst_action
 def channel(frame, args):
     frame.push(frame.proc.machine.make_channel())
 
@@ -197,6 +220,20 @@ def env_pipe(frame, args):
     if debug(): print '-- pipe %s | %s' % (producer, consumer)
     frame.push(consumer)
     frame.push(producer)
+
+@inst_action
+def env_set_input(frame, args):
+    idx = args[0]
+    inp = frame.pop_channel()
+    env = frame.pop_env()
+    env.set_input(idx, inp)
+
+@inst_action
+def env_set_output(frame, args):
+    idx = args[0]
+    outp = frame.pop_channel()
+    env = frame.pop_env()
+    env.set_output(idx, outp)
 
 @inst_action
 def intrinsic(frame, args):
@@ -246,3 +283,8 @@ def jumpfail(frame, args):
     if debug(): print '-- jumpfail', status.s()
     if not status.is_success():
         frame.pc = args[0]
+
+@inst_action
+def compensate(frame, args):
+    is_unconditional = (args[1] == 1)
+    frame.add_compensation(args[0], is_unconditional)

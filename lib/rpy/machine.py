@@ -61,6 +61,7 @@ class Machine(object):
 
         if debug(): print '%%%%% PHASE: resolve %%%%%'
         for channel in self.channels.table:
+            if debug(): print '+', channel.s()
             assert isinstance(channel, Channel)
             channel.resolve()
 
