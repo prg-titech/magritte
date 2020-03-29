@@ -77,7 +77,7 @@ class String(Value):
             if invokee.invokable:
                 invokee.invokable.invoke(frame, args)
             else:
-                frame.crash('not invokable: '+invokee.s())
+                frame.fail(tagged('not-invokable', invokee))
 
     def __init__(self, string):
         self.value = string
