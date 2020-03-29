@@ -9,6 +9,7 @@ from symbol import symbol_table, sym, revsym
 from intrinsic import intrinsic, intrinsics
 from base import base_env
 from spawn import spawn
+from status import Fail
 
 import os
 
@@ -163,7 +164,7 @@ def precompile(fname):
     try:
         mag_binary = os.environ['MAG_COMPILER']
     except KeyError:
-        raise Crash('cannot load %s, is not precompiled and MAG_COMPILER is not set' % fname)
+        raise Crash(Fail(String('cannot load %s, is not precompiled and MAG_COMPILER is not set' % fname)))
 
 
     if debug(): print 'magc out of date, recompiling', mag_binary, '-c', fname

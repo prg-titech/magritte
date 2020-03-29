@@ -19,6 +19,9 @@ __repr__ = "{ <prelude> }"
 
 exec = []
 
+(true) = ()
+(false) = (@!fail false)
+
 # 
 # (times ?n ?fn (?args)) = (
 #   in = (stdin)

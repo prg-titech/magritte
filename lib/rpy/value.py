@@ -3,9 +3,19 @@ from symbol import sym
 from debug import debug
 from code import labels_by_addr
 
-class Crash(Exception): pass
+from rpython.rlib.rarithmetic import r_uint, intmask
+
 class Done(Exception): pass
 class Deadlock(Exception): pass
+
+def tagged(tag, *values):
+    values = list(values)
+    values.insert(0, String(tag))
+    return Vector(values)
+
+class Crash(Exception):
+    def __init__(self, status):
+        self.status = status
 
 def impl(klass):
     """NOT_RPYTHON"""
@@ -44,8 +54,8 @@ class Value(TableEntry):
     invokable = None
     channelable = None
 
-    def as_number(self):
-        raise Crash('not a number: '+self.s())
+    def as_number(self, frame):
+        frame.fail(tagged('not a number', self))
 
     def s(self):
         raise NotImplementedError
@@ -62,7 +72,7 @@ class String(Value):
             try:
                 invokee = frame.env.get(symbol)
             except KeyError:
-                raise Crash('no such function '+self.value)
+                raise frame.fail(tagged('no-such-function', self))
 
             if invokee.invokable:
                 invokee.invokable.invoke(frame, args)
@@ -76,11 +86,18 @@ class String(Value):
     def s(self): return self.value
     def typeof(self): return 'string'
 
+    def as_number(self, frame):
+        try:
+            return int(self.value)
+        except ValueError:
+            frame.fail(tagged('not-a-number', self))
+
 class Int(Value):
     def __init__(self, value):
+        assert isinstance(value, int)
         self.value = value
 
-    def as_number(self):
+    def as_number(self, frame):
         return self.value
 
     def s(self): return str(self.value)
@@ -105,10 +122,10 @@ class Vector(Value):
             values = self.values
 
             if len(values) == 0:
-                raise Crash('empty invoke')
+                frame.fail_str('empty invoke')
 
             invokable = values[0].invokable
-            if not invokable: raise Crash('not invokable: %s' % values[0].s())
+            if not invokable: frame.fail(tagged('bad-invoke', values[0]))
 
             new_args = Vector(self.values[1:] + args.values)
             invokable.invoke(frame, new_args)

@@ -1,9 +1,8 @@
 from value import *
 from debug import debug
+from status import Status
 
-class Interrupt(object): pass
-
-class Close(Interrupt):
+class Close(Status):
     def __init__(self, channel, is_input):
         self.channel = channel
         self.is_input = is_input

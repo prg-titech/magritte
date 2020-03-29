@@ -8,9 +8,11 @@ from const import const_table
 from intrinsic import intrinsics
 from env import Env
 from symbol import revsym # error messages only
+from status import Success, Fail
 
 inst_actions = [None] * len(inst_type_table)
 inst_action_sig = enforceargs(None, lltype.Array(lltype.Signed))
+
 def inst_action(fn):
     """NOT_RPYTHON"""
     inst_type = as_dashed(fn.__name__)
@@ -73,14 +75,8 @@ def collect(frame, args):
 @inst_action
 def index(frame, args):
     idx = args[0]
-    source = frame.pop()
-
-    if isinstance(source, Vector):
-        frame.push(source.values[idx])
-    else:
-        if debug(): print source.s()
-        if debug(): print 'frame: ', frame.s()
-        frame.crash('not indexable')
+    source = frame.pop_vec()
+    frame.push(source.values[idx])
 
 @inst_action
 def current_env(frame, args):
@@ -133,14 +129,19 @@ def jumpne(frame, args):
 
 @inst_action
 def jumplt(frame, args):
+    limit = frame.pop_number()
     val = frame.pop_number()
-    if val < args[0]:
-        frame.pc = args[1]
+
+    if debug(): print '-- jumplt', val, '<', limit
+
+    if val < limit:
+        frame.pc = args[0]
 
 @inst_action
 def return_(frame, args):
     proc = frame.proc
     proc.pop()
+    proc.status = Success()
     if debug(): print 'after-return', proc.s()
     if not proc.frames:
         proc.set_done()
@@ -149,16 +150,16 @@ def return_(frame, args):
 def invoke(frame, args):
     collection = frame.pop_vec()
     if not collection.values:
-        raise Crash('empty invocation')
+        frame.fail_str('empty-invocation')
 
     if debug(): print '-- invoke', collection.s()
 
-    # tail elim
-    if frame.current_inst().id == InstType.RETURN:
-        frame.proc.frames.pop()
+    # tail elim is handled in proc.py
+    # if frame.current_inst().id == InstType.RETURN:
+    #     frame.proc.frames.pop()
 
     invokee = collection.values.pop(0)
-    if not invokee.invokable: raise Crash('cannot invoke %s' % invokee.s())
+    if not invokee.invokable: frame.fail(tagged('not-invokable', invokee))
 
     invokee.invokable.invoke(frame, collection)
 
@@ -203,30 +204,20 @@ def intrinsic(frame, args):
         builtin = intrinsics.lookup(args[0])
         frame.push(builtin)
     except IndexError:
-        frame.crash('unknown intrinsic: '+revsym(args[0]))
+        frame.fail(tagged('unknown-intrinsic', String(revsym(args[0]))))
 
 @inst_action
 def rest(frame, args):
     size = args[0]
-    assert size >= 0
-    source = frame.pop()
-    if isinstance(source, Vector):
-        assert size <= len(source.values)
-        frame.push(Vector(source.values[size:]))
-    else:
-        if debug(): print source.s()
-        if debug(): print 'frame: ', frame.s()
-        frame.crash('not indexable')
+    source = frame.pop_vec()
+    assert size <= len(source.values)
+    assert size > 0
+    frame.push(Vector(source.values[size:]))
 
 @inst_action
 def size(frame, args):
-    source = frame.pop()
-    if isinstance(source, Vector):
-        frame.push(Int(len(source.values)))
-    else:
-        if debug(): print source.s()
-        if debug(): print 'frame: ', frame.s()
-        frame.crash('not indexable')
+    source = frame.pop_vec()
+    frame.push(Int(len(source.values)))
 
 @inst_action
 def typeof(frame, args):
@@ -235,11 +226,23 @@ def typeof(frame, args):
 
 @inst_action
 def crash(frame, args):
-    if debug(): print '-- crash', frame.proc.s()
-    raise Crash
+    reason = frame.pop()
+    if debug(): print '-- crash', frame.proc.s(), reason.s()
+    raise Crash(reason)
 
 @inst_action
 def clear(frame, args):
     if len(frame.stack) > 1:
         frame.stack.pop(len(frame.stack) - 1)
     if debug(): print '-- clear', frame.s()
+
+@inst_action
+def last_status(frame, args):
+    frame.push(frame.proc.status)
+
+@inst_action
+def jumpfail(frame, args):
+    status = frame.pop_status()
+    if debug(): print '-- jumpfail', status.s()
+    if not status.is_success():
+        frame.pc = args[0]

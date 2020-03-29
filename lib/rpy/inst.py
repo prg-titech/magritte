@@ -61,7 +61,7 @@ mkinst('return', [], [], [], 'pop a frame off the stack')
 mkinst('spawn', ['inst'], ['env'], [], 'spawn a new process')
 mkinst('jump', ['inst'], [], [], 'jump')
 mkinst('jumpne', ['inst'], [None, None], [], 'jump if not equal')
-mkinst('jumplt', [None, 'inst'], ['int'], [], 'jump if less than')
+mkinst('jumplt', ['inst'], ['int', 'int'], [], 'jump if less than')
 mkinst('invoke', [], ['collection'], [], 'invoke a collection')
 mkinst('jumpfail', ['inst'], ['status'], [], 'jump if the last status is a failure')
 

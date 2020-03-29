@@ -3,6 +3,7 @@ from table import Table, TableEntry
 from value import *
 from symbol import sym
 from debug import debug
+from status import Fail
 
 intrinsics = Table()
 
@@ -24,7 +25,7 @@ def intrinsic(fn):
 def add(frame, args):
     total = 0
     for arg in args:
-        total += arg.as_number()
+        total += arg.as_number(frame)
 
     frame.put([Int(total)])
 
@@ -32,7 +33,7 @@ def add(frame, args):
 def mul(frame, args):
     product = 1
     for arg in args:
-        product *= arg.as_number()
+        product *= arg.as_number(frame)
 
     frame.put([Int(product)])
 
@@ -50,13 +51,13 @@ def get(frame, args):
 @intrinsic
 def take(frame, args):
     assert isinstance(args[0], Value)
-    count = args[0].as_number()
+    count = args[0].as_number(frame)
     frame.env.get_input(0).channelable.read(frame.proc, count, frame.env.get_output(0))
 
 @intrinsic
 def for_(frame, args):
     vec = args[0]
-    if not isinstance(vec, Vector): raise Crash('not a vector')
+    if not isinstance(vec, Vector): frame.fail(tagged('not-a-vector', vec))
     frame.put(vec.values)
 
 @intrinsic
@@ -68,3 +69,7 @@ def stdout(frame, args):
 
     frame.push(parent_frame.env.get_output(0))
 
+@intrinsic
+def fail(frame, args):
+    frame.proc.status = Fail(args[0])
+    frame.proc.pop()

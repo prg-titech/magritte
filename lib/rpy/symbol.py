@@ -14,9 +14,7 @@ class SymbolTable(Table):
         return self.table[idx].name
 
 class Symbol(TableEntry):
-    def __init__(self, string):
-        self.id = -1
-        self.name = string
+    def __init__(self, string): self.name = string
 
 
 symbol_table = SymbolTable()

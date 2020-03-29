@@ -7,6 +7,7 @@ from channel import Channel, Close
 from env import Env
 from code import labels_by_addr, inst_table
 from load import arg_as_str
+from status import Status, Success, Fail
 
 class Proc(TableEntry):
     INIT = 0
@@ -98,12 +99,15 @@ class Proc(TableEntry):
                 print 'out:', env.get_output(0) and env.get_output(0).s()
 
 
-        while self.frames and self.is_running():
-            # IMPORTANT: only check interrupts when we're waiting!
-            if self.state == Proc.INTERRUPTED and self.check_interrupts(): return
+        try:
+            while self.frames and self.is_running():
+                # IMPORTANT: only check interrupts when we're waiting!
+                if self.state == Proc.INTERRUPTED and self.check_interrupts(): return
 
-            self.state = Proc.RUNNING
-            self.current_frame().step()
+                self.state = Proc.RUNNING
+                self.current_frame().step()
+        except Crash as e:
+            self.status = e.status
 
         if not self.frames:
             if debug(): print 'out of frames', self.s()
@@ -156,7 +160,14 @@ class Proc(TableEntry):
 
 class Frame(object):
     def crash(self, message):
+        assert isinstance(message, Status)
         raise Crash(message)
+
+    def fail(self, reason):
+        raise Crash(Fail(reason))
+
+    def fail_str(self, reason_str):
+        raise Crash(Fail(String(reason_str)))
 
     def __init__(self, proc, env, addr):
         assert isinstance(env, Env)
@@ -193,47 +204,52 @@ class Frame(object):
         self.env.each_output(deregister_as_output, self)
 
     def push(self, val):
-        if val is None: raise Crash('pushing None onto the stack')
+        assert val is not None, 'pushing None onto the stack'
 
         self.stack.append(val)
 
     def pop(self):
-        if not self.stack: raise Crash('empty stack!')
+        if not self.stack: raise Crash(Fail(String('empty-stack')))
         val = self.stack.pop()
         assert isinstance(val, Value)
         return val
 
     def pop_number(self):
-        return self.pop().as_number()
+        return self.pop().as_number(self)
 
-    def pop_string(self, message='not a string: %s'):
+    def pop_string(self, message='not-a-string'):
         val = self.pop()
-        if not isinstance(val, String): raise Crash(message % val.s())
+        if not isinstance(val, String): self.fail(tagged(message, val))
         return val.value
 
-    def pop_env(self, message='not an env: %s'):
+    def pop_status(self, message='not-a-status'):
         val = self.pop()
-        if not isinstance(val, Env): raise Crash(message % val.s())
+        if not isinstance(val, Status): self.fail(tagged(message, val))
         return val
 
-    def pop_ref(self, message='not a ref: %s'):
+    def pop_env(self, message='not-an-env'):
         val = self.pop()
-        if not isinstance(val, Ref): raise Crash(message % val.s())
+        if not isinstance(val, Env): self.fail(tagged(message, val))
         return val
 
-    def pop_channel(self, message='not a channel: %s'):
+    def pop_ref(self, message='not-a-ref'):
         val = self.pop()
-        if not isinstance(val, Channel): raise Crash(message % val.s())
+        if not isinstance(val, Ref): self.fail(tagged(message, val))
         return val
 
-    def pop_vec(self, message='not a vector: %s'):
+    def pop_channel(self, message='not-a-channel'):
         val = self.pop()
-        if not isinstance(val, Vector): raise Crash(message % val.s())
+        if not isinstance(val, Channel): self.fail(tagged(message, val))
         return val
 
-    def top_vec(self, message='not a vector: %s'):
+    def pop_vec(self, message='not-a-vector'):
+        val = self.pop()
+        if not isinstance(val, Vector): self.fail(tagged(message, val))
+        return val
+
+    def top_vec(self, message='not-a-vector'):
         val = self.top()
-        if not isinstance(val, Vector): raise Crash(message % val.s())
+        if not isinstance(val, Vector): self.fail(tagged(message, val))
         return val
 
     def top(self):
