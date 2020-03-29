@@ -12,8 +12,8 @@ mul = @!mul
 (drain) = (@!get; drain)
 (repeat (?a)) = (@!for $a; repeat (@!for $a))
 (iter ?fn ?x) = (put $x; iter $fn ($fn $x))
-(each (?args)) = (
-  (k) = (%args (@!get); k)
+(each (?fn)) = (
+  (k) = (%fn (@!get); k)
   k
 )
 
@@ -27,6 +27,9 @@ exec = []
 (false) = (@!fail false)
 
 (make-channel) = @!make-channel
+
+(count-forever) = iter [@!add 1] 0
+(eq ?x ?y) = @!eq $x $y
 
 # 
 # (times ?n ?fn (?args)) = (
