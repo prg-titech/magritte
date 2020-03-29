@@ -73,3 +73,7 @@ def stdout(frame, args):
 def fail(frame, args):
     frame.proc.status = Fail(args[0])
     frame.proc.pop()
+
+@intrinsic
+def crash(frame, args):
+    frame.crash(Fail(args[0]))
