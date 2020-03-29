@@ -288,7 +288,7 @@ module Magritte
     def compile_patterns(name, range, patterns, bodies, failto)
       start_label = @current_label
       labels = (0...patterns.size).map { |i| label("#{name}-#{i}", range) }
-      fallthrough = labels[1..] + [failto]
+      fallthrough = labels.drop(1) + [failto]
 
       patterns.zip(labels, fallthrough, bodies) do |pat, label, failto, body|
         @current_label = label
