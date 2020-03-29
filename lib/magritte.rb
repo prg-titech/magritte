@@ -51,12 +51,14 @@ module Magritte
   # load "#{LIB_DIR}/magritte/vm/interp.rb"
 
   # step
-  load "#{LIB_DIR}/magritte/runtime/channel.rb"
-  load "#{LIB_DIR}/magritte/runtime/frame.rb"
-  load "#{LIB_DIR}/magritte/runtime/layer.rb"
-  load "#{LIB_DIR}/magritte/runtime/proc.rb"
-  load "#{LIB_DIR}/magritte/runtime/scheduler.rb"
-  load "#{LIB_DIR}/magritte/runtime/builtins.rb"
+  # load "#{LIB_DIR}/magritte/runtime/channel.rb"
+  # load "#{LIB_DIR}/magritte/runtime/frame.rb"
+  # load "#{LIB_DIR}/magritte/runtime/layer.rb"
+  # load "#{LIB_DIR}/magritte/runtime/proc.rb"
+  # load "#{LIB_DIR}/magritte/runtime/scheduler.rb"
+  # load "#{LIB_DIR}/magritte/runtime/builtins.rb"
+
+  load "#{LIB_DIR}/magritte/compiler.rb"
 
   # tools
   load "#{LIB_DIR}/magritte/runner.rb"

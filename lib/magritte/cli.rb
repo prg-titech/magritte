@@ -9,8 +9,6 @@ module Magritte
     end
 
     def compile_files
-      load "#{LIB_DIR}/magritte/compiler.rb"
-
       # TODO
       file = @files[0]
       ast = Parser.parse(Skeleton.parse(Lexer.new(file, File.read(file))))

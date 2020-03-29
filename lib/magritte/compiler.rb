@@ -304,7 +304,11 @@ module Magritte
 
     def visit_lambda(node)
       # TODO: make this global or unnecessary
-      crash = label('crash') { emit 'crash' }
+      crash = label('crash') do
+        emit 'const', const(Value::String.new('pattern match fail!'))
+        emit 'crash'
+      end
+
       pattern_labels = compile_patterns(node.name, node.range, node.patterns, node.bodies, crash)
 
       addr = label('lambda', node.range) do
@@ -473,7 +477,8 @@ module Magritte
         emit 'size'
 
         if node.rest
-          emit 'jumplt', node.patterns.size, @failto
+          emit 'const', const(Value::Number.new(node.patterns.size))
+          emit 'jumplt', @failto
         else
           emit 'noop', sym(node.patterns.size.to_s)
           emit 'const', const(Value::Number.new(node.patterns.size))
