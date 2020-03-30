@@ -36,7 +36,7 @@ class Machine(object):
         return proc
 
     def run(self):
-        if debug(): print 'run!'
+        debug(0, ['run!'])
         try:
             while True: self.step()
         except Done:
@@ -45,7 +45,7 @@ class Machine(object):
         assert False # impossible
 
     def step(self):
-        if debug(): print '%%%%% PHASE: step %%%%%'
+        debug(0, ['%%%%% PHASE: step %%%%%'])
         for proc in self.procs.table:
             if not proc: continue
             if proc.state == Proc.DONE: continue
@@ -59,24 +59,21 @@ class Machine(object):
 
                 proc.step()
 
-        if debug(): print '%%%%% PHASE: resolve %%%%%'
+        debug(0, ['%%%%% PHASE: resolve %%%%%'])
         for channel in self.channels.table:
-            if debug(): print '+', channel.s()
+            debug(0, ['+', channel.s()])
             assert isinstance(channel, Channel)
             channel.resolve()
 
-        if debug():
-            print '%%%%% PHASE: check %%%%%'
-            for p in self.procs.table: print p.s()
+        debug(0, ['%%%%% PHASE: check %%%%%'])
+        for p in self.procs.table: debug(0, [p.s()])
 
         running = 0
         waiting = 0
         for proc in self.procs.table:
             if proc.is_running():
-                # if debug(): print '> ', proc.id, 'running'
                 running += 1
             elif proc.state == Proc.WAITING:
-                # if debug(): print '> ', proc.id, 'waiting'
                 waiting += 1
 
         if running == 0 and waiting > 0: raise Deadlock

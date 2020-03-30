@@ -24,10 +24,10 @@ class Receiver(Blocker):
         self.count = count
 
     def receive(self, val):
-        if debug(): print 'receiving', val.s(), 'into', self.into.s()
+        debug(0, ['receiving', val.s(), 'into', self.into.s()])
         self.into.channelable.write(self.proc, val)
         self.count -= 1
-        if debug(): print 'remaining', self.count, self.is_done()
+        debug(0, ['remaining', str(self.count), str(self.is_done())])
         if self.is_done(): self.proc.try_set_running()
 
     def is_done(self):
@@ -60,10 +60,10 @@ class Sender(Blocker):
         return self.index >= len(self.values)
 
     def send(self, receiver):
-        if debug(): print 'sending', self.s()
+        debug(0, ['sending', self.s()])
 
         receiver.receive(self.next_val())
-        if debug(): print 'sender is_done()', self.is_done()
+        debug(0, ['sender is_done()', str(self.is_done())])
         if self.is_done(): self.proc.try_set_running()
 
     def s(self):
@@ -115,10 +115,10 @@ class Channel(Value):
 
         if self.state != Channel.OPEN: return False
 
-        if debug(): print 'check_for_close', self.s()
+        debug(0, ['check_for_close', self.s()])
         if self.reader_count > 0 and self.writer_count > 0: return False
 
-        if debug(): print 'closing', self.s()
+        debug(0, ['closing', self.s()])
         self.state = Channel.CLOSED
 
         for blocker in self.senders:
@@ -147,31 +147,33 @@ class Channel(Value):
         def read(self, proc, count, into):
             if self.is_closed(): return proc.interrupt(Close(self, True))
             self.receivers.append(Receiver(proc, count, into))
-            if debug(): print '-- read set-waiting', proc.s()
+            debug(0, ['-- read set-waiting', proc.s()])
             proc.set_waiting()
 
         def write_all(self, proc, vals):
             if self.is_closed(): return proc.interrupt(Close(self, False))
             self.senders.append(Sender(proc, vals))
-            if debug(): print '-- write set-waiting', proc.s()
+            debug(0, ['-- write set-waiting', proc.s()])
             proc.set_waiting()
 
         def add_writer(self, frame):
-            if debug(): print '-- add_writer', self.s(), frame.s()
+            debug(0, ['-- add_writer', self.s(), frame.s()])
             self.writer_count += 1
 
         def add_reader(self, frame):
-            if debug(): print '-- add_reader', self.s(), frame.s()
+            debug(0, ['-- add_reader', self.s(), frame.s()])
             self.reader_count += 1
 
         def rm_writer(self, frame):
             if self.is_closed(): return
-            if debug(): print '-- rm_writer', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
+            debug(0, ['-- rm_writer', self.s(), frame.s()] + [s.s() for s in self.senders] + [r.s() for r in self.receivers])
             self.writer_count -= 1
 
         def rm_reader(self, frame):
             if self.is_closed(): return
-            if debug(): print '-- rm_reader', self.s(), frame.s(), ' '.join([s.s() for s in self.senders]), ' '.join([r.s() for r in self.receivers])
+            debug(0, ['-- rm_reader', self.s(), frame.s()]
+                    + [s.s() for s in self.senders]
+                    + [r.s() for r in self.receivers])
             self.reader_count -= 1
 
 

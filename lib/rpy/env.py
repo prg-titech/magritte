@@ -79,12 +79,12 @@ class Env(Value):
 
     def set_input(self, i, ch):
         assert ch.channelable
-        if debug(): print 'set_input', self.s(), ch.s()
+        debug(0, ['set_input', self.s(), ch.s()])
         self.inputs[i] = ch
 
     def set_output(self, i, ch):
         assert ch.channelable
-        if debug(): print 'set_output', self.s(), ch.s()
+        debug(0, ['set_output', self.s(), ch.s()])
         self.outputs[i] = ch
 
     def each_input(self, fn, *a):

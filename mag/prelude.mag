@@ -29,7 +29,9 @@ exec = []
 (make-channel) = @!make-channel
 
 (count-forever) = iter [@!add 1] 0
-(eq ?x ?y) = @!eq $x $y
+
+# TODO
+# (eq ?x ?y) = @!eq $x $y
 
 # 
 # (times ?n ?fn (?args)) = (

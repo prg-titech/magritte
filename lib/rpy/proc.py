@@ -30,9 +30,9 @@ class Proc(TableEntry):
     # INTERRUPTED and we want to avoid overriding that.
     def try_set_running(self):
         if self.state == Proc.INTERRUPTED:
-            if debug(): print 'try_set_running: already interrupted', self.s()
+            debug(0, ['try_set_running: already interrupted', self.s()])
         else:
-            if debug(): print 'try_set_running: set to running', self.s()
+            debug(0, ['try_set_running: set to running', self.s()])
             self.set_running()
 
     def state_name(self):
@@ -56,7 +56,7 @@ class Proc(TableEntry):
         self.last_cleaned = []
 
     def frame(self, env, addr):
-        if debug(): print '--', self.id, labels_by_addr[addr].name
+        debug(0, ['--', str(self.id), labels_by_addr[addr].name])
         assert isinstance(addr, int)
         eliminated = self.tail_eliminate()
 
@@ -66,7 +66,7 @@ class Proc(TableEntry):
         frame = Frame(self, env, addr)
 
         if eliminated:
-            if debug(): print '-- saving compensations', frame.s()
+            debug(0, ['-- saving compensations', frame.s()])
             for comp in eliminated.compensations:
                 frame.compensations.append(comp)
 
@@ -83,10 +83,10 @@ class Proc(TableEntry):
         if len(self.frames) <= 1: return
 
         while len(self.frames) > 1 and self.current_frame().should_eliminate():
-            if debug(): print '-- tco', self.s()
+            debug(0, ['-- tco', self.s()])
             out = self.pop()
 
-        if debug() and out: print '-- post-tco', self.s()
+        debug(0, ['-- post-tco', self.s()])
 
         return out
 
@@ -99,66 +99,62 @@ class Proc(TableEntry):
         return top
 
     def step(self):
-        if debug():
-            print '=== step %s ===' % self.s()
-            if self.frames:
-                env = self.current_frame().env
-                print 'env:', env.s()
-                print 'in:', env.get_input(0) and env.get_input(0).s()
-                print 'out:', env.get_output(0) and env.get_output(0).s()
-
+        debug(0, ['=== step %s ===' % self.s()])
+        if self.frames:
+            env = self.current_frame().env
+            debug(0, ['env:', env.s()])
+            debug(0, ['in:', env.get_input(0).s() if env.get_input(0) else '_'])
+            debug(0, ['out:', env.get_output(0).s() if env.get_output(0) else '_'])
 
         try:
             while self.frames and self.is_running():
                 # IMPORTANT: only check interrupts when we're waiting!
                 if self.state == Proc.INTERRUPTED and self.check_interrupts(): return
 
-                if debug() and self.last_cleaned:
-                    print '-- emptying last_cleaned',
-                    for f in self.last_cleaned: print f.s(),
-                    print
+                if self.last_cleaned:
+                    debug(0, ['-- emptying last_cleaned'] +
+                             [f.s() for f in self.last_cleaned])
 
                 self.last_cleaned = []
                 self.state = Proc.RUNNING
                 self.current_frame().step()
         except Crash as e:
             print '-- crash', e.status.s()
-            if debug(): print '-- crashed', self.s()
+            debug(0, ['-- crashed', self.s()])
             self.status = e.status
             self.state = Proc.TERMINATED
 
         if not self.frames:
-            if debug(): print 'out of frames', self.s()
+            debug(0, ['out of frames', self.s()])
             self.state = Proc.DONE
 
 
     def check_interrupts(self):
-        if debug(): print 'check_interrupts', self.s()
+        debug(0, ['check_interrupts', self.s()])
         if not self.interrupts: return False
 
         interrupt = self.interrupts.pop(0)
-        if debug(): print 'interrupted:', interrupt.s()
+        debug(0, ['-- interrupted', self.s(), interrupt.s()])
 
         # unwind the stack until the channel goes out of scope
         if isinstance(interrupt, Close):
-            if debug(): print 'channel closed', interrupt.s()
-            if debug(): print 'env:', self.current_frame().env.s()
-            if debug(): print 'has channel?', self.has_channel(not interrupt.is_input, interrupt.channel)
+            debug(0, ['channel closed', interrupt.s()])
+            debug(0, ['env:', self.current_frame().env.s()])
+            debug(0, ['has channel?', str(self.has_channel(not interrupt.is_input, interrupt.channel))])
 
             while self.frames and self.has_channel(not interrupt.is_input, interrupt.channel):
-                if debug(): print 'unwind!'
+                debug(0, ['unwind!'])
                 self.pop()
         else:
             while self.frame:
-                if debug(): print 'unwind all!'
+                debug(0, ['unwind all!'])
                 self.pop()
 
-        if debug(): print_list_s('-- unwound', self.last_cleaned)
+        debug(0, ['unwound'] + [f.s() for f in self.last_cleaned])
         for frame in self.last_cleaned:
-            if debug():
-                print '-- compensating', frame.s(), len(frame.compensations)
+            debug(0, ['-- compensating', frame.s(), str(len(frame.compensations))])
             for (addr, _) in frame.compensations:
-                if debug(): print '-- unwind-comp', frame.s(), labels_by_addr[addr].name
+                debug(0, ['-- unwind-comp', frame.s(), labels_by_addr[addr].name])
                 self.frame(frame.env, addr)
 
         if self.frames:
@@ -172,7 +168,7 @@ class Proc(TableEntry):
         return self.current_frame().env.has_channel(is_input, channel)
 
     def interrupt(self, interrupt):
-        if debug(): print 'interrupt', self.s(), interrupt.s()
+        debug(0, ['interrupt', self.s(), interrupt.s()])
         self.interrupts.append(interrupt)
         self.state = Proc.INTERRUPTED
 
@@ -197,7 +193,7 @@ class Frame(object):
         raise Crash(Fail(String(reason_str)))
 
     def add_compensation(self, addr, is_unconditional):
-        if debug(): print '-- add-compensation', self.s(), addr, is_unconditional
+        debug(0, ['-- add-compensation', self.s(), labels_by_addr[addr].name, str(is_unconditional)])
         self.compensations.append((addr, is_unconditional))
 
     def __init__(self, proc, env, addr):
@@ -235,7 +231,7 @@ class Frame(object):
         self.env.each_output(register_as_output, self)
 
     def cleanup(self):
-        if debug(): print '-- cleanup', self
+        debug(0, ['-- cleanup', self.s()])
         self.env.each_input(deregister_as_input, self)
         self.env.each_output(deregister_as_output, self)
         is_success = self.proc.status.is_success()
@@ -294,7 +290,7 @@ class Frame(object):
         return self.stack[len(self.stack)-1]
 
     def put(self, vals):
-        if debug(): print 'put', self.env.get_output(0).s(), ' '.join(v.s() for v in vals)
+        debug(0, ['put', self.env.get_output(0).s()] + [v.s() for v in vals])
         self.env.get_output(0).channelable.write_all(self.proc, vals)
 
     def get(self, into, n=1):
@@ -305,15 +301,9 @@ class Frame(object):
 
     # @enforceargs(None, lltype.Signed, lltype.Array(lltype.Signed))
     def run_inst_action(self, inst_id, static_args):
-        if debug():
-            inst_type = inst_type_table.lookup(inst_id)
-            msg = ['+ ']
-            msg.append(inst_type.name)
-            for (i, arg) in enumerate(static_args):
-                msg.append(' ')
-                msg.append(arg_as_str(inst_type, i, arg))
-
-            print ''.join(msg)
+        inst_type = inst_type_table.lookup(inst_id)
+        debug(0, ['+', inst_type.name] +
+                 [arg_as_str(inst_type, i, arg) for (i, arg) in enumerate(static_args)])
 
         action = inst_actions[inst_id]
         if not action:

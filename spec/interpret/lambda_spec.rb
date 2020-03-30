@@ -101,9 +101,7 @@ interpret_spec "lambda functionality" do
   interpret "nested body stretching multiple lines" do
     source <<-EOF
       (f ?x ?y) = (
-        z = (?a => (
-            put (dec $a) 1
-        ))
+        z = (?a => put (dec $a) 1)
         put (z $x) $y
       )
       put (f 1 2)

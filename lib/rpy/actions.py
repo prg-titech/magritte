@@ -40,14 +40,14 @@ def swap(frame, args):
 
 @inst_action
 def dup(frame, args):
-    if debug(): print '-- dup', frame.s()
+    debug(0, ['-- dup', frame.s()])
     frame.push(frame.top())
 
 @inst_action
 def frame(frame, args):
     env = frame.pop_env()
     addr = args[0]
-    if debug(): print '-- frame', env.s()
+    debug(0, ['-- frame', env.s()])
     frame.proc.frame(env, addr)
 
 @inst_action
@@ -55,7 +55,7 @@ def spawn(frame, args):
     addr = args[0]
     env = frame.pop_env()
     new_proc = frame.proc.machine.spawn(env, addr)
-    if debug(): print '-- spawn', env.s(), new_proc.s()
+    debug(0, ['-- spawn', env.s(), new_proc.s()])
 
 @inst_action
 def collection(frame, args):
@@ -87,7 +87,7 @@ def let(frame, args):
     val = frame.pop()
     env = frame.pop()
     sym = args[0]
-    if debug(): print revsym(sym), '=', val.s()
+    debug(0, [revsym(sym), '=', val.s()])
     env.let(sym, val)
 
 @inst_action
@@ -132,7 +132,7 @@ def jumpne(frame, args):
     lhs = frame.pop()
     rhs = frame.pop()
 
-    if debug(): print '-- jumpne', lhs.s(), rhs.s()
+    debug(0, ['-- jumpne', lhs.s(), rhs.s()])
 
     # TODO: define equality properly!
     if lhs.s() == rhs.s(): return
@@ -144,7 +144,7 @@ def jumplt(frame, args):
     limit = frame.pop_number()
     val = frame.pop_number()
 
-    if debug(): print '-- jumplt', val, '<', limit
+    debug(0, ['-- jumplt', str(val), '<', str(limit)])
 
     if val < limit:
         frame.pc = args[0]
@@ -154,11 +154,10 @@ def return_(frame, args):
     proc = frame.proc
     proc.pop()
     proc.status = Success()
-    if debug(): print '-- returned', proc.s()
+    debug(0, ['-- returned', proc.s()])
 
     for (addr, is_unconditional) in frame.compensations:
-        if debug():
-            print '-- ret-comp', ('(run!)' if is_unconditional else '(skip)'), labels_by_addr[addr].name
+        debug(0, ['-- ret-comp', ('(run!)' if is_unconditional else '(skip)'), labels_by_addr[addr].name])
         if is_unconditional: proc.frame(frame.env, addr)
 
     if not proc.frames:
@@ -170,7 +169,7 @@ def invoke(frame, args):
     if not collection.values:
         frame.fail_str('empty-invocation')
 
-    if debug(): print '-- invoke', collection.s()
+    debug(0, ['-- invoke', collection.s()])
 
     # tail elim is handled in proc.py
     # if frame.current_inst().id == InstType.RETURN:
@@ -217,7 +216,7 @@ def env_pipe(frame, args):
     producer.set_output(0, channel)
     consumer = env.extend()
     consumer.set_input(0, channel)
-    if debug(): print '-- pipe %s | %s' % (producer, consumer)
+    debug(0, ['-- pipe %s | %s' % (producer.s(), consumer.s())])
     frame.push(consumer)
     frame.push(producer)
 
@@ -264,14 +263,14 @@ def typeof(frame, args):
 @inst_action
 def crash(frame, args):
     reason = frame.pop()
-    if debug(): print '-- crash', frame.proc.s(), reason.s()
+    debug(0, ['-- crash', frame.proc.s(), reason.s()])
     raise Crash(reason)
 
 @inst_action
 def clear(frame, args):
     if len(frame.stack) > 1:
         frame.stack.pop(len(frame.stack) - 1)
-    if debug(): print '-- clear', frame.s()
+    debug(0, ['-- clear', frame.s()])
 
 @inst_action
 def last_status(frame, args):
@@ -280,7 +279,7 @@ def last_status(frame, args):
 @inst_action
 def jumpfail(frame, args):
     status = frame.pop_status()
-    if debug(): print '-- jumpfail', status.s()
+    debug(0, ['-- jumpfail', status.s()])
     if not status.is_success():
         frame.pc = args[0]
 

@@ -103,9 +103,9 @@ def arg_as_str(inst_type, i, arg):
         if arg_type == 'sym': return ':'+revsym(arg)
         if arg_type == 'intrinsic': return '@!'+intrinsics.lookup(arg).name
     except KeyError as e:
-        if debug(): print 'no key:', inst_type.name, arg_type, i, arg
+        debug(0, ['no key:', inst_type.name, arg_type or '??', str(i), str(arg)])
     except IndexError as e:
-        if debug(): print 'no index:', inst_type.name, arg_type, i, arg
+        debug(0, ['no index:', inst_type.name, arg_type or '??', str(i), str(arg)])
 
     return '?%s' % str(arg)
 
@@ -167,7 +167,7 @@ def precompile(fname):
         raise Crash(Fail(String('cannot load %s, is not precompiled and MAG_COMPILER is not set' % fname)))
 
 
-    if debug(): print 'magc out of date, recompiling', mag_binary, '-c', fname
+    debug(0, ['magc out of date, recompiling', mag_binary, '-c', fname])
     spawn(mag_binary, ['-c', fname])
 
 @intrinsic
@@ -178,7 +178,7 @@ def load(frame, args):
 
     load_file(fname + 'c')
     addr = label_table.get('main').addr
-    if debug(): print 'load!', fname, addr
+    debug(0, ['load!', fname, str(addr)])
 
     frame.proc.frame(base_env, addr)
 

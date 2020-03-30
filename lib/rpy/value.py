@@ -154,10 +154,7 @@ class Vector(Value):
             if not_first: out.append(' ')
             not_first = True
 
-            if debug() and val is None:
-                out.append('None')
-            else:
-                out.append(val.s())
+            out.append(val.s())
 
         out.append(']')
         return ''.join(out)
@@ -183,7 +180,7 @@ class Function(Value):
     @impl
     class Invoke(Invokable):
         def invoke(self, frame, collection):
-            if debug(): print '()', self.label().s()
+            debug(0, ['()', self.label().s()])
             new_env = frame.env.extend().merge(self.env)
             new_frame = frame.proc.frame(new_env, self.addr)
             new_frame.push(collection)

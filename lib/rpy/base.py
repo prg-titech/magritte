@@ -9,7 +9,7 @@ base_env = Env()
 
 def global_out(proc, vals):
     for val in vals:
-        if debug(): print '==== GLOBAL_OUT ====', val.s()
+        debug(0, ['==== GLOBAL_OUT ====', val.s()])
         print val.s()
 
 base_env.set_output(0, Streamer(global_out))

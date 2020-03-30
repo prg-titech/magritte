@@ -11,11 +11,7 @@ intrinsics = Table()
 def intrinsic(fn):
     intrinsic_name = as_dashed(fn.__name__)
     def wrapper(frame, args):
-        if debug():
-            print ':', '@!'+intrinsic_name,
-            for a in args:
-                print ' '+a.s(),
-            print
+        debug(0, [':', '@!'+intrinsic.name] + [a.s() for a in args])
         return fn(frame, args)
 
     # make sure the name is stored as a symbol
