@@ -50,6 +50,7 @@ class Machine(object):
             if not proc: continue
             if proc.state == Proc.DONE: continue
 
+            debug(0, ['-- running proc', proc.s()])
             if proc.is_running():
                 jit_driver.jit_merge_point(
                     pc=proc.current_frame().pc,
@@ -62,8 +63,8 @@ class Machine(object):
         debug(0, ['%%%%% PHASE: resolve %%%%%'])
         for channel in self.channels.table:
             debug(0, ['+', channel.s()])
-            assert isinstance(channel, Channel)
-            channel.resolve()
+            assert channel.channelable is not None
+            channel.channelable.resolve()
 
         debug(0, ['%%%%% PHASE: check %%%%%'])
         for p in self.procs.table: debug(0, [p.s()])

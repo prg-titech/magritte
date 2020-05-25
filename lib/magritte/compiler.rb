@@ -552,6 +552,7 @@ module Magritte
           emit 'env-extend'
           emit 'env-collect'
           emit 'frame', addr
+          emit 'wait-for-close'
         else
           visit(node)
           emit 'collect'

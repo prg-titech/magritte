@@ -111,3 +111,4 @@ mkinst('clear', [], [], [], 'flush the value stack down to one element (used in 
 mkinst('size', [], ['vector'], ['int'], 'get the size of a vector or collection')
 
 mkinst('compensate', ['inst', None], [], [], 'register a compensation')
+mkinst('wait-for-close', [], ['vector'], ['vector'], 'wait for the writers of a vector to exit')

@@ -76,6 +76,6 @@ interpret_spec "lexical variables" do
     EOF
 
     results []
-    status :crash?
+    expect_fail!
   end
 end

@@ -8,6 +8,7 @@ __repr__ = "{ <prelude> }"
 
 add = @!add
 mul = @!mul
+str = @!str
 
 (drain) = (@!get; drain)
 (repeat (?a)) = (@!for $a; repeat (@!for $a))
@@ -31,7 +32,9 @@ exec = []
 (count-forever) = iter [@!add 1] 0
 
 # TODO
-# (eq ?x ?y) = @!eq $x $y
+(eq ?x ?y) = @!eq $x $y
+
+(len ?v) = @!len $v
 
 # 
 # (times ?n ?fn (?args)) = (

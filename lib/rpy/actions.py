@@ -16,6 +16,7 @@ inst_action_sig = enforceargs(None, lltype.Array(lltype.Signed))
 def inst_action(fn):
     """NOT_RPYTHON"""
     inst_type = as_dashed(fn.__name__)
+    debug(0, ['-- inst_type', inst_type])
 
     inst_id = inst_type_table.get(inst_type).id
     # inst_actions[inst_id] = inst_action_sig(fn)
@@ -193,6 +194,15 @@ def env_collect(frame, args):
     env.set_output(0, collection)
     frame.push(collection)
     frame.push(env)
+
+@inst_action
+def wait_for_close(frame, args):
+    collection = frame.top_vec()
+    if collection.is_closed: return
+
+    frame.proc.machine.channels.register(collection)
+    collection.wait_for_close(frame.proc)
+    debug(0, ['-- wait-for-close', collection.s(), frame.proc.s()])
 
 @inst_action
 def env_extend(frame, args):

@@ -96,8 +96,6 @@ class Channel(Value):
 
     def typeof(self): return 'channel'
 
-    def resolve(self): return self.channelable.resolve()
-
     def state_name(self):
         if self.state == Channel.INIT: return 'init'
         if self.state == Channel.OPEN: return 'open'
@@ -128,19 +126,6 @@ class Channel(Value):
             blocker.proc.interrupt(Close(self, False))
 
         return True
-
-    def resolve(self):
-        while self.senders and self.receivers:
-            (sender, receiver) = (self.senders.pop(0), self.receivers.pop(0))
-
-            sender.send(receiver)
-
-            if not sender.is_done(): self.senders.insert(0, sender)
-            if not receiver.is_done(): self.receivers.insert(0, receiver)
-
-        assert (not self.senders) or (not self.receivers)
-
-        return self.check_for_close()
 
     @impl
     class Impl(Channelable):
@@ -175,6 +160,20 @@ class Channel(Value):
                     + [s.s() for s in self.senders]
                     + [r.s() for r in self.receivers])
             self.reader_count -= 1
+
+        def resolve(self):
+            while self.senders and self.receivers:
+                (sender, receiver) = (self.senders.pop(0), self.receivers.pop(0))
+
+                sender.send(receiver)
+
+                if not sender.is_done(): self.senders.insert(0, sender)
+                if not receiver.is_done(): self.receivers.insert(0, receiver)
+
+            assert (not self.senders) or (not self.receivers)
+
+            return self.check_for_close()
+
 
 
 class Streamer(Value):

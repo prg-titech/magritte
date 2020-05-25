@@ -77,3 +77,26 @@ def crash(frame, args):
 @intrinsic
 def make_channel(frame, args):
     frame.put([frame.proc.machine.make_channel()])
+
+@intrinsic
+def str_(frame, args):
+    out = ''
+    for arg in args:
+        out += arg.s()
+
+    frame.put([String(out)])
+
+@intrinsic
+def eq(frame, args):
+    if not args[0].eq(args[1]):
+        frame.fail_str('not-eq')
+
+@intrinsic
+def len_(frame, args):
+    vec = args[0]
+    if isinstance(vec, Vector):
+        frame.put([Int(len(vec.values))])
+    else:
+        frame.fail(tagged('not-a-vector', vec))
+        return
+

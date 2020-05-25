@@ -44,6 +44,7 @@ class Channelable(object):
     def read(self, proc, count, into): raise NotImplementedError
     def write(self, proc, val): return self.write_all(proc, [val])
 
+    def resolve(self): return False
     def add_writer(self, frame): pass
     def add_reader(self, frame): pass
     def rm_writer(self, frame): pass
@@ -56,6 +57,10 @@ class Value(TableEntry):
 
     def as_number(self, frame):
         frame.fail(tagged('not a number', self))
+
+    def eq(self, other):
+        # TODO
+        return self.s() == other.s()
 
     def s(self):
         raise NotImplementedError
@@ -134,11 +139,39 @@ class Vector(Value):
     class Channel(Channelable):
         def write_all(self, proc, values): self.push_all(values)
 
+        def add_writer(self, proc): self.writer_count += 1
+        def rm_writer(self, proc):
+            self.writer_count -= 1
+            if self.writer_count == 0: self.is_closed = True
+
+        def resolve(self):
+            debug(0, ['-- vec resolve', str(self.writer_count), str(len(self.close_waiters or []))])
+            if self.writer_count > 0: return False
+            if self.is_closed: return False
+            self.is_closed = True
+
+            if not self.close_waiters: return False
+            for proc in self.close_waiters:
+                proc.try_set_running()
+
+            return True
 
     def __init__(self, values):
         self.values = values
         self.invokable = Vector.Invoke(self)
         self.channelable = Vector.Channel(self)
+        self.close_waiters = None
+        self.is_closed = True
+        self.writer_count = 0
+
+    def wait_for_close(self, proc):
+        debug(0, ['-- is_closed', str(self.is_closed)])
+        if self.is_closed: return
+
+        if self.close_waiters: self.close_waiters.append(proc)
+        else: self.close_waiters = [proc]
+
+        proc.set_waiting()
 
     def push(self, value):
         assert value is not None

@@ -5,7 +5,7 @@ should_debug = False
 debug_fd = -1
 
 try:
-    debug_option = os.environ['MAG_DEBUG_TO']
+    debug_option = os.environ['MAGRITTE_DEBUG_TO']
     should_debug = True
 
     if debug_option in ['1', 'stdout']:
@@ -21,4 +21,4 @@ def debug(level, parts):
     assert isinstance(level, int)
 
     if should_debug:
-        os.write(debug_fd, ' '.join(parts))
+        os.write(debug_fd, ' '.join(parts) + '\n')

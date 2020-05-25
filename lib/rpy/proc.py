@@ -29,11 +29,11 @@ class Proc(TableEntry):
     # if that write pipes into a closed channel it will properly get set to
     # INTERRUPTED and we want to avoid overriding that.
     def try_set_running(self):
-        if self.state == Proc.INTERRUPTED:
-            debug(0, ['try_set_running: already interrupted', self.s()])
-        else:
+        if self.state == Proc.WAITING:
             debug(0, ['try_set_running: set to running', self.s()])
             self.set_running()
+        else:
+            debug(0, ['try_set_running: not waiting', self.s()])
 
     def state_name(self):
         if self.state == Proc.INIT: return 'init'
@@ -58,20 +58,19 @@ class Proc(TableEntry):
     def frame(self, env, addr):
         debug(0, ['--', str(self.id), labels_by_addr[addr].name])
         assert isinstance(addr, int)
-        eliminated = self.tail_eliminate()
 
-        if eliminated:
-            env = eliminated.env.merge(env)
-
+        # must setup before tail eliminating so the number of registered
+        # channels doesn't go to zero from tail elim
         frame = Frame(self, env, addr)
+        frame.setup()
 
+        eliminated = self.tail_eliminate()
         if eliminated:
-            debug(0, ['-- saving compensations', frame.s()])
+            frame.env = eliminated.env.merge(env)
             for comp in eliminated.compensations:
                 frame.compensations.append(comp)
 
         self.frames.append(frame)
-        frame.setup()
         return frame
 
     def tail_eliminate(self):
@@ -100,6 +99,10 @@ class Proc(TableEntry):
 
     def step(self):
         debug(0, ['=== step %s ===' % self.s()])
+        # if not self.frames:
+        #     debug(0, ['-- out of frames', self.s()])
+        #     self.set_done()
+
         if self.frames:
             env = self.current_frame().env
             debug(0, ['env:', env.s()])
@@ -127,6 +130,8 @@ class Proc(TableEntry):
         if not self.frames:
             debug(0, ['out of frames', self.s()])
             self.state = Proc.DONE
+        else:
+            debug(0, ['still has frames!', self.s()])
 
 
     def check_interrupts(self):
