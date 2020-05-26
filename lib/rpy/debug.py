@@ -49,3 +49,7 @@ def set_debug(level):
 def disable_debug():
     if not debug_enabled: return
     debugger.level = -1
+
+def open_debug_file(fname):
+    debugger.fname = fname
+    debugger.open_file()

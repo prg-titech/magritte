@@ -4,18 +4,16 @@ load mag/prelude.mag
 
 (skip ?reason ?name ?fn) = put (str "- skip:" $name " (" $reason ")")
 (test ?name ?fn) = (
-  getenv MAGRITTE_FOCUS && test-focus $name $fn (getenv MAGRITTE_FOCUS)
-                        !! test-normal $name $fn
+  (
+    %name => run-test %name %fn
+          => run-test %name %fn
+    _     => skip not-focused %name %fn
+  ) (getenv MAGRITTE_FOCUS)
 )
 
-(test-focus ?name ?fn ?focus) = (
-  eq $name $focus && test-normal $name $fn !! skip not-focused $name $fn
-)
-
-(test-normal ?name ?fn) = (
+(run-test ?name ?fn) = (
   put (str "- test:" $name)
   %fn && put "-- pass" !! put "-- fail"
-  getenv foo && put "there's a foo" !! put "no foo"
 )
 
 test pipe-cases (=>
@@ -31,7 +29,7 @@ test pipe-cases (=>
 )
 
 test alternating-iter (=>
-  vm-debug on
+  vm-debug open ./tmp/out
   iter (
     [a ?x] => put [b (add 1 $x)]
     [b ?y] => put [a (add 2 $y)]

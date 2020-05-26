@@ -41,6 +41,7 @@ vm-debug = (
   on => @!vm-debug 10
   off => @!vm-debug -1
   ?level => @!vm-debug $level
+  open ?fname => @!vm-debug-open $fname; @!vm-debug 10
 )
 
 # 

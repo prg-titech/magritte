@@ -333,9 +333,6 @@ module Magritte
     end
 
     def visit_assignment(node)
-      # TODO: multi-assign
-      raise 'oops' unless node.lhs.size == 1 && node.rhs.size == 1
-
       emit 'collection'
       collect(node.rhs)
 
@@ -459,6 +456,7 @@ module Magritte
       def label(*a, &b); @compiler.label(*a, &b); end
       def const(*a, &b); @compiler.const(*a, &b); end
       def sym(*a, &b); @compiler.sym(*a, &b); end
+      def collect(*a, &b); @compiler.collect(*a, &b); end
 
       def compile(node)
         emit 'clear'
@@ -537,6 +535,12 @@ module Magritte
         # emit 'const', const(Value::String.new('string'))
         # emit 'jumpne', @failto
         emit 'const', const(Value::String.new(node.value))
+        emit 'jumpne', @failto
+      end
+
+      def visit_variable_pattern(node)
+        emit 'noop', sym('var_pattern')
+        @compiler.visit(node.var)
         emit 'jumpne', @failto
       end
     end

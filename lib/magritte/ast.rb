@@ -9,10 +9,6 @@ module Magritte
       defdata :name
     end
 
-    class Binder < Tree::Node
-      defdata :name
-    end
-
     class Intrinsic < Tree::Node
       defdata :name
     end
@@ -23,6 +19,14 @@ module Magritte
 
     class Number < Tree::Node
       defdata :value
+    end
+
+    class Binder < Tree::Node
+      defdata :name
+    end
+
+    class VariablePattern < Tree::Node
+      defrec :var
     end
 
     class StringPattern < Tree::Node

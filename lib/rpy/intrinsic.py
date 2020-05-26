@@ -2,7 +2,7 @@ from util import as_dashed
 from table import Table, TableEntry
 from value import *
 from symbol import sym
-from debug import debug, set_debug
+from debug import debug, set_debug, open_debug_file
 from status import Success, Fail
 import os
 
@@ -120,3 +120,8 @@ def vm_debug(frame, args):
     debug(0, ['-- setting debug: ', str(level)])
     set_debug(level)
     debug(0, ['-- done setting debug: ', str(level)])
+
+@intrinsic
+def vm_debug_open(frame, args):
+    fname = args[0].s()
+    open_debug_file(fname)

@@ -208,6 +208,14 @@ module Magritte
         end
       end
 
+      pattern.match(~token(:var)) do |v|
+        return AST::VariablePattern[AST::Variable[v.value]]
+      end
+
+      pattern.match(~token(:lex_var)) do |v|
+        return AST::VariablePattern[AST::LexVariable[v.value]]
+      end
+
       pattern.match(~token(:bind)) do |b|
         return AST::Binder[b.value]
       end
@@ -274,14 +282,30 @@ module Magritte
           bodies = []
           name = "anon@#{term.range.repr}"
           item.elems.each do |elem|
-            tmp = elem
             elem.match(lsplit(~_, token(:arrow), ~_)) do |patterns, body|
+              # any further arrow on this line is an empty pattern, asserting
+              # that there are no arguments.
+              empties = []
+
+              while true
+                body.match(rsplit(~_, token(:arrow), ~_)) do |new_body, empty|
+                  p :arrow => [new_body, empty]
+                  body = new_body
+                  empties << empty
+                end or break
+              end
+
               bindings << patterns
-              bodies << []
-              tmp = body
-            end
-            tmp.match(nay(empty)) do
-              bodies.last << tmp
+              bodies << [body]
+
+              empties.each do |e|
+                bindings << Skeleton::Item[[]]
+                bodies << [e]
+              end
+
+              next
+            end or begin
+              bodies.last << elem
             end
           end
 
