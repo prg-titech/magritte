@@ -31,12 +31,17 @@ exec = []
 
 (count-forever) = iter [@!add 1] 0
 
-# TODO
 (eq ?x ?y) = @!eq $x $y
 
 (len ?v) = @!len $v
 
 (getenv ?s) = @!getenv $s
+
+vm-debug = (
+  on => @!vm-debug 10
+  off => @!vm-debug -1
+  ?level => @!vm-debug $level
+)
 
 # 
 # (times ?n ?fn (?args)) = (

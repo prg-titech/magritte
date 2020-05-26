@@ -85,6 +85,8 @@ class String(Value):
                 frame.fail(tagged('not-invokable', invokee))
 
     def __init__(self, string):
+        assert isinstance(string, str)
+        assert string is not None
         self.value = string
         self.invokable = String.Invoke(self)
 

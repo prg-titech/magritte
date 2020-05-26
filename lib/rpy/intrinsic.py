@@ -2,7 +2,7 @@ from util import as_dashed
 from table import Table, TableEntry
 from value import *
 from symbol import sym
-from debug import debug
+from debug import debug, set_debug
 from status import Success, Fail
 import os
 
@@ -68,7 +68,7 @@ def stdout(frame, args):
 
 @intrinsic
 def fail(frame, args):
-    frame.proc.status = Fail(args[0])
+    frame.set_status(Fail(args[0]))
     frame.proc.pop()
 
 @intrinsic
@@ -90,9 +90,9 @@ def str_(frame, args):
 @intrinsic
 def eq(frame, args):
     if args[0].eq(args[1]):
-        frame.status = Success()
+        frame.set_status(Success())
     else:
-        frame.status = Fail(String('not-eq'))
+        frame.set_status(Fail(String('not-eq')))
 
 @intrinsic
 def len_(frame, args):
@@ -109,6 +109,14 @@ def getenv(frame, args):
     assert isinstance(key, String)
     try:
         frame.put([String(os.environ[key.value])])
-        frame.status = Success()
+        frame.set_status(Success())
     except KeyError:
-        frame.status = Fail(String('no-key'))
+        frame.set_status(Fail(String('no-key')))
+
+@intrinsic
+def vm_debug(frame, args):
+    level = args[0].as_number(frame)
+
+    debug(0, ['-- setting debug: ', str(level)])
+    set_debug(level)
+    debug(0, ['-- done setting debug: ', str(level)])

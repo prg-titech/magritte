@@ -56,6 +56,10 @@ class Frame(object):
         self.env.each_input(register_as_input, self)
         self.env.each_output(register_as_output, self)
 
+    def set_status(self, status):
+        debug(0, ['-- set status', status.s()])
+        self.proc.status = status
+
     def cleanup(self):
         debug(0, ['-- cleanup', self.s()])
         self.env.each_input(deregister_as_input, self)

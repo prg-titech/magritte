@@ -21,7 +21,6 @@ def unescape(s):
 
 def read_int(fd):
     out = runpack('i', os.read(fd, 4))
-    assert out >= 0 # unsigned
     return out
 
 def read_str(fd):

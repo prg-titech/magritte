@@ -154,7 +154,6 @@ def jumplt(frame, args):
 def return_(frame, args):
     proc = frame.proc
     proc.pop()
-    proc.status = Success()
     debug(0, ['-- returned', proc.s()])
 
     for (addr, is_unconditional) in frame.compensations:
