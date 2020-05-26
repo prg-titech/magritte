@@ -36,6 +36,8 @@ exec = []
 
 (len ?v) = @!len $v
 
+(getenv ?s) = @!getenv $s
+
 # 
 # (times ?n ?fn (?args)) = (
 #   in = (stdin)

@@ -167,8 +167,8 @@ def precompile(fname):
         raise Crash(Fail(String('cannot load %s, is not precompiled and MAG_COMPILER is not set' % fname)))
 
 
-    debug(0, ['magc out of date, recompiling', mag_binary, '-c', fname])
-    spawn(mag_binary, ['-c', fname])
+    debug(0, ['magc out of date, recompiling', mag_binary, fname])
+    spawn(mag_binary, [fname])
 
 @intrinsic
 def load(frame, args):

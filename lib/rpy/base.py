@@ -4,6 +4,7 @@ from symbol import sym
 from channel import Streamer
 from value import *
 from debug import debug
+import os
 
 base_env = Env()
 
@@ -13,5 +14,3 @@ def global_out(proc, vals):
         print val.s()
 
 base_env.set_output(0, Streamer(global_out))
-
-

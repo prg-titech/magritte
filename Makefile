@@ -36,26 +36,28 @@ sigplan-watch:
 clean:
 	rm -f -- $(CLEAN)
 
-VM_BIN=./build/magvm
+VM_BIN=./bin/magvm
 
 $(VM_BIN): lib/rpy/*.py
 	./bin/rpython-compile ./lib/rpy/targetmagritte.py
 	mv targetmagritte-c $(VM_BIN)
 
-%.magc: %.mag lib/magritte/compiler.rb
-	./bin/mag -c $<
+%.magc: %.mag ./bin/magc lib/magritte/compiler.rb
+	./bin/magc $<
 
+TEST_FILE=./test/test.mag
+TEST_FILEC=$(TEST_FILE)c
 
-HELLO_WORLD_DEPS = mag/testy.magc
+HELLO_WORLD_DEPS = $(TEST_FILEC)
 
 DYNAMIC ?= 0
 
 .PHONY: hello-world
-hello-world: $(VM_BIN) mag/testy.magc
-	$(VM_BIN) mag/testy.magc
+hello-world: $(VM_BIN) $(TEST_FILEC)
+	$(VM_BIN) $(TEST_FILEC)
 
 .PHONY: hello-world-dynamic
-hello-world-dynamic: mag/testy.magc
-	python2 ./lib/rpy/targetmagritte.py mag/testy.magc
+hello-world-dynamic: $(TEST_FILEC)
+	python2 ./lib/rpy/targetmagritte.py $(TEST_FILEC)
 
 CLEAN += **/*.magc **/*.magx build/*

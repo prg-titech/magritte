@@ -76,3 +76,5 @@ skip bails-too-early thread-into-collector (=>
 skip infinite-loop slide-example (=>
   count-forever | (& drain; & drain) | get
 )
+
+getenv MAGRITTE_DEBUG_TO

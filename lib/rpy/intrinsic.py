@@ -4,6 +4,7 @@ from value import *
 from symbol import sym
 from debug import debug
 from status import Success, Fail
+import os
 
 intrinsics = Table()
 
@@ -102,3 +103,12 @@ def len_(frame, args):
         frame.fail(tagged('not-a-vector', vec))
         return
 
+@intrinsic
+def getenv(frame, args):
+    key = args[0]
+    assert isinstance(key, String)
+    try:
+        frame.put([String(os.environ[key.value])])
+        frame.status = Success()
+    except KeyError:
+        frame.status = Fail(String('no-key'))
