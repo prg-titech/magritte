@@ -3,7 +3,7 @@ from table import Table, TableEntry
 from value import *
 from symbol import sym
 from debug import debug
-from status import Fail
+from status import Success, Fail
 
 intrinsics = Table()
 
@@ -88,8 +88,10 @@ def str_(frame, args):
 
 @intrinsic
 def eq(frame, args):
-    if not args[0].eq(args[1]):
-        frame.fail_str('not-eq')
+    if args[0].eq(args[1]):
+        frame.status = Success()
+    else:
+        frame.status = Fail(String('not-eq'))
 
 @intrinsic
 def len_(frame, args):
