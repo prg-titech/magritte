@@ -211,6 +211,15 @@ class Ref(Value):
 
     def typeof(self): return 'ref'
 
+class Placeholder(Value):
+    def __init__(self):
+        pass
+
+    def s(self):
+        return '<placeholder>'
+
+placeholder = Placeholder()
+
 class Function(Value):
     @impl
     class Invoke(Invokable):

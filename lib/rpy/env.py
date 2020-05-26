@@ -109,7 +109,9 @@ class Env(Value):
                 raise KeyError(revsym(key))
 
     def let(self, key, val):
-        self.dict[key] = Ref(val)
+        r = Ref(val)
+        self.dict[key] = r
+        return r
 
     def get(self, key):
         return self.lookup_ref(key).ref_get()

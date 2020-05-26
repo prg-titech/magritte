@@ -28,14 +28,29 @@ test pipe-cases (=>
   )
 )
 
-test alternating-iter (=>
-  vm-debug open ./tmp/out
+test funcdef-group (=>
+  (foo a) = put b
+  (foo b) = put a
+
+  eq [(foo a) (foo b)] [b a]
+)
+
+test funcdef-group-env (=>
+  vm-debug on
+  e = {}
+  ($e!bar a) = put b
+  ($e!bar b) = put a
+
+  eq [($e!bar a) ($e!bar b)] [b a]
+  vm-debug off
+)
+
+skip deadlocks alternating-iter (=>
   iter (
     [a ?x] => put [b (add 1 $x)]
     [b ?y] => put [a (add 2 $y)]
   ) [a 1]
   | take 10
-  vm-debug off
 )
 
 skip deadlock iter (=>
@@ -86,5 +101,3 @@ skip bails-too-early thread-into-collector (=>
 skip infinite-loop slide-example (=>
   count-forever | (& drain; & drain) | get
 )
-
-getenv MAGRITTE_DEBUG_TO

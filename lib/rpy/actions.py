@@ -105,18 +105,26 @@ def ref(frame, args):
 
 @inst_action
 def dynamic_ref(frame, args):
+    debug(0, [frame.s()])
     lookup = frame.pop_string()
     env = frame.pop_env()
+    debug(0, ['-- dynamic-ref lookup:', lookup, env.s()])
 
     try:
         frame.push(env.lookup_ref(sym(lookup)))
     except KeyError:
-        frame.fail(tagged('missing-key', env, String(lookup)))
+        ref = env.let(sym(lookup), placeholder)
+        frame.push(ref)
 
 @inst_action
 def ref_get(frame, args):
     ref = frame.pop_ref()
-    frame.push(ref.ref_get())
+    val = ref.ref_get()
+
+    if val == placeholder:
+        frame.fail(tagged('uninitialized-ref', ref))
+
+    frame.push(val)
 
 @inst_action
 def ref_set(frame, args):

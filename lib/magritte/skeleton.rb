@@ -16,6 +16,11 @@ module Magritte
         true
       end
 
+      def ==(other)
+        return false if self.class != other.class
+        same?(other)
+      end
+
       def token?(type = nil)
         false
       end
@@ -27,6 +32,12 @@ module Magritte
       def range
         raise "Abstract"
       end
+
+    private
+      def all_eq?(as, bs)
+        as.zip(bs) { |a, b| return false unless a == b }
+        true
+      end
     end
 
     class Token < Base
@@ -34,6 +45,10 @@ module Magritte
 
       def repr
         ".#{token.repr}"
+      end
+
+      def same?(other)
+        token.type == other.token.type && token.value == other.token.value
       end
 
       def token?(type = nil)
@@ -58,6 +73,15 @@ module Magritte
       defdata :close
       deflistrec :elems
 
+      def same?(other)
+        return false unless open == other.open
+        return false unless close == other.close
+        return false unless elems.size == other.elems.size
+        return false unless all_eq?(elems, other.elems)
+
+        true
+      end
+
       def repr
         "[#{open.repr}|#{elems.map(&:repr).join(" ")}|#{close.repr}]"
       end
@@ -75,6 +99,13 @@ module Magritte
     class Item < Base
       defdata :elems # Why isn't this one deflistrec?
 
+      def same?(other)
+        return false unless elems.size == other.elems.size
+        return false unless all_eq?(elems, other.elems)
+
+        true
+      end
+
       def sub_items
         return self.elems if self.elems.all? { |e| e.is_a?(Item) }
         [self]
@@ -91,6 +122,10 @@ module Magritte
 
     class Root < Base
       defdata :elems # Same question as for Item class
+
+      def same?(other)
+        all_eq?(elems, other.elems)
+      end
 
       def sub_items
         elems

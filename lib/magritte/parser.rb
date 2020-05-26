@@ -34,7 +34,10 @@ module Magritte
 
     def parse_root(skel)
       elems = []
-      skel.sub_items.each do |item|
+      sub_items = skel.sub_items.dup
+      while sub_items.any?
+        item = sub_items.shift
+
         item.match(singleton(~token(:keyword))) do |kw|
           case kw.value
           when 'allow-intrinsics'
@@ -46,10 +49,56 @@ module Magritte
           end
         end and next
 
+        match_funcdef = lsplit(
+          singleton(nested(:lparen, ~_)),
+          token(:equal),
+          ~_
+        )
+
+        item.match(match_funcdef) do |defn, body|
+          name, lhs, args = extract_funcdef_lhs(defn)
+          common_funcdefs = [[lhs, args, body]]
+
+          while sub_items.any?
+            next_lhs = nil
+            next_body = nil
+            next_args = nil
+            sub_items.first.match(match_funcdef) do |defn, body|
+              _, next_lhs, next_args = extract_funcdef_lhs(defn)
+              next_body = body
+            end or break
+
+            break unless lhs == next_lhs
+            common_funcdefs << [sub_items.first, next_args, next_body]
+
+            sub_items.shift
+          end
+
+          elems << parse_funcdefs(name, lhs, common_funcdefs)
+        end and next
+
         elems << parse_line(item)
       end
 
       AST::Group[elems]
+    end
+
+    def extract_funcdef_lhs(elems)
+      bang_match = lsplit(
+        singleton(~_),
+        ~token(:bang),
+        starts(~token(:bare), ~_)
+      )
+
+      elems.match bang_match do |bang, env, key, args|
+        return ["#{env.value}!#{key.value}", Skeleton::Item[[env, bang, key]], args]
+      end
+
+      elems.match(starts(~_, ~_)) do |head, rest|
+        return [head.value, Skeleton::Item[[head]], rest]
+      end
+
+      error!(elems, "invalid funcdef lhs")
     end
 
     def parse_line(item)
@@ -99,6 +148,21 @@ module Magritte
       AST::Vector[parse_terms(vec)]
     end
 
+    def parse_funcdefs(name, lhs, defs)
+      range = Lexer::Range.between(defs.first[0], defs.last[0])
+
+      bindings = []
+      bodies = []
+
+      defs.each do |(item, args, body)|
+        bindings << args
+        bodies << [body]
+      end
+
+      lam = parse_lambda(name, bindings, bodies, range)
+      AST::Assignment[parse_terms(lhs), [lam]]
+    end
+
     def parse_assignment(lhs, rhs)
       # Check if lhs have parenthesis
       # In this case we're doing a special lambda assigment
@@ -132,7 +196,7 @@ module Magritte
 
     def parse_lambda(name, bindings, bodies, range)
       patterns = parse_bindings(bindings)
-      groups = bodies.map { |body| AST::Group[body.map { |line| parse_line(line) }]}
+      groups = bodies.map { |body| parse_root(Skeleton::Item[body]) }
       return AST::Lambda[name, patterns, groups, range]
     end
 
