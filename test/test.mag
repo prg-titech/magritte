@@ -33,7 +33,9 @@ skip deadlock "iter" (=>
 )
 
 skip crashes-whole-thing crash (=>
-  crash oops && put yay !! put "oh no"
+  out = (& crash oops && put yay !! put "oh no")
+
+  eq $out ""
 )
 
 test modules (=>
@@ -49,16 +51,21 @@ test modules (=>
 test channels (=>
   c = (make-channel)
 
-  (
-    put 1 %% (put comp > %c)
-    put 2 3 4 5 6
-  ) | take 2
+  out = [(
+    (
+      put 1 %% (put comp > %c)
+      put 2 3 4 5 6
+    ) | take 2
 
-  get < $c
+    get < $c
+  )]
+
+  put (str "out: " $out)
+  eq $out [1 2 3]
 )
 
 test nested-put (=>
-  put (put 1)
+  eq (put (put 1)) 1
 )
 
 skip bails-too-early thread-into-collector (=>
