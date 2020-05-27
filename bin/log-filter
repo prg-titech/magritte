@@ -68,6 +68,10 @@ log-view::proc() {
   done
 }
 
+log-view::all() {
+  cat
+}
+
 
 COMMAND="$1"; shift
 
