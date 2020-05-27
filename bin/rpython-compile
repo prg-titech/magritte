@@ -1,3 +1,8 @@
 #!/bin/bash
 
+export MAGRITTE_PREFIX="${BASH_SOURCE[0]%/*}"
+export MAGRITTE_PREFIX="${MAGRITTE_PREFIX%/*}"
+export PYTHONPATH="$MAGRITTE_PREFIX/vendor/pypy"
+export PATH="$MAGRITTE_PREFIX/bin:$PATH"
+
 exec python2 "$(dirname "$0")/../vendor/pypy/rpython/__main__.py" "$@"
