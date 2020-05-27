@@ -5,6 +5,10 @@ from debug import debugger, debug
 from rpython.rlib.objectmodel import we_are_translated
 import os
 
+####### main target ##########################
+# This is the main target file for compilation by RPython.
+# The whole program will start at the `entry_point` function.
+
 def run_file(filename):
     load_file(filename)
     machine.spawn_label(base_env, 'main')

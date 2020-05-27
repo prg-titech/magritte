@@ -8,13 +8,19 @@ from frame import Frame
 from debug import debug, open_shell
 from value import *
 
+############# processes #######################
+# This class represents one process, running
+# concurrently with others. It is ticked forward
+# one step at a time by the machine through the
+# .step() method. This method tries to evaluate
+# as much as it can before it is set to wait.
 class Proc(TableEntry):
-    INIT = 0
-    RUNNING = 1
-    WAITING = 2
-    INTERRUPTED = 3
-    DONE = 4
-    TERMINATED = 5
+    INIT = 0        # hasn't started running yet
+    RUNNING = 1     # can safely step forward
+    WAITING = 2     # waiting to be woken up by a channel
+    INTERRUPTED = 3 # the waiting channel has closed, need to unwind the stack
+    DONE = 4        # no more steps to run
+    TERMINATED = 5  # there has been a crash, probably due to an error
 
     def set_init(self): self.state = Proc.INIT
     def set_running(self): self.state = Proc.RUNNING
@@ -23,9 +29,10 @@ class Proc(TableEntry):
     def set_done(self): self.state = Proc.DONE
     def set_terminated(self): self.state = Proc.TERMINATED
 
-    # important: a channel will set a successful write to "running". but
-    # if that write pipes into a closed channel it will properly get set to
-    # INTERRUPTED and we want to avoid overriding that.
+    # Important: a channel will set a successful write to "running". but
+    # if that write is connected to a closed channel, it needs to preserve
+    # the INTERRUPTED state. So on a successful read or write, we only set
+    # the state back to RUNNING if we can verify it's still WAITING.
     def try_set_running(self):
         if self.state == Proc.WAITING:
             debug(0, ['try_set_running: set to running', self.s()])
@@ -54,6 +61,11 @@ class Proc(TableEntry):
         self.status = Success()
         self.last_cleaned = []
 
+    # Push a new frame on to the call stack, with a given environment
+    # and starting instruction. This will automatically tail eliminate
+    # any finished frames from the top. However, this can be disabled on
+    # a case-by-case basis by the `tail_elim` parameter for things like
+    # loading files, where we need to preserve the base environment.
     def frame(self, env, addr, tail_elim=True):
         debug(0, ['--', str(self.id), labels_by_addr[addr].name])
         assert isinstance(addr, int)
@@ -65,16 +77,20 @@ class Proc(TableEntry):
 
         if tail_elim:
             eliminated = self.tail_eliminate()
-            if eliminated:
-                frame.env = eliminated.env.merge(env)
-                for comp in eliminated.compensations:
+
+            # when we eliminate a frame, we need to preserve
+            # its stack variables and compensations for the
+            # new frame.
+            for e in eliminated:
+                frame.env = e.env.merge(frame.env)
+                for comp in e.compensations:
                     frame.compensations.append(comp)
 
         self.frames.append(frame)
         return frame
 
     def tail_eliminate(self):
-        out = None
+        out = []
 
         # don't tail eliminate the root frame, for Reasons.
         # the root frame might have the global env and we really don't want
@@ -83,7 +99,7 @@ class Proc(TableEntry):
 
         while len(self.frames) > 1 and self.current_frame().should_eliminate():
             debug(0, ['-- tco', self.s()])
-            out = self.pop()
+            out.append(self.pop())
 
         debug(0, ['-- post-tco', self.s()])
 
@@ -99,9 +115,6 @@ class Proc(TableEntry):
 
     def step(self):
         debug(0, ['=== step %s ===' % self.s()])
-        # if not self.frames:
-        #     debug(0, ['-- out of frames', self.s()])
-        #     self.set_done()
 
         if self.frames:
             env = self.current_frame().env

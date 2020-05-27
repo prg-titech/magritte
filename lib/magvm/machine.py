@@ -19,6 +19,9 @@ from random import shuffle
 jit_driver = JitDriver(greens=['pc'], reds=['env', 'stack'])
 
 ################## machine ####################
+# This class contains the main loop of the vm,
+# and implements basic scheduling among a
+# collection of Proc objects.
 class Machine(object):
     def __init__(self):
         self.procs = Table()

@@ -1,5 +1,7 @@
 from table import Table, TableEntry
 
+#### the global symbol table ####
+
 class SymbolTable(Table):
     def sym(self, string):
         assert isinstance(string, str)

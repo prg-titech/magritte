@@ -24,6 +24,16 @@ def inst_action(fn):
 
     return fn
 
+
+################## actions! #################
+# These functions implement the instructions
+# of the vm, and are run by a Frame whenever
+# it encounters the corresponding instruction.
+#
+# see inst.py for descriptions of these.
+# see frame.py, specifically the .step() method
+#     to see how they're called.
+
 @inst_action
 def pop(frame, args):
     frame.stack.pop()

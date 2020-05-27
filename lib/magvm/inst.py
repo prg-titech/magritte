@@ -55,6 +55,18 @@ def mkinst(name, *a):
     screaming_name = name.upper().replace('-', '_')
     setattr(InstType, screaming_name, t.id)
 
+############# instruction documentation ###############
+# mkinst(instruction_name, argument_types, start_stack, end_stack, description)
+#
+# The argument types are needed at runtime for loading
+# files, so we can re-index them according to the global
+# tables. For example, in a compiled .magc file a `jump`
+# instruction may refer to an address within the file -
+# but once all instructions are merged together into a
+# global table it will need to refer to a different number.
+#
+# see actions.py for the implementations of these.
+
 # jumps and spawns
 mkinst('frame', ['inst'], ['env'], [], 'start a new frame')
 mkinst('return', [], [], [], 'pop a frame off the stack')

@@ -1,6 +1,21 @@
 from value import *
 from symbol import revsym
 
+############ environments ###############
+# An environment in Magritte is a simple
+# dictionary of keys and values, together
+# with a parent pointer (a "prototype").
+# These are used not only for variable
+# scopes, but also for all OOP-style
+# patterns.
+#
+# An environment additionally contains
+# input and output channels, which can
+# be inherited.
+#
+# see frame.py for how the channels are used
+# see actions.py and intrinsics.py for
+# the basic operations from the machine.
 MAX_CHANNELS = 8
 class Env(Value):
     def __init__(self, parent=None):

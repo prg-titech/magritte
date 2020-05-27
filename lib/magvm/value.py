@@ -5,6 +5,22 @@ from labels import labels_by_addr
 
 from rpython.rlib.rarithmetic import r_uint, intmask
 
+######### values! ###########################
+# These classes implement the core values of
+# the VM. They can implement a number of interfaces
+# through the @impl function - attached objects
+# that implement certain features. For example,
+# many values can be invoked as functions, and
+# the behaviour is implemented in value.invokable.
+# This allows us to keep the top-level shared
+# namespace thin.
+#
+# Since RPython's support for __repr__ can be
+# brittle, we equip each class with a method
+# .s() to retrieve the string representation.
+#
+# see channel.py for the Channel value.
+
 class Done(Exception): pass
 class Deadlock(Exception): pass
 

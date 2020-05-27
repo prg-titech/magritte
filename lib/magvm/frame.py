@@ -7,6 +7,24 @@ from load import arg_as_str
 from actions import inst_actions
 from value import *
 
+################# frame #####################
+# This class represents a stack frame inside
+# a single process. It contains a program
+# counter which points to the current
+# instruction, and an environment holding the
+# variables in its local scope.
+#
+# The frame also represents the main API for
+# intrinsics and instructions (actions) to
+# change the state of the machine - the
+# current frame is always passed in to their
+# implementations.
+#
+# see env.py for environments
+# see proc.py for the process
+# see actions.py and intrinsic.py for
+#     the use of many of these methods
+
 class Frame(object):
     def crash(self, message):
         assert isinstance(message, Status)
