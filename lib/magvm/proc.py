@@ -95,7 +95,7 @@ class Proc(TableEntry):
         # don't tail eliminate the root frame, for Reasons.
         # the root frame might have the global env and we really don't want
         # to mess with that env
-        if len(self.frames) <= 1: return
+        if len(self.frames) <= 1: return []
 
         while len(self.frames) > 1 and self.current_frame().should_eliminate():
             debug(0, ['-- tco', self.s()])
