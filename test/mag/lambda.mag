@@ -1,13 +1,11 @@
 require test/framework.mag
 
 test funcdef-group-env (=>
-  vm-debug on
   e = {}
   ($e!bar a) = put b
   ($e!bar b) = put a
 
   eq [($e!bar a) ($e!bar b)] [b a]
-  vm-debug off
 )
 
 test funcdef-group (=>
