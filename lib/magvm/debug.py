@@ -10,12 +10,14 @@ class Debugger(object):
     def should_debug(self, level):
         return level <= self.level
 
+    def setup(self):
+        if self.fname: self.open_file()
+
     def open_file(self):
         self.fd = os.open(self.fname, os.O_WRONLY | os.O_CREAT, 0o777)
 
     def debug(self, level, parts):
         assert isinstance(level, int)
-        if self.fname and self.fd < 0: self.open_file()
 
         if self.should_debug(level) and self.fd > 0:
             os.write(self.fd, ' '.join(parts) + '\n')
@@ -35,6 +37,7 @@ try:
         debug_enabled = False
     else:
         debugger.fname = debug_option
+
 except KeyError:
     debug_enabled = False
 
