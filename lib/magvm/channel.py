@@ -151,12 +151,18 @@ class Channel(Value):
 
         def rm_writer(self, frame):
             if self.is_closed(): return
-            debug(0, ['-- rm_writer', self.s(), frame.s()] + [s.s() for s in self.senders] + [r.s() for r in self.receivers])
+            debug(0, ['-- rm_writer',
+                      str(self.writer_count - 1),
+                      self.s(), frame.s()]
+                    + [s.s() for s in self.senders]
+                    + [r.s() for r in self.receivers])
             self.writer_count -= 1
 
         def rm_reader(self, frame):
             if self.is_closed(): return
-            debug(0, ['-- rm_reader', self.s(), frame.s()]
+            debug(0, ['-- rm_reader',
+                      str(self.reader_count - 1),
+                      self.s(), frame.s()]
                     + [s.s() for s in self.senders]
                     + [r.s() for r in self.receivers])
             self.reader_count -= 1
