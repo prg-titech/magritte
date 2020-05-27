@@ -20,7 +20,7 @@ Both implementations are still very unstable, so please do not use this code for
 
 ## Architecture
 
-The implementation is split in to three parts:
+The implementation is split into three parts:
 
 * `lib/magc`, a compiler written in Ruby that generates Magritte bytecode
 * `lib/magvm`, a virtual machine written in RPython, which interprets the bytecode
@@ -56,7 +56,7 @@ The decompiled file does not contain the labels table, instead opting to mark th
 
 Running `make test` will automatically compile the vm into `./bin/magvm`, and use it to run the test suite (`test/test.mag`). Running `make test-dynamic`, on the other hand, will not compile any RPython code, but instead run the interpreter as regular Python. `./bin/magvm-dynamic` and `./bin/mag-dynamic` do the same.
 
-The machine (`machine.py`) is an object that keeps track of multiple Proc objects (`proc.py`), stepping each active process forward independently. Each process contains its own stack, which is simply a list of Frame objects (`frame.py`). The frame implements a basic stack machine - instructions can push or pop values (`value.py`) from the current frame's stack.
+The machine (`machine.py`) is an object that keeps track of multiple Proc objects (`proc.py`), stepping each active process forward independently. Each process contains its own call stack, which is simply a list of Frame objects (`frame.py`). The frame implements a basic stack machine - instructions can push or pop values (`value.py`) from the current frame's stack.
 
 A frame steps forward in the usual way, by incrementing the program counter and evaluating one instruction according to its action (`actions.py`). Instruction actions have full access to the frame, and can push/pop values, change the program counter (`jump` etc), and more.
 
@@ -78,6 +78,4 @@ Often it is necessary to further filter the logs, and for that we provide `./bin
 
 * View only the activity of a single proc (as well as all resolve and check phases) with `log-view proc <proc-id>`, e.g. `log-view proc 2` to view only `<proc2>`.
 
-* When running in interpreted mode, you can use the intrinsic `@!vm-debugger` to drop to a Python shell, where you will have access to the current frame and any arguments you pass in. Using this in compiled mode results in a warning.
-
-* This shell is also available elsewhere in the VM through the `open_shell` Python function from the `debug` module.
+When running in interpreted mode, you can use the intrinsic `@!vm-debugger` to drop to a Python shell, where you will have access to the current frame and any arguments you pass in. Using this in compiled mode results in a warning. This shell is also available elsewhere in the VM through the `open_shell` Python function from the `debug` module.
