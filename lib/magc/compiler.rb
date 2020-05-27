@@ -439,6 +439,7 @@ module Magritte
       end
 
       emit 'compensate', comp_label, (node.unconditional ? 1 : 0)
+      visit(node.expr)
     end
 
     # assume a collection of values is on the stack.
