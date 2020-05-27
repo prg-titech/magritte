@@ -142,11 +142,11 @@ class Channel(Value):
             proc.set_waiting()
 
         def add_writer(self, frame):
-            debug(0, ['-- add_writer', self.s(), frame.s()])
+            debug(0, ['-- add_writer', str(self.writer_count + 1), self.s(), frame.s()])
             self.writer_count += 1
 
         def add_reader(self, frame):
-            debug(0, ['-- add_reader', self.s(), frame.s()])
+            debug(0, ['-- add_reader', str(self.reader_count + 1), self.s(), frame.s()])
             self.reader_count += 1
 
         def rm_writer(self, frame):
