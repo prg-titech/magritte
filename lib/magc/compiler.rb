@@ -280,7 +280,7 @@ module Magritte
     end
 
     def visit_spawn(node)
-      addr = label('spawn') { visit(node.expr) }
+      addr = label('spawn') { visit(node.expr); emit 'return' }
       emit 'current-env'
       emit 'spawn', addr
     end

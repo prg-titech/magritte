@@ -3,7 +3,7 @@ import rpython.rtyper.lltypesystem.lltype as lltype
 from inst import inst_type_table, InstType
 from util import as_dashed
 from value import *
-from debug import debug
+from debug import debug, open_shell
 from const import const_table
 from intrinsic import intrinsics
 from env import Env

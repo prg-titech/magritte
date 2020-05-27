@@ -157,15 +157,27 @@ class Vector(Value):
     class Channel(Channelable):
         def write_all(self, proc, values): self.push_all(values)
 
-        def add_writer(self, proc): self.writer_count += 1
+        def add_writer(self, proc):
+            debug(0, ['-- vec add_writer',
+                      str(self.writer_count + 1),
+                      self.s()])
+            self.writer_count += 1
+
         def rm_writer(self, proc):
+            debug(0, ['-- vec rm_writer',
+                      str(self.writer_count - 1),
+                      self.s()])
             self.writer_count -= 1
-            if self.writer_count == 0: self.is_closed = True
+            # if self.writer_count == 0:
+            #     self.is_closed = True
+            #     debug(0, ['-- vec close!'])
 
         def resolve(self):
             debug(0, ['-- vec resolve', str(self.writer_count), str(len(self.close_waiters or []))])
             if self.writer_count > 0: return False
             if self.is_closed: return False
+
+            debug(0, ['-- vec close!'])
             self.is_closed = True
 
             if not self.close_waiters: return False
@@ -179,7 +191,7 @@ class Vector(Value):
         self.invokable = Vector.Invoke(self)
         self.channelable = Vector.Channel(self)
         self.close_waiters = None
-        self.is_closed = True
+        self.is_closed = False
         self.writer_count = 0
 
     def wait_for_close(self, proc):
