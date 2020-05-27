@@ -303,7 +303,6 @@ module Magritte
     end
 
     def visit_lambda(node)
-      # TODO: make this global or unnecessary
       crash = label('crash') do
         emit 'collection'
 
