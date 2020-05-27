@@ -3,6 +3,7 @@
 export MAGRITTE_PREFIX="${BASH_SOURCE[0]%/*}"
 export MAGRITTE_PREFIX="${MAGRITTE_PREFIX%/*}"
 export PYTHONPATH="$MAGRITTE_PREFIX/vendor/pypy"
+[[ -z "$MAGRITTE_DEBUG" ]] && MAGRITTE_DEBUG=$MAGRITTE_PREFIX/log/magritte.debug.log
 export PATH="$MAGRITTE_PREFIX/bin:$PATH"
 
 exec python2 ./lib/magvm/targetmagritte.py "$@"
