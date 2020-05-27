@@ -62,6 +62,18 @@ Some intrinsics, like `@!for` and `@!get`, cause a read or write on a channel. I
 
 This will most likely happen in the resolve phase: Periodically, the machine will perform handoffs of values between processes. This involves calling `.resolve()` on each channel (`channel.py`), which causes processes to be moved into the RUNNING or INTERRUPTED states.
 
+## Debugging tools
 
+You can enable debugging with the `MAGRITTE_DEBUG` environment variable. If set to 1 or 2, debug logs will go to stdout or stderr, respectively. If set to a file path, logs will be written to the specified file. The default is to write to `log/magritte.debug.log`.
 
+Since the debug logs are a bit of a firehose, they are disabled by default. To enable them for a specific piece of Magritte code, use the Magritte functions `vm-debug on` and `vm-debug off` to control which piece of execution is being debugged.
 
+Often it is necessary to further filter the logs, and for that we provide `./bin/log-filter`, which will filter a Magritte debug log according to specific "views":
+
+* View channel registrations/deregistrations with `log-view channel -c <channel-id>`
+
+* View only the activity of a single proc (as well as all resolve and check phases) with `log-view proc <proc-id>`, e.g. `log-view proc 2` to view only `<proc2>`.
+
+* When running in interpreted mode, you can use the intrinsic `@!vm-debugger` to drop to a python shell, where you will have access to the current frame and any arguments you pass in. Using this in compiled mode results in a warning.
+
+* This shell is also available elsewhere in the VM through the `open_shell` python function from the `debug` module.
