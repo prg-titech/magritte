@@ -1,0 +1,8 @@
+require test/framework.mag
+
+skip crashes-whole-thing crash (=>
+  out = (& crash oops && put yay !! put "oh no")
+
+  eq $out ""
+)
+

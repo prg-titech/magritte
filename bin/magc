@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
-root = File.dirname(File.dirname(__FILE__))
-load "#{root}/lib/magritte.rb"
+prefix = File.dirname(File.dirname(__FILE__))
+load "#{prefix}/lib/magc/index.rb"
 Magritte::CLI.run(ARGV)

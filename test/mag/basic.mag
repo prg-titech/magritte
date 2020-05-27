@@ -1,0 +1,5 @@
+require test/framework.mag
+
+test nested-put (=>
+  eq (put (put 1)) 1
+)

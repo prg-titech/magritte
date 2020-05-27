@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+export MAGRITTE_PREFIX="${BASH_SOURCE[0]%/*}"
+export MAGRITTE_PREFIX="${MAGRITTE_PREFIX%/*}"
+
+FILE="$1"; shift
+
+[[ -s "$FILE"c ]] && [[ "$FILE" -ot "$FILE"c ]] || {
+  magc "$FILE"
+}
+
+if [[ -n "$MAGRITTE_DYNAMIC" ]]; then
+  exec magvm-dynamic "$FILE"c "$@"
+else
+  echo magvm "$FILE"c "$@"
+  exec magvm "$FILE"c "$@"
+fi

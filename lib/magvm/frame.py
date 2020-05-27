@@ -1,6 +1,6 @@
 from env import Env
 from status import Status, Success, Fail
-from code import labels_by_addr, inst_table
+from labels import labels_by_addr, inst_table
 from inst import inst_type_table, InstType
 from debug import debug
 from load import arg_as_str

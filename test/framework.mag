@@ -1,0 +1,13 @@
+(skip ?reason ?name ?fn) = puts "- skip:" $name " (" $reason ")"
+(test ?name ?fn) = (
+  (
+    %name => run-test %name %fn
+          => run-test %name %fn
+    _     => skip not-focused %name %fn
+  ) (getenv MAGRITTE_FOCUS)
+)
+
+(run-test ?name ?fn) = (
+  puts "- test:" $name
+  %fn && put "-- pass" !! put "-- fail"
+)

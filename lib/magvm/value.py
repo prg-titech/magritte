@@ -1,7 +1,7 @@
 from table import TableEntry
 from symbol import sym
 from debug import debug
-from code import labels_by_addr
+from labels import labels_by_addr
 
 from rpython.rlib.rarithmetic import r_uint, intmask
 

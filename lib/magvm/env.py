@@ -108,6 +108,13 @@ class Env(Value):
             else:
                 raise KeyError(revsym(key))
 
+    def has(self, key):
+        try:
+            self.lookup_ref(key)
+            return True
+        except KeyError:
+            return False
+
     def let(self, key, val):
         r = Ref(val)
         self.dict[key] = r

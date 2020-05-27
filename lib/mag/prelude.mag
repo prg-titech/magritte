@@ -10,6 +10,8 @@ add = @!add
 mul = @!mul
 str = @!str
 
+(puts (?a)) = put (str (@!for $a))
+
 (drain) = (@!get; drain)
 (repeat (?a)) = (@!for $a; repeat (@!for $a))
 (iter ?fn ?x) = (put $x; iter $fn ($fn $x))
@@ -42,6 +44,15 @@ vm-debug = (
   off => @!vm-debug -1
   ?level => @!vm-debug $level
   open ?fname => @!vm-debug-open $fname; @!vm-debug 10
+)
+
+LOADED_MODULES = {}
+
+(require ?fname) = (
+  @!has $fname $LOADED_MODULES || (
+    $LOADED_MODULES!$fname = 1
+    load $fname
+  )
 )
 
 # 

@@ -4,6 +4,11 @@ from value import *
 from symbol import sym
 from debug import debug, set_debug, open_debug_file
 from status import Success, Fail
+from env import Env
+from symbol import revsym
+
+from rpython.rlib.objectmodel import we_are_translated
+
 import os
 
 intrinsics = Table()
@@ -125,3 +130,37 @@ def vm_debug(frame, args):
 def vm_debug_open(frame, args):
     fname = args[0].s()
     open_debug_file(fname)
+
+@intrinsic
+def has(frame, args):
+    key = args[0].s()
+    env = args[1]
+    assert isinstance(env, Env)
+    boolify(env.has(sym(key)), frame, 'no-key-'+key)
+
+def boolify(b, frame, msg):
+    if b:
+        frame.set_status(Success())
+    else:
+        frame.set_status(Fail(String(msg)))
+
+@intrinsic
+def vm_debugger(frame, args):
+    if we_are_translated():
+        vm_debugger_rpython()
+    else:
+        vm_debugger_dynamic()
+
+def vm_debugger_rpython():
+    print 'vm_debugger not available in compiled mode'
+
+def vm_debugger_dynamic():
+    """NOT_RPYTHON"""
+    import code
+
+    code.interact(local=dict(globals(), **locals()))
+
+
+def own_keys(e):
+    return map(revsym, e.dict.keys())
+

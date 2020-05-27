@@ -1,3 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-exec python2 ./lib/rpy/targetmagritte.py "$@"
+export MAGRITTE_PREFIX="${BASH_SOURCE[0]%/*}"
+export MAGRITTE_PREFIX="${MAGRITTE_PREFIX%/*}"
+
+exec python2 ./lib/magvm/targetmagritte.py "$@"

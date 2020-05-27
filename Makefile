@@ -38,26 +38,20 @@ clean:
 
 VM_BIN=./bin/magvm
 
-$(VM_BIN): lib/rpy/*.py
-	./bin/rpython-compile ./lib/rpy/targetmagritte.py
+$(VM_BIN): lib/magvm/*.py
+	./bin/rpython-compile ./lib/magvm/targetmagritte.py
 	mv targetmagritte-c $(VM_BIN)
 
-%.magc: %.mag ./bin/magc lib/magritte/compiler.rb
-	./bin/magc $<
-
 TEST_FILE=./test/test.mag
-TEST_FILEC=$(TEST_FILE)c
-
-HELLO_WORLD_DEPS = $(TEST_FILEC)
 
 DYNAMIC ?= 0
 
-.PHONY: hello-world
-hello-world: $(VM_BIN) $(TEST_FILEC)
-	$(VM_BIN) $(TEST_FILEC)
+.PHONY: test
+test: $(VM_BIN) $(TEST_FILE)
+	./bin/mag $(TEST_FILE)
 
-.PHONY: hello-world-dynamic
-hello-world-dynamic: $(TEST_FILEC)
-	python2 ./lib/rpy/targetmagritte.py $(TEST_FILEC)
+.PHONY: test-dynamic
+test-dynamic: $(TEST_FILE)
+	./bin/mag-dynamic $(TEST_FILE)
 
 CLEAN += **/*.magc **/*.magx build/*

@@ -1,0 +1,27 @@
+require test/framework.mag
+
+test modules (=>
+  my-module = {
+    a = 1
+    b = 2
+    (thing ?c) = add %a %b %c
+  }
+
+  eq ($my-module!thing 6) 9
+)
+
+test dynamic-assign (=>
+  e = {}
+  key = foo
+  $e!$key = bar
+
+  eq bar $e!foo
+)
+
+test dynamic-get (=>
+  e = {}
+  key = foo
+  $e!foo = bar
+
+  eq bar $e!$key
+)

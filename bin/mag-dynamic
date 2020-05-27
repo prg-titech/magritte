@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+MAGRITTE_DYNAMIC=1 exec mag "$@"

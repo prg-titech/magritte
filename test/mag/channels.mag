@@ -1,0 +1,16 @@
+require test/framework.mag
+
+test channels (=>
+  c = (make-channel)
+
+  out = [(
+    (
+      put 1 %% (put comp > %c)
+      put 2 3 4 5 6
+    ) | take 2
+
+    get < $c
+  )]
+
+  eq $out [1 2 comp]
+)

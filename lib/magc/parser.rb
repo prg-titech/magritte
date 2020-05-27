@@ -353,7 +353,6 @@ module Magritte
 
               while true
                 body.match(rsplit(~_, token(:arrow), ~_)) do |new_body, empty|
-                  p :arrow => [new_body, empty]
                   body = new_body
                   empties << empty
                 end or break

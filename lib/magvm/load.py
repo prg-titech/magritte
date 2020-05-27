@@ -4,7 +4,7 @@ from value import *
 from util import map_int
 from debug import debug
 from const import const_table
-from code import inst_table, label_table, register_label
+from labels import inst_table, label_table, register_label
 from symbol import symbol_table, sym, revsym
 from intrinsic import intrinsic, intrinsics
 from base import base_env
@@ -15,6 +15,9 @@ import os
 
 from rpython.rlib.rposix import spawnv
 from rpython.rlib.rstruct.runpack import runpack
+
+def prefixed(p):
+    return os.environ['MAGRITTE_PREFIX'] + p
 
 def unescape(s):
     return s.replace('\\n', '\n').replace('\\\\', '\\')
@@ -82,6 +85,14 @@ def load_file(fname):
         load_fd(fd)
     finally:
         os.close(fd)
+
+    label = label_table.get('main')
+    debug(0, ['load!', fname, str(label.addr)])
+    return label
+
+def precompile_and_load_file(fname):
+    precompile(fname)
+    return load_file(fname + 'c')
 
 def decomp_to_file(fname):
     fd = 0
@@ -159,12 +170,7 @@ def precompile(fname):
     fnamec = fname + 'c'
     if os.path.exists(fnamec) and os.path.getmtime(fnamec) >= os.path.getmtime(fname): return
 
-    mag_binary = None
-    try:
-        mag_binary = os.environ['MAG_COMPILER']
-    except KeyError:
-        raise Crash(Fail(String('cannot load %s, is not precompiled and MAG_COMPILER is not set' % fname)))
-
+    mag_binary = prefixed('/bin/magc')
 
     debug(0, ['magc out of date, recompiling', mag_binary, fname])
     spawn(mag_binary, [fname])
@@ -173,13 +179,14 @@ def precompile(fname):
 def load(frame, args):
     fname = _get_fname(args)
 
-    precompile(fname)
+    if not os.path.exists(fname): fname = prefixed(fname)
 
-    load_file(fname + 'c')
-    addr = label_table.get('main').addr
-    debug(0, ['load!', fname, str(addr)])
+    if not os.path.exists(fname):
+        frame.fail(tagged('no-such-file', String(fname)))
 
-    frame.proc.frame(base_env, addr)
+    label = precompile_and_load_file(fname)
+
+    frame.proc.frame(base_env, label.addr, tail_elim=False)
 
 base_env.let(sym('load'), load)
 

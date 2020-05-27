@@ -1,0 +1,19 @@
+require test/framework.mag
+
+test funcdef-group-env (=>
+  vm-debug on
+  e = {}
+  ($e!bar a) = put b
+  ($e!bar b) = put a
+
+  eq [($e!bar a) ($e!bar b)] [b a]
+  vm-debug off
+)
+
+test funcdef-group (=>
+  (foo a) = put b
+  (foo b) = put a
+
+  eq [(foo a) (foo b)] [b a]
+)
+

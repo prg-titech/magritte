@@ -1,6 +1,6 @@
 from machine import machine
 from base import base_env
-from load import load_file
+from load import load_file, precompile_and_load_file, prefixed
 import os
 
 def run_file(filename):
@@ -9,6 +9,9 @@ def run_file(filename):
     machine.run()
     return 0
 
+def run_prelude():
+    main = precompile_and_load_file(prefixed('/lib/mag/prelude.mag'))
+    machine.spawn(base_env, main.addr)
 
 def usage():
     print "TODO: usage"
@@ -29,6 +32,7 @@ def entry_point(argv):
         usage()
         return 1
 
+    run_prelude()
     return run_file(filename)
 
 def target(*args):

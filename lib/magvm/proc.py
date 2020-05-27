@@ -1,7 +1,7 @@
 from table import TableEntry
 from inst import inst_type_table, InstType
 from channel import Channel, Close
-from code import labels_by_addr, inst_table
+from labels import labels_by_addr, inst_table
 from status import Status, Success, Fail
 from util import print_list_s
 from frame import Frame
@@ -53,7 +53,7 @@ class Proc(TableEntry):
         self.status = Success()
         self.last_cleaned = []
 
-    def frame(self, env, addr):
+    def frame(self, env, addr, tail_elim=True):
         debug(0, ['--', str(self.id), labels_by_addr[addr].name])
         assert isinstance(addr, int)
 
@@ -62,11 +62,12 @@ class Proc(TableEntry):
         frame = Frame(self, env, addr)
         frame.setup()
 
-        eliminated = self.tail_eliminate()
-        if eliminated:
-            frame.env = eliminated.env.merge(env)
-            for comp in eliminated.compensations:
-                frame.compensations.append(comp)
+        if tail_elim:
+            eliminated = self.tail_eliminate()
+            if eliminated:
+                frame.env = eliminated.env.merge(env)
+                for comp in eliminated.compensations:
+                    frame.compensations.append(comp)
 
         self.frames.append(frame)
         return frame

@@ -10,7 +10,7 @@ from debug import debug
 from channel import *
 from base import base_env
 from symbol import symbol_table
-from code import label_table
+from labels import label_table
 from rpython.rlib.jit import JitDriver, elidable
 
 from random import shuffle
