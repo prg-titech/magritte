@@ -290,7 +290,7 @@ def typeof(frame, args):
 @inst_action
 def crash(frame, args):
     reason = frame.pop()
-    debug(0, ['-- crash', frame.proc.s(), reason.s()])
+    debug(0, ['-- crash: ', frame.proc.s(), reason.s()])
     raise Crash(reason)
 
 @inst_action
