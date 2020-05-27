@@ -164,29 +164,8 @@ module Magritte
     end
 
     def parse_assignment(lhs, rhs)
-      # Check if lhs have parenthesis
-      # In this case we're doing a special lambda assigment
-      lhs.match(singleton(nested(:lparen, starts(~_, ~_)))) do |var, bindings|
-        lambda_name = ""
+      # note: funcdef assignment is handled separately in parse_root.
 
-        # If we have an access variable we need to move the bang + one more token
-        # to the var
-        if !var.token?(:bare) && bindings.elems.length > 1 && bindings.elems.first.token?(:bang)
-          var = Skeleton::Item[[var, bindings.elems.shift, bindings.elems.shift]]
-          lambda_name = var.elems[2].value
-        else
-          # Note: we are only encapsulating var inside an Item in this case
-          # so we can call parse_terms no matter which situation we are in
-          var = Skeleton::Item[[var]]
-          lambda_name = var.elems[0].value
-        end
-
-        range = Lexer::Range.between(lhs, rhs)
-        lam = parse_lambda(lambda_name, [bindings], [[rhs]], range)
-        return AST::Assignment[parse_terms(var), [lam]]
-      end
-
-      # Normal assignment
       unless lhs.elems.all? { |elem| elem.token?(:bare) || elem.token?(:var) || elem.token?(:lex_var) || elem.token?(:bang) }
         error!(lhs, "Invalid lhs")
       end
