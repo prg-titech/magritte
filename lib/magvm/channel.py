@@ -120,10 +120,10 @@ class Channel(Value):
         self.state = Channel.CLOSED
 
         for blocker in self.senders:
-            blocker.proc.interrupt(Close(self, True))
+            blocker.proc.interrupt(Close(self, False))
 
         for blocker in self.receivers:
-            blocker.proc.interrupt(Close(self, False))
+            blocker.proc.interrupt(Close(self, True))
 
         return True
 

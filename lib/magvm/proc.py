@@ -158,7 +158,7 @@ class Proc(TableEntry):
         if isinstance(interrupt, Close):
             debug(0, ['channel closed', interrupt.s()])
             debug(0, ['env:', self.current_frame().env.s()])
-            debug(0, ['has channel?', str(self.has_channel(interrupt.is_input, interrupt.channel))])
+            debug(0, ['has channel?', str(self.has_channel(not interrupt.is_input, interrupt.channel))])
 
             while self.frames and self.has_channel(interrupt.is_input, interrupt.channel):
                 debug(0, ['unwind!'])
