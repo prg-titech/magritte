@@ -138,7 +138,7 @@ class Frame(object):
         return self.stack[len(self.stack)-1]
 
     def put(self, vals):
-        debug(0, ['put', self.env.get_output(0).s()] + [v.s() for v in vals])
+        debug(0, ['-- put', self.env.get_output(0).s()] + [v.s() for v in vals])
         self.env.get_output(0).channelable.write_all(self.proc, vals)
 
     def get(self, into, n=1):
@@ -159,6 +159,7 @@ class Frame(object):
 
         for arg in static_args:
             assert isinstance(arg, int)
+
         action(self, static_args)
 
     def step(self):

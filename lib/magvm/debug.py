@@ -14,7 +14,7 @@ class Debugger(object):
         if self.fname: self.open_file()
 
     def open_file(self):
-        self.fd = os.open(self.fname, os.O_WRONLY | os.O_CREAT, 0o777)
+        self.fd = os.open(self.fname, os.O_TRUNC | os.O_WRONLY | os.O_CREAT, 0o777)
 
     def debug(self, level, parts):
         assert isinstance(level, int)
