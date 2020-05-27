@@ -1,10 +1,14 @@
 # Magritte
 
-Magritte is a shell language with a design firmly centered around pipes. The full specification can be found in [my thesis][http://files.jneen.net/academic/thesis.pdf].
+Magritte is a shell language with a design firmly centered around pipes. The full specification can be found in [my thesis](http://files.jneen.net/academic/thesis.pdf).
+
+The current repository represents an attempt to implement a JIT interpreter for Magritte using RPython. The Ruby interpreter mentioned in the paper can be found on the branch [old-implementation](https://github.com/prg-titech/magritte/tree/old-implementation).
+
+Both implementations are still very unstable, so please do not use this code for anything critical.
 
 ## Building
 
-* Depends on Ruby 2.6+ and python 2.7 (yes, python 2, it's required for RPython). There are no gem dependencies or python package dependencies.
+* Depends on Ruby 2.6+ and Python 2.7 (yes, Python 2, it's required for RPython). There are no gem dependencies or Python package dependencies.
 
 * There is, however, one submodule - make sure you have this fetched. Either `git clone --recursive` this repository, or run `git submodule update --init` in the project root.
 
@@ -48,9 +52,9 @@ The decompiled file does not contain the labels table, instead opting to mark th
 
 ## `magvm`
 
-`magvm` is an interpreter for the `magc` bytecode format. It is written in RPython, which is a subset of python that can compile to native code. Because of this, it can be either run as a native binary (much faster), or run directly as python code (much more flexible for debugging, doesn't require a slow compilation step).
+`magvm` is an interpreter for the `magc` bytecode format. It is written in RPython, which is a subset of Python that can compile to native code. Because of this, it can be either run as a native binary (much faster), or run directly as Python code (much more flexible for debugging, doesn't require a slow compilation step).
 
-Running `make test` will automatically compile the vm into `./bin/magvm`, and use it to run the test suite (`test/test.mag`). Running `make test-dynamic`, on the other hand, will not compile any RPython code, but instead run the interpreter as regular python. `./bin/magvm-dynamic` and `./bin/mag-dynamic` do the same.
+Running `make test` will automatically compile the vm into `./bin/magvm`, and use it to run the test suite (`test/test.mag`). Running `make test-dynamic`, on the other hand, will not compile any RPython code, but instead run the interpreter as regular Python. `./bin/magvm-dynamic` and `./bin/mag-dynamic` do the same.
 
 The machine (`machine.py`) is an object that keeps track of multiple Proc objects (`proc.py`), stepping each active process forward independently. Each process contains its own stack, which is simply a list of Frame objects (`frame.py`). The frame implements a basic stack machine - instructions can push or pop values (`value.py`) from the current frame's stack.
 
@@ -74,6 +78,6 @@ Often it is necessary to further filter the logs, and for that we provide `./bin
 
 * View only the activity of a single proc (as well as all resolve and check phases) with `log-view proc <proc-id>`, e.g. `log-view proc 2` to view only `<proc2>`.
 
-* When running in interpreted mode, you can use the intrinsic `@!vm-debugger` to drop to a python shell, where you will have access to the current frame and any arguments you pass in. Using this in compiled mode results in a warning.
+* When running in interpreted mode, you can use the intrinsic `@!vm-debugger` to drop to a Python shell, where you will have access to the current frame and any arguments you pass in. Using this in compiled mode results in a warning.
 
-* This shell is also available elsewhere in the VM through the `open_shell` python function from the `debug` module.
+* This shell is also available elsewhere in the VM through the `open_shell` Python function from the `debug` module.
