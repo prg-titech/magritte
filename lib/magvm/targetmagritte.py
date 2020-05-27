@@ -1,6 +1,8 @@
 from machine import machine
 from base import base_env
 from load import load_file, precompile_and_load_file, prefixed
+from debug import debugger, debug
+from rpython.rlib.objectmodel import we_are_translated
 import os
 
 def run_file(filename):
@@ -17,6 +19,12 @@ def usage():
     print "TODO: usage"
 
 def entry_point(argv):
+    debugger.setup()
+    if we_are_translated():
+        debug(0, ['== starting magvm in native mode =='])
+    else:
+        debug(0, ['== starting magvm in interpreted mode =='])
+
     filename = None
 
     while argv:

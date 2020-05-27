@@ -56,3 +56,18 @@ def disable_debug():
 def open_debug_file(fname):
     debugger.fname = fname
     debugger.open_file()
+
+def open_shell(frame, args):
+    if we_are_translated():
+        vm_debugger_rpython(frame, args)
+    else:
+        vm_debugger_dynamic(frame, args)
+
+def vm_debugger_rpython(frame, args):
+    print 'vm_debugger not available in compiled mode'
+
+def vm_debugger_dynamic(frame, args):
+    """NOT_RPYTHON"""
+    import code
+
+    code.interact(local=dict(globals(), **locals()))

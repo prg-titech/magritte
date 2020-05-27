@@ -2,7 +2,7 @@ from util import as_dashed
 from table import Table, TableEntry
 from value import *
 from symbol import sym
-from debug import debug, set_debug, open_debug_file
+from debug import debug, set_debug, open_debug_file, open_shell
 from status import Success, Fail
 from env import Env
 from symbol import revsym
@@ -146,20 +146,7 @@ def boolify(b, frame, msg):
 
 @intrinsic
 def vm_debugger(frame, args):
-    if we_are_translated():
-        vm_debugger_rpython()
-    else:
-        vm_debugger_dynamic()
-
-def vm_debugger_rpython():
-    print 'vm_debugger not available in compiled mode'
-
-def vm_debugger_dynamic():
-    """NOT_RPYTHON"""
-    import code
-
-    code.interact(local=dict(globals(), **locals()))
-
+    open_shell(frame, args)
 
 def own_keys(e):
     return map(revsym, e.dict.keys())

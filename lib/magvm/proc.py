@@ -5,7 +5,7 @@ from labels import labels_by_addr, inst_table
 from status import Status, Success, Fail
 from util import print_list_s
 from frame import Frame
-from debug import debug
+from debug import debug, open_shell
 from value import *
 
 class Proc(TableEntry):
