@@ -12,7 +12,9 @@ PDFLATEXMK_OPTS += -latexoption='-shell-escape'
 PDFLATEXMK_OPTS += -usepretex='\def\sigplan{1}'
 PDFLATEXMK_OPTS += -view=none
 
-CLEAN = doc/paper.pdf doc/paper.log doc/paper.aux doc/paper.out doc/paper-autopp* doc/paper.bbl doc/paper.dvi
+CLEAN += doc/paper.pdf doc/paper.log doc/paper.aux doc/paper.out doc/paper-autopp* doc/paper.bbl doc/paper.dvi
+
+all: vm
 
 .PHONY: open-doc
 open-doc: doc/paper.pdf
@@ -37,6 +39,7 @@ clean:
 	rm -f -- $(CLEAN)
 
 VM_BIN=./bin/magvm
+CLEAN += $(VM_BIN)
 
 $(VM_BIN): lib/magvm/*.py
 	./bin/rpython-compile ./lib/magvm/targetmagritte.py
@@ -46,6 +49,9 @@ TEST_FILE=./test/test.mag
 
 DYNAMIC ?= 0
 
+.PHONY: vm
+vm: $(VM_BIN)
+
 .PHONY: test
 test: $(VM_BIN) $(TEST_FILE)
 	./bin/mag $(TEST_FILE)
@@ -54,4 +60,4 @@ test: $(VM_BIN) $(TEST_FILE)
 test-dynamic: $(TEST_FILE)
 	./bin/mag-dynamic $(TEST_FILE)
 
-CLEAN += **/*.magc **/*.magx build/*
+CLEAN += **/*.magc **/*.magx
