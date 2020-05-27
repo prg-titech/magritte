@@ -12,6 +12,7 @@ from base import base_env
 from symbol import symbol_table
 from labels import label_table
 from rpython.rlib.jit import JitDriver, elidable
+from rpython.rlib.listsort import make_timsort_class
 
 from random import shuffle
 
@@ -46,12 +47,16 @@ class Machine(object):
 
     def step(self):
         debug(0, ['%%%%% PHASE: step %%%%%'])
-        for proc in self.procs.table:
+        sort = age_sort([p for p in self.procs.table])
+        sort.sort()
+        for proc in sort.list:
             if not proc: continue
             if proc.state == Proc.DONE: continue
 
             debug(0, ['-- running proc', proc.s()])
             if proc.is_running():
+                proc.age += 1
+
                 jit_driver.jit_merge_point(
                     pc=proc.current_frame().pc,
                     stack=proc.frames,
@@ -81,3 +86,5 @@ class Machine(object):
         if running == 0: raise Done
 
 machine = Machine()
+
+age_sort = make_timsort_class(lt=lambda p, q: p.age < q.age)

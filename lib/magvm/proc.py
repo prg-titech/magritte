@@ -46,6 +46,7 @@ class Proc(TableEntry):
         return self.state in [Proc.INIT, Proc.RUNNING, Proc.INTERRUPTED]
 
     def __init__(self, machine):
+        self.age = 0
         self.state = Proc.INIT
         self.machine = machine
         self.frames = []
