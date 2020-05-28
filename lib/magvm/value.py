@@ -173,7 +173,7 @@ class Vector(Value):
             #     debug(0, ['-- vec close!'])
 
         def resolve(self):
-            debug(0, ['-- vec resolve', str(self.writer_count), str(len(self.close_waiters or []))])
+            debug(0, ['-- vec resolve', str(self.writer_count), str(len(self.close_waiters or [])), self.s()])
             if self.writer_count > 0: return False
             if self.is_closed: return False
 

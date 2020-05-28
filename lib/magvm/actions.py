@@ -216,7 +216,8 @@ def env_collect(frame, args):
 @inst_action
 def wait_for_close(frame, args):
     collection = frame.top_vec()
-    if collection.is_closed: return
+
+    if collection.writer_count == 0: return
 
     frame.proc.machine.channels.register(collection)
     collection.wait_for_close(frame.proc)
