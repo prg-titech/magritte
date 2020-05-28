@@ -102,7 +102,7 @@ class Proc(TableEntry):
             # its stack variables and compensations for the
             # new frame.
             for e in eliminated:
-                frame.env = e.env.merge(frame.env)
+                frame.env = e.env.extend().merge(frame.env)
                 for comp in e.compensations:
                     frame.compensations.append(comp)
 
