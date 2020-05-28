@@ -139,42 +139,42 @@ module Magritte
       elsif scan /\]/
         skip_ws
         return token(:rbrack)
-     elsif scan /\=>/
-       skip_ws
-       return token(:arrow)
-     elsif scan /[=]/
-       skip_ws
-       return token(:equal)
-     elsif scan /</
-       skip_ws
-       return token(:lt)
-     elsif scan />/
-       skip_ws
-       return token(:gt)
-     elsif scan /%%!/
-       skip_ws
-       return token(:d_per_bang)
-     elsif scan /%%/
-       skip_ws
-       return token(:d_per)
-     elsif scan /!!/
-       skip_ws
-       return token(:d_bang)
-     elsif scan /&&/
-       skip_ws
-       return token(:d_amp)
-     elsif scan /\|\|/
-       skip_ws
-       return token(:d_bar)
-     elsif scan /&/
-       skip_ws
-       return token(:amp)
-     elsif scan /\|/
-       skip_ws
-       return token(:pipe)
-     elsif scan /!/
-       skip_ws
-       return token(:bang)
+      elsif scan /\=>/
+        skip_ws
+        return token(:arrow)
+      elsif scan /[=]/
+        skip_ws
+        return token(:equal)
+      elsif scan /</
+        skip_ws
+        return token(:lt)
+      elsif scan />/
+        skip_ws
+        return token(:gt)
+      elsif scan /%%!/
+        skip_ws
+        return token(:d_per_bang)
+      elsif scan /%%/
+        skip_ws
+        return token(:d_per)
+      elsif scan /!!/
+        skip_ws
+        return token(:d_bang)
+      elsif scan /&&/
+        skip_ws
+        return token(:d_amp)
+      elsif scan /\|\|/
+        skip_ws
+        return token(:d_bar)
+      elsif scan /&/
+        skip_ws
+        return token(:amp)
+      elsif scan /\|/
+        skip_ws
+        return token(:pipe)
+      elsif scan /!/
+        skip_ws
+        return token(:bang)
       elsif scan /[$](#{WORD})/
         skip_ws
         return token(:var, group(1))
