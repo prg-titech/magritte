@@ -22,12 +22,32 @@ class Proc(TableEntry):
     DONE = 4        # no more steps to run
     TERMINATED = 5  # there has been a crash, probably due to an error
 
-    def set_init(self): self.state = Proc.INIT
-    def set_running(self): self.state = Proc.RUNNING
-    def set_waiting(self): self.state = Proc.WAITING
-    def set_interrupted(self): self.state = Proc.INTERRUPTED
-    def set_done(self): self.state = Proc.DONE
-    def set_terminated(self): self.state = Proc.TERMINATED
+    def set_init(self):
+        debug(0, ['-- set-init', self.s()])
+        self.state = Proc.INIT
+
+    def set_running(self):
+        debug(0, ['-- set-running', self.s()])
+        self.state = Proc.RUNNING
+
+    def set_waiting(self):
+        debug(0, ['-- set-waiting', self.s()])
+        if self.state == Proc.WAITING:
+            raise StandardError('oh no')
+        self.state = Proc.WAITING
+
+    def set_interrupted(self):
+        debug(0, ['-- set-interrupted', self.s()])
+        self.state = Proc.INTERRUPTED
+
+    def set_done(self):
+        debug(0, ['-- set-done', self.s()])
+        self.state = Proc.DONE
+
+    def set_terminated(self):
+        debug(0, ['-- set-terminated', self.s()])
+        self.state = Proc.TERMINATED
+
 
     # Important: a channel will set a successful write to "running". but
     # if that write is connected to a closed channel, it needs to preserve
@@ -132,17 +152,17 @@ class Proc(TableEntry):
                              [f.s() for f in self.last_cleaned])
 
                 self.last_cleaned = []
-                self.state = Proc.RUNNING
+                self.set_running()
                 self.current_frame().step()
         except Crash as e:
             print '-- crash', e.status.s()
             debug(0, ['-- crashed', self.s()])
             self.status = e.status
-            self.state = Proc.TERMINATED
+            self.set_terminated()
 
         if not self.frames:
             debug(0, ['out of frames', self.s()])
-            self.state = Proc.DONE
+            self.set_done()
         else:
             debug(0, ['still has frames!', self.s()])
 
@@ -158,7 +178,7 @@ class Proc(TableEntry):
         if isinstance(interrupt, Close):
             debug(0, ['channel closed', interrupt.s()])
             debug(0, ['env:', self.current_frame().env.s()])
-            debug(0, ['has channel?', str(self.has_channel(not interrupt.is_input, interrupt.channel))])
+            debug(0, ['has channel?', str(self.has_channel(interrupt.is_input, interrupt.channel))])
 
             while self.frames and self.has_channel(interrupt.is_input, interrupt.channel):
                 debug(0, ['unwind!'])
@@ -168,7 +188,6 @@ class Proc(TableEntry):
                 debug(0, ['unwind all!'])
                 self.pop()
 
-        debug(0, ['unwound'] + [f.s() for f in self.last_cleaned])
         for frame in self.last_cleaned:
             debug(0, ['-- compensating', frame.s(), str(len(frame.compensations))])
             for (addr, _) in frame.compensations:
@@ -176,9 +195,11 @@ class Proc(TableEntry):
                 self.frame(frame.env, addr)
 
         if self.frames:
-            self.state = Proc.RUNNING
+            self.set_running()
         else:
-            self.state = Proc.DONE
+            self.set_done()
+
+        debug(0, ['unwound', self.s()] + [f.s() for f in self.last_cleaned])
 
         return True
 
@@ -188,7 +209,7 @@ class Proc(TableEntry):
     def interrupt(self, interrupt):
         debug(0, ['interrupt', self.s(), interrupt.s()])
         self.interrupts.append(interrupt)
-        self.state = Proc.INTERRUPTED
+        self.set_interrupted()
 
     def s(self):
         out = ['<proc', str(self.id), ':', self.state_name()]

@@ -24,11 +24,12 @@ class Receiver(Blocker):
         self.count = count
 
     def receive(self, val):
-        debug(0, ['receiving', val.s(), 'into', self.into.s()])
-        self.into.channelable.write(self.proc, val)
         self.count -= 1
         debug(0, ['remaining', str(self.count), str(self.is_done())])
-        if self.is_done(): self.proc.try_set_running()
+        if self.is_done(): self.proc.set_running()
+
+        debug(0, ['receiving', val.s(), 'into', self.into.s()])
+        self.into.channelable.write(self.proc, val)
 
     def is_done(self):
         return self.count <= 0
@@ -132,13 +133,13 @@ class Channel(Value):
         def read(self, proc, count, into):
             if self.is_closed(): return proc.interrupt(Close(self, True))
             self.receivers.append(Receiver(proc, count, into))
-            debug(0, ['-- read set-waiting', proc.s()])
+            debug(0, ['-- read set-waiting', str(count)])
             proc.set_waiting()
 
         def write_all(self, proc, vals):
             if self.is_closed(): return proc.interrupt(Close(self, False))
             self.senders.append(Sender(proc, vals))
-            debug(0, ['-- write set-waiting', proc.s()])
+            debug(0, ['-- write set-waiting', Vector(vals).s()])
             proc.set_waiting()
 
         def add_writer(self, frame):
@@ -168,15 +169,16 @@ class Channel(Value):
             self.reader_count -= 1
 
         def resolve(self):
+            if self.is_closed(): return False
+
             while self.senders and self.receivers:
                 (sender, receiver) = (self.senders.pop(0), self.receivers.pop(0))
-
                 sender.send(receiver)
 
                 if not sender.is_done(): self.senders.insert(0, sender)
                 if not receiver.is_done(): self.receivers.insert(0, receiver)
 
-            assert (not self.senders) or (not self.receivers)
+            debug(0, ['-- still waiting:['] + [p.s() for p in self.senders + self.receivers] + [']'])
 
             return self.check_for_close()
 

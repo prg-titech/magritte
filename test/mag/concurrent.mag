@@ -10,6 +10,6 @@ test thread-into-collector (=>
   eq 11 (len $out)
 )
 
-skip infinite-loop slide-example (=>
-  count-forever | (& drain; & drain) | get
+test slide-example (=>
+  count-forever | (& drain; & drain) | take 10
 )

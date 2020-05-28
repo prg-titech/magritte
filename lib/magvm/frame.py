@@ -165,8 +165,7 @@ class Frame(object):
     def step(self):
         inst = self.current_inst()
         self.pc += 1
-        self.state = self.run_inst_action(inst.inst_id, inst.arguments)
-        return self.state
+        self.run_inst_action(inst.inst_id, inst.arguments)
 
     def should_eliminate(self):
         return self.current_inst().inst_id == InstType.RETURN
