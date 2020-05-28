@@ -1,7 +1,7 @@
 require test/framework.mag
 
-skip crashes-whole-thing crash (=>
-  out = (& crash oops && put yay !! put "oh no")
+skip make-crash-deregister crash (=>
+  out = (& (put 3; crash))
 
   eq $out ""
 )

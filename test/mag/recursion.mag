@@ -33,3 +33,12 @@ test pipe-cases (=>
   # `each` is falsey, since it can be interrupted
   eq 1 1
 )
+
+skip deadlock each-continues (=>
+  num = 0
+  for [1 2 3] | each (=>
+    %num = (incr %num)
+  )
+
+  put done %num
+)
