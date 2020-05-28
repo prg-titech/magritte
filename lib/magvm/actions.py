@@ -183,6 +183,7 @@ def return_(frame, args):
 
 @inst_action
 def invoke(frame, args):
+    frame.proc.status = Success()
     collection = frame.pop_vec()
     if not collection.values:
         frame.fail_str('empty-invocation')
