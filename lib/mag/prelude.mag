@@ -2,7 +2,7 @@
 
 __repr__ = "{ <prelude> }"
 
-(put (?a)) = @!for $a
+(put ...?a) = @!for $a
 (get) = @!get
 (take ?n) = @!take $n
 
@@ -10,12 +10,12 @@ add = @!add
 mul = @!mul
 str = @!str
 
-(puts (?a)) = put (str (@!for $a))
+(puts ...?a) = put (str ...$a)
 
 (drain) = (@!get; drain)
-(repeat (?a)) = (@!for $a; repeat (@!for $a))
+(repeat ...?a) = (@!for $a; repeat ...$a)
 (iter ?fn ?x) = (put $x; iter $fn ($fn $x))
-(each (?fn)) = (
+(each ...?fn) = (
   (k) = (%fn (@!get); k)
   k
 )
@@ -55,61 +55,64 @@ LOADED_MODULES = {}
   )
 )
 
-# 
-# (times ?n ?fn (?args)) = (
-#   in = (stdin)
-#   range %n | each (_ => exec %fn (for %args) < %in)
-# )
-# 
-# (fan ?nthreads ?fn (?args)) = (
-#   times %nthreads (=>
-#     & each [%fn (for %args)]
-#   )
-# )
-# 
-# (range ?n) = (count-forever | take %n)
-# (repeat-forever ?val) = (put %val; repeat-forever %val)
-# (repeat ?n ?val) = (repeat-forever %val | take %n)
-# (inc ?val) = (add %val 1)
-# (dec ?val) = (add %val -1)
-# (label ?l) = (each (?x => put [%l %x]))
-# 
-# (into ?f (?a)) = (%f (for %a) (drain))
-# 
-# 
-# (prob ?total ?amt) = (lt %amt (mul %total (rand)))
-# 
-# (sample) = (
-#   hold = (get)
-#   i = 1
-#   each (?v =>
-#     # local
-#     %i = (inc %i)
-#     prob %i 1 && (%hold = %v)
-#   )
-# 
-#   put %hold
-# )
-# 
-# (produce ?fn) = (loop-channel (stdout) %fn)
-# (consume ?fn) = (loop-channel (stdin) %fn)
-# 
-# (iter ?fn ?a) = (produce (=> (put %a; %a = (%fn %a))))
-# (each ?fn) = (consume (=> %fn (get)))
-# 
-# (even ?x) = (eq 0 (mod 2 %x))
-# (odd ?x) = (eq 1 (mod 2 %x))
-# (not (?args)) = (exec (for %args) && false !! true)
-# (all ?pred) = (not any [not %pred])
-# 
-# (take-until ?pred) = (each (?e => %pred %e && put %e !! false))
-# 
-# stdout = @!stdout
-# LOG = (stdout)
-# (log ?msg) = (put ["log:" %msg] > $LOG)
-# 
-# null = (make-null)
-# (through ?o) = (
-#   & %o!from < %null
-#   & %o!into > %null
-# )
+(label ?l) = (each (?x => put [%l %x]))
+
+(filter ?fn) = each (?x => %fn $x && put $x)
+
+# # 
+# # (times ?n ?fn (?args)) = (
+# #   in = (stdin)
+# #   range %n | each (_ => exec %fn (for %args) < %in)
+# # )
+# # 
+# # (fan ?nthreads ?fn (?args)) = (
+# #   times %nthreads (=>
+# #     & each [%fn (for %args)]
+# #   )
+# # )
+# # 
+# # (range ?n) = (count-forever | take %n)
+# # (repeat-forever ?val) = (put %val; repeat-forever %val)
+# # (repeat ?n ?val) = (repeat-forever %val | take %n)
+# # (inc ?val) = (add %val 1)
+# # (dec ?val) = (add %val -1)
+# # 
+# # (into ?f (?a)) = (%f (for %a) (drain))
+# # 
+# # 
+# # (prob ?total ?amt) = (lt %amt (mul %total (rand)))
+# # 
+# # (sample) = (
+# #   hold = (get)
+# #   i = 1
+# #   each (?v =>
+# #     # local
+# #     %i = (inc %i)
+# #     prob %i 1 && (%hold = %v)
+# #   )
+# # 
+# #   put %hold
+# # )
+# # 
+# # (produce ?fn) = (loop-channel (stdout) %fn)
+# # (consume ?fn) = (loop-channel (stdin) %fn)
+# # 
+# # (iter ?fn ?a) = (produce (=> (put %a; %a = (%fn %a))))
+# # (each ?fn) = (consume (=> %fn (get)))
+# # 
+# # (even ?x) = (eq 0 (mod 2 %x))
+# # (odd ?x) = (eq 1 (mod 2 %x))
+# # (not (?args)) = (exec (for %args) && false !! true)
+# # (all ?pred) = (not any [not %pred])
+# # 
+# # (take-until ?pred) = (each (?e => %pred %e && put %e !! false))
+# # 
+# # stdout = @!stdout
+# # LOG = (stdout)
+# # (log ?msg) = (put ["log:" %msg] > $LOG)
+# # 
+# # null = (make-null)
+# # (through ?o) = (
+# #   & %o!from < %null
+# #   & %o!into > %null
+# # )

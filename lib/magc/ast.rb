@@ -141,6 +141,10 @@ module Magritte
       defrec :lookup
     end
 
+    class Splat < Tree::Node
+      defrec :expr
+    end
+
     class Assignment < Tree::Node
       deflistrec :lhs
       deflistrec :rhs

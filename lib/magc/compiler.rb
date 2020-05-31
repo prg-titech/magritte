@@ -441,6 +441,11 @@ module Magritte
       @current_label = final_label
     end
 
+    def visit_splat(node)
+      require 'pry'; binding.pry
+      raise 'should not get here'
+    end
+
     def visit_compensation(node)
       comp_label = label('compensation', node.range) do
         visit(node.compensation)
@@ -567,6 +572,10 @@ module Magritte
           emit 'env-collect'
           emit 'frame', addr
           emit 'wait-for-close'
+        when AST::Splat
+          emit 'collection'
+          collect([node.expr])
+          emit 'splat'
         else
           visit(node)
           emit 'collect'

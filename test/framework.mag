@@ -8,6 +8,8 @@
 )
 
 (run-test ?name ?fn) = (
+  vm-debug on
   puts "- test:" $name
+  vm-debug off
   %fn && put "-- pass" !! put "-- fail"
 )

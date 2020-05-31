@@ -3,3 +3,13 @@ require test/framework.mag
 test nested-put (=>
   eq (put (put 1)) 1
 )
+
+test unsplat (=>
+  (f ...?a) = put $a
+  eq (f 1 2 3) [1 2 3]
+)
+
+test splat (=>
+  args = [1 1]
+  eq ...$args
+)

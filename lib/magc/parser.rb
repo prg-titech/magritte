@@ -231,11 +231,16 @@ module Magritte
           lookup = elems.shift
           error!(terms, 'cannot end with a !') if lookup.nil?
           out << AST::Access[source, parse_term(lookup)]
+        elsif x.token?(:ellipsis)
+          splatted = elems.shift
+          error!(terms, 'cannot end with ellipsis') if splatted.nil?
+          out << AST::Splat[parse_term(splatted)]
         else
           out << parse_term(x)
         end
       end
-      return out
+
+      out
     end
 
     def parse_pattern(pattern)
@@ -264,7 +269,7 @@ module Magritte
       end
 
       pattern.match(nested(:lbrack,~_)) do |vec|
-        return AST::VectorPattern[vec.elems.map { |e| parse_pattern(e) }, nil]
+        return parse_patterns(vec)
       end
 
       pattern.match(nested(:lparen,~_)) do |rest|
@@ -276,11 +281,27 @@ module Magritte
     end
 
     def parse_bindings(bindings)
-      bindings.map do |b|
-        pats = b.elems.map { |p| parse_pattern(p) }
-        rest = pats.pop if pats.last.is_a?(AST::RestPattern)
-        AST::VectorPattern[pats, rest]
+      bindings.map { |b| parse_patterns(b) }
+    end
+
+    def parse_patterns(b)
+      elems = b.elems.dup
+
+      out = []
+
+      while (e = elems.shift)
+        if e.token?(:ellipsis)
+          rest = elems.shift
+          error!('pattern cannot end with ellipsis') if rest.nil?
+          error!('ellipsis can only be on the last element') if elems.any?
+
+          return AST::VectorPattern[out, parse_pattern(rest)]
+        else
+          out << parse_pattern(e)
+        end
       end
+
+      AST::VectorPattern[out, nil]
     end
 
     def parse_term(term)

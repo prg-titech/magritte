@@ -81,7 +81,7 @@ mkinst('jumpfail', ['inst'], ['status'], [], 'jump if the last status is a failu
 mkinst('collection', [], [], ['collection'], 'start a collection')
 mkinst('index', [None], ['vec', 'idx'], [], 'index a vector')
 mkinst('collect', [], ['collection', None], ['collection'], 'collect a single value into a collection')
-mkinst('vector', [], ['collection'], ['vec'], 'make a new vector')
+mkinst('splat', [], ['collection', 'collection'], ['collection'], 'append all elements of the vector to the collection')
 mkinst('typeof', [], [None], ['str'], 'get the type of a value')
 
 # environments and refs

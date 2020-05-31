@@ -82,6 +82,16 @@ def collect(frame, args):
     collection = frame.top_vec()
     collection.push(value)
 
+@inst_action
+def splat(frame, args):
+    vec = frame.pop_vec()
+    collection = frame.top_vec()
+
+    for v in vec.values:
+        if isinstance(v, Vector):
+            collection.push_all(v.values)
+        else:
+            collection.push(v)
 
 @inst_action
 def index(frame, args):

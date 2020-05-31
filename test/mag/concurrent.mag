@@ -13,3 +13,7 @@ test thread-into-collector (=>
 test slide-example (=>
   count-forever | (& drain; & drain) | take 10
 )
+
+test no-starvation (=>
+  count-forever | (& label a; & label b) | take 20
+)

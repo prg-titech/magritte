@@ -34,11 +34,21 @@ test pipe-cases (=>
   eq 1 1
 )
 
-skip deadlock each-continues (=>
-  num = 0
-  for [1 2 3] | each (=>
-    %num = (incr %num)
+test each-continues (=>
+  (sum) = (
+    out = 0
+    each (?x => %out = (add $x %out))
+    put $out
   )
 
-  put done %num
+  eq (put 1 2 3 | sum) 6
+)
+
+test filter (=>
+  out = [(
+    (put [a 1]; put [b 2]; put [a 3]; put [b 4])
+    | filter ([a _] => true; _ => false)
+  )]
+
+  eq $out [[a 1] [a 3]]
 )

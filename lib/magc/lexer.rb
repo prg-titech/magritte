@@ -175,6 +175,9 @@ module Magritte
       elsif scan /!/
         skip_ws
         return token(:bang)
+      elsif scan /[.][.][.]/
+        skip_lines
+        return token(:ellipsis)
       elsif scan /[$](#{WORD})/
         skip_ws
         return token(:var, group(1))
