@@ -1,4 +1,4 @@
-﻿# use the correct latex and bibtex
+# use the correct latex and bibtex
 UPLATEXMK_OPTS += -pdfdvi
 UPLATEXMK_OPTS += -latex=uplatex
 UPLATEXMK_OPTS += -latexoption='-shell-escape'
